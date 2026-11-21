@@ -1,0 +1,387 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "materias": [
+                {
+                    "materia": {
+                        "codigo": "7162",
+                        "texto": "Viviendas"
+                    }
+                }
+            ],
+            "notas": {
+                "nota": "Vigencia por un mes desde el 18 de marzo, en la forma indicada en la disposici\u00f3n final 10."
+            },
+            "referencias": {
+                "anteriores": [
+                    {
+                        "anterior": [
+                            {
+                                "id_norma": "BOE-A-2020-3580",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "el art. 16 del Real Decreto-ley 7\/2020, de 12 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2018-9268",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "la disposici\u00f3n adicional 134 de la Ley 6\/2018, de 3 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2003-13471",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "los arts. 8.2, 12.2 y A\u00d1ADE el art. 7 bis a la Ley 19\/2003, de 4 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2002-8628",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "el art. 6.2 de la Ley 11\/2002, de 6 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-1993-25359",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "el art. 45.I.B) de la Ley del Impuesto sobre Transmisiones Patrimoniales y Actos Jur\u00eddicos Documentados, texto refundido aprobado por el Real Decreto Legislativo 1\/1993, de 24 de septiembre."
+                            },
+                            {
+                                "id_norma": "BOE-A-2011-9617",
+                                "relacion": {
+                                    "codigo": "235",
+                                    "texto": "SUPRIME"
+                                },
+                                "texto": "el art. 41 de la Ley 14\/2011, de 1 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2015-2495",
+                                "relacion": {
+                                    "codigo": "231",
+                                    "texto": "SUSPENDE"
+                                },
+                                "texto": "en la forma y con los efectos indicados la vigencia de los arts. 3.5 y 6 de la Orden IET\/389\/2015, de 5 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2009-10329",
+                                "relacion": {
+                                    "codigo": "231",
+                                    "texto": "SUSPENDE"
+                                },
+                                "texto": "en la forma y con los efectos indicados la vigencia del art. 10 y la disposici\u00f3n adicional \u00fanica.2 de la Orden ITC\/1660\/2009, de 22 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2017-11505",
+                                "relacion": {
+                                    "codigo": "401",
+                                    "texto": "PRORROGA"
+                                },
+                                "texto": "hasta el 15 de septiembre de 2020, lo indicado del art. 9.2 del Real Decreto 897\/2017, de 6 de octubre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-3692",
+                                "relacion": {
+                                    "codigo": "330",
+                                    "texto": "CITA"
+                                },
+                                "texto": "Real Decreto 463\/2020, de 14 de marzo"
+                            }
+                        ]
+                    }
+                ],
+                "posteriores": [
+                    {
+                        "posterior": [
+                            {
+                                "id_norma": "BOE-A-2021-4908",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": "el art. 42, SE MODIFICA el art. 40.1 y 2, Ley 2\/2021, de 29 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-10923",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": "de forma reiterada el art. 43, por Ley 3\/2020, de 18 de septiembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-5895",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": ", con los efectos indicados, el art. 42 y SE MODIFICA el art. 40.1 y 2, por Real Decreto-ley 21\/2020, de 9 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-5315",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": "los arts. 16.ter.2 y 20, SE MODIFICAN los arts. 17.4, 24.2, 40.3 y 5 y la disposici\u00f3n adicional 7.3 Y SE DICTA EN RELACI\u00d3N sobre avales, moratorias e Impuesto de Sociedades, por Real Decreto-ley 19\/2020, de 26 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4705",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": "el art. 43, por Real Decreto-ley 16\/2020, de 28 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2023-6967",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 17.9, por Real Decreto-ley 2\/2023, de 16 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-19305",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 29.2, por Real Decreto-ley 27\/2021, de 23 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-16477",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "los arts. 17 y 34, en la redacci\u00f3n dada a la disposici\u00f3n final 9 del Real Decreto-ley 17\/2020, de 5 de mayo, por Ley 14\/2021, de 11 de octubre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-3946",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 29.2 y SE DICTA EN RELACI\u00d3N sobre el r\u00e9gimen de cobranza de avales, por Real Decreto-ley 5\/2021, de 12 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-1130",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 25.2 y SE PRORROGA, hasta el 31 de mayo de 2021, el art. 6 y, en la redacci\u00f3n dada por el Real Decreto-ley 30\/2020, de 29 de septiembre, lo indicado de los arts. 22, 23, 25 y disposici\u00f3n adicional 6, por Real Decreto-ley 2\/2021, de 26 de enero"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-14368",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 29.2, por Real Decreto-ley 34\/2020, de 17 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-7432",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "los arts. 4.2, 12 y 13, por Real Decreto-ley 26\/2020, de 7 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-7311",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "los arts. 31.1 y 40, por Real Decreto-ley 25\/2020, de 3 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4959",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 24 y la disposici\u00f3n adicional 6 y SE DICTA EN RELACI\u00d3N con los arts, 22, 23 y 25, sobre medidas sociales en defensa del empleo, por Real Decreto-ley 18\/2020, de 12 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4832",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 34, por Real Decreto-ley 17\/2020, de 5 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4554",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el t\u00edtulo del art. 6, los arts. 17.7, 22.1, 25.6, 29.1 y 2, 33  y SE PRORROGA lo indicado de los arts. 5 y 6, por Real Decreto-ley 15\/2020, de 21 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4332",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 17, por Real Decreto-ley 13\/2020, de 7 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4208",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "y SE A\u00d1ADEN determinados preceptos y SE INTERPRETA, por Real Decreto-ley 11\/2020, de 31 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4152",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "la disposici\u00f3n transitoria 1.2 y SE DESARROLLAN los arts. 22, 23 y 25, por Real Decreto-ley 9\/2020, de 27 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2022-2849",
+                                "relacion": {
+                                    "codigo": "401",
+                                    "texto": "SE PRORROGA"
+                                },
+                                "texto": ", hasta el 30 de junio de 2022, el art. 6, por Real Decreto-ley 2\/2022, de 22 de febrero"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-15768",
+                                "relacion": {
+                                    "codigo": "401",
+                                    "texto": "SE PRORROGA"
+                                },
+                                "texto": ", hasta el 28 de febrero de 2022, la vigencia del art. 6 y SE DICTA EN RELACI\u00d3N con los arts.22, 23 y 25, sobre pr\u00f3rroga de los ERTE y medidas de protecci\u00f3n por desempleo: Real Decreto-ley 18\/2021, de 28 de septiembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-8877",
+                                "relacion": {
+                                    "codigo": "401",
+                                    "texto": "SE PRORROGA"
+                                },
+                                "texto": ", hasta el 30 de septiembre de 2021, la vigencia del art. 6, los ERTE, la  protecci\u00f3n por desempleo y se establecen medidas sobre cese de actividad de los trabajadores aut\u00f3nomos : Real Decreto-ley 11\/2021, de 27 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-11043",
+                                "relacion": {
+                                    "codigo": "401",
+                                    "texto": "SE PRORROGA"
+                                },
+                                "texto": ",con efectos desde el 23 de septiembre de 2020,  hasta el 31 de enero de 2021, la vigencia del art.6, por Real Decreto-ley 28\/2020, de 22 de septiembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4026",
+                                "relacion": {
+                                    "codigo": "201",
+                                    "texto": "CORRECCI\u00d3N de errores"
+                                },
+                                "texto": ", con variaci\u00f3n de preceptos modificadores, en BOE n\u00fam. 82 de 25 de marzo de 2020"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4377",
+                                "relacion": {
+                                    "codigo": "203",
+                                    "texto": "SE CORRIGEN errores"
+                                },
+                                "texto": "en el Real Decreto-ley 11\/2020, de 31 de marzo, en BOE n\u00fam. 99, de 9 de abril de 2020"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-5771",
+                                "relacion": {
+                                    "codigo": "490",
+                                    "texto": "SE DESARROLLA"
+                                },
+                                "texto": "los arts. 22, 23 y 25, por Ley 3\/2021, de 12 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2022-10809",
+                                "relacion": {
+                                    "codigo": "331",
+                                    "texto": "SE DICTA EN RELACI\u00d3N"
+                                },
+                                "texto": "y se habilita la extensi\u00f3n del vencimiento de los avales se\u00f1alados en el art. 29, por Resoluci\u00f3n de 27 de junio de 2022"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-1529",
+                                "relacion": {
+                                    "codigo": "331",
+                                    "texto": "SE DICTA EN RELACI\u00d3N"
+                                },
+                                "texto": "sobre extensi\u00f3n del plazo de solicitud y duraci\u00f3n de moratorias y suspensiones: Real Decreto-ley 3\/2021, de 2 de febrero"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-11416",
+                                "relacion": {
+                                    "codigo": "331",
+                                    "texto": "SE DICTA EN RELACI\u00d3N"
+                                },
+                                "texto": "los arts. 17, 22, 23, 25 y la disposici\u00f3n adicional 6, y se prorrogan hasta el  31 de enero de 2021 los ERTE, la  protecci\u00f3n por desempleo y se establecen medidas sobre cese de actividad de los trabajadores aut\u00f3nomos: Real Decreto-ley 30\/2020, de 29 de septiembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-6838",
+                                "relacion": {
+                                    "codigo": "331",
+                                    "texto": "SE DICTA EN RELACI\u00d3N"
+                                },
+                                "texto": "los arts. 17, 22, 23, 25 y la disposici\u00f3n adicional 6, y se establecen medidas relativas a expedientes de regulaci\u00f3n de empleo, protecci\u00f3n por desempleo y cotizaciones: Real Decreto-ley 24\/2020, de 26 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-11306",
+                                "relacion": {
+                                    "codigo": "470",
+                                    "texto": "SE DECLARA"
+                                },
+                                "texto": ", en el Recurso 2035\/2020, su extinci\u00f3n por p\u00e9rdida sobrevenida del objeto en relaci\u00f3n a la disposici\u00f3n final 2, por Sentencia 124\/2021, de 3 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-10023",
+                                "relacion": {
+                                    "codigo": "470",
+                                    "texto": "SE DECLARA"
+                                },
+                                "texto": "en el Recurso 1813\/2020, la inconstitucionalidad y nulidad de la disposici\u00f3n final 2, por Sentencia 110\/2021, de 13 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4874",
+                                "relacion": {
+                                    "codigo": "552",
+                                    "texto": "Recurso"
+                                },
+                                "texto": "2035\/2020 promovido contra la disposici\u00f3n final 2"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4167",
+                                "relacion": {
+                                    "codigo": "301",
+                                    "texto": "SE PUBLICA  Acuerdo de convalidaci\u00f3n"
+                                },
+                                "texto": ", por Resoluci\u00f3n de 25 de marzo de 2020"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

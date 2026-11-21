@@ -1,0 +1,179 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "materias": [
+                {
+                    "materia": {
+                        "codigo": "6896",
+                        "texto": "T\u00edtulos valores"
+                    }
+                }
+            ],
+            "notas": {
+                "nota": "Entrada en vigor, con la salvedad indicada, el  6 de julio de 2003"
+            },
+            "referencias": {
+                "anteriores": [
+                    {
+                        "anterior": [
+                            {
+                                "id_norma": "BOE-A-1999-21980",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Disposici\u00f3n adicional 4 de la Ley 41\/1999, de 12 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-1993-30991",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "P\u00e1rrafo 2 del art.13.1 y MODIFICA los arts. 1, 2, 3, 5, 8, 12, 16 y la disposici\u00f3n adicional 2 de la Ley 19\/1993, de 28 de diciembre ,"
+                            },
+                            {
+                                "id_norma": "BOE-A-1979-29281",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "salvo el cap\u00edtulo II, la Ley 40\/1979, de 10 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2002-24711",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Disposici\u00f3n adicional 4 de la Ley 46\/2002, de 18 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-1963-22706",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "arts. 113.1 y 112 de la Ley 230\/1963, de 28 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2002-25286",
+                                "relacion": {
+                                    "codigo": "407",
+                                    "texto": "A\u00d1ADE"
+                                },
+                                "texto": "Disposici\u00f3n adicional 13 a la Ley 51\/2002, de 27 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-1985-9680",
+                                "relacion": {
+                                    "codigo": "407",
+                                    "texto": "A\u00d1ADE"
+                                },
+                                "texto": "Disposici\u00f3n adicional 2 a la Ley 13\/1985, de 25 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-1998-5934",
+                                "relacion": {
+                                    "codigo": "480",
+                                    "texto": "DECLARA la vigencia"
+                                },
+                                "texto": "art. 5 del Reglamento aprobado por Real Decreto 230\/1998, de 16 de febrero"
+                            },
+                            {
+                                "id_norma": "BOE-A-1993-6202",
+                                "relacion": {
+                                    "codigo": "480",
+                                    "texto": "DECLARA la vigencia"
+                                },
+                                "texto": "art. 10.4 del Reglamento aprobado pro Real Decreto 137\/1993, de 29 de enero"
+                            },
+                            {
+                                "id_norma": "BOE-A-1999-10228",
+                                "relacion": {
+                                    "codigo": "330",
+                                    "texto": "CITA"
+                                },
+                                "texto": "Tratado de Amsterdam, de 2 de octubre de 1997"
+                            }
+                        ]
+                    }
+                ],
+                "posteriores": [
+                    {
+                        "posterior": [
+                            {
+                                "id_norma": "BOE-A-2022-22685",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 7 bis.1, por Real Decreto-ley 20\/2022, de 27 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-14368",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 7 bis, por Real Decreto-ley 34\/2020, de 17 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4208",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 7 bis, por Real Decreto-ley 11\/2020, de 31 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-3824",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "los arts. 8.2, 12.2 y SE A\u00d1ADE el art. 7 bis , por Real Decreto-ley 8\/2020, de 17 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2018-12131",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 12.3, por Real Decreto-ley 11\/2018, de 31 de agosto"
+                            },
+                            {
+                                "id_norma": "BOE-A-2010-6737",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el t\u00edtulo y el art. 12.2, por Ley 10\/2010, de 28 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2023-15549",
+                                "relacion": {
+                                    "codigo": "490",
+                                    "texto": "SE DESARROLLA"
+                                },
+                                "texto": ", por Real Decreto 571\/2023, de 4 de julio de 2023"
+                            },
+                            {
+                                "id_norma": "BOE-A-2006-20764",
+                                "relacion": {
+                                    "codigo": "480",
+                                    "texto": "SE DECLARA la vigencia"
+                                },
+                                "texto": "de lo indicado de la disposici\u00f3n transitoria 2, por Ley 35\/2006, de 28 de noviembre"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
