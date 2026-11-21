@@ -13,18 +13,30 @@ can fix the clock.
 from __future__ import annotations
 
 import asyncio
+import re
 from collections import Counter
 from collections.abc import Iterable, Sequence
-from datetime import UTC, date, datetime
-from typing import Literal
-from zoneinfo import ZoneInfo
+from dataclasses import dataclass
+from datetime import date, datetime
+from typing import Literal, get_args
 
 from boe_insights_mcp.client import AuxiliaryTable, BoeClient
-from boe_insights_mcp.errors import BoeNotFoundError
-from boe_insights_mcp.models import LawAnalysis, LawMetadata, LawReference, LawSummary
+from boe_insights_mcp.errors import BoeError, BoeNotFoundError
+from boe_insights_mcp.identifiers import normalise_identifier
+from boe_insights_mcp.models import (
+    Block,
+    BlockVersion,
+    LawAnalysis,
+    LawMetadata,
+    LawReference,
+    LawSummary,
+)
 from boe_insights_mcp.query import SortField, build_search_query
-from boe_insights_mcp.references import ParsedReference, fold, normalise_identifier, parse_reference
+from boe_insights_mcp.references import ParsedReference, fold, parse_reference
 from boe_insights_mcp.schemas import (
+    AmendmentGroup,
+    AmendmentHistoryResult,
+    AmendmentItem,
     AmendmentSummary,
     CodeMatch,
     FindCodesResult,
@@ -36,15 +48,22 @@ from boe_insights_mcp.schemas import (
     RelationCount,
     ResolveReferenceResult,
     SearchLegislationResult,
+    YearCount,
+    madrid_today,
+    utc_now,
 )
+from boe_insights_mcp.versions import repeal_note
 
 __all__ = [
+    "AmendmentFilter",
     "CodeKind",
     "RankFilter",
     "ScopeFilter",
     "derive_status",
     "find_codes",
+    "get_amendment_history",
     "get_law_overview",
+    "relation_group",
     "resolve_reference",
     "search_legislation",
 ]
@@ -63,6 +82,7 @@ RankFilter = Literal[
 ]
 ScopeFilter = Literal["state", "regional", "any"]
 CodeKind = Literal["department", "subject", "rank"]
+AmendmentFilter = Literal["all", "repeals", "modifies", "adds", "corrections", "other"]
 
 _CODE_TABLES: dict[CodeKind, AuxiliaryTable] = {
     "department": "departamentos",
@@ -89,21 +109,29 @@ MAX_LIMIT = 50
 _MAX_CANDIDATES = 10
 _SAMPLE_SIZE = 10
 _TITLE_SEARCH_LIMIT = 10
+_MAX_NUMBER_HITS = 200
+MAX_AMENDMENT_LIMIT = 100
+
+# Relation texts of the BOE "relaciones-posteriores" table, folded (lower case, no accents), that
+# put an amending norm in a group. The first group with a match wins, so the order is the
+# precedence. Checked against all 50 relations of the table in the tests: the repeals group also
+# takes annulments, suppressions and "sin efecto" (they remove text, like a repeal); the adds
+# group takes "completa" and "amplia" (they put in new text); "actualiza" is an amendment.
+_GROUP_KEYWORDS: tuple[tuple[AmendmentGroup, tuple[str, ...]], ...] = (
+    ("repeals", ("se deroga", "anula", "deja sin efecto", "suprime")),
+    ("corrections", ("correccion", "corrig", "errores")),
+    ("modifies", ("modifica", "sustituye", "nueva redaccion", "actualiza")),
+    ("adds", ("anade", "amplia", "completa")),
+)
+_YEAR_IN_ID = re.compile(r"-(\d{4})-")
+_QUOTE_LIMIT = 300
+_INITIAL_NOTE_LIMIT = 600
 
 _FORMATS_HINT = (
     "Accepted formats: a BOE identifier (BOE-A-2015-10566), a rank and official number "
     "(Ley 40/2015, Real Decreto-ley 6/2019, LO 3/2018) or just a number (40/2015). "
     "Years need four digits."
 )
-
-
-# Calendar days of Spanish legislation are Madrid days (see get_law_overview).
-_MADRID = ZoneInfo("Europe/Madrid")
-
-
-def _utc(now: datetime | None) -> datetime:
-    """Return ``now``, or the current UTC time when it is ``None`` (the injectable clock)."""
-    return now if now is not None else datetime.now(UTC)
 
 
 def _brief(law: LawSummary) -> LawBrief:
@@ -128,28 +156,41 @@ def _newest_update(laws: Iterable[LawSummary]) -> datetime | None:
 
 
 def derive_status(
-    metadata: LawMetadata, today: date, repeal_references: int
+    metadata: LawMetadata,
+    today: date,
+    repeal_references: int,
+    repeal_note: BlockVersion | None,
 ) -> tuple[LawStatus, str]:
     """Return the legal status of a law and a plain-English note explaining it.
 
     ``repeal_references`` is the number of later norms whose relation is a repeal
-    (:func:`_repeal_reference_count`). Precedence: annulled, repealed, validity exhausted, not
-    yet in force, partially repealed, in force. The BOE's repeal flag marks only whole-law
-    repeals, so a law that later norms repeal in part (or in full, without the flag) is
-    reported as ``partially_repealed`` rather than ``in_force``.
+    (:func:`_repeal_reference_count`); ``repeal_note`` is the version of the law's initial note
+    that announces a repeal (``versions.repeal_note``), or ``None``. Precedence: annulled,
+    repealed (the flag or the note), validity exhausted, not yet in force, partially repealed,
+    in force. The BOE's repeal flag marks only whole-law repeals, so a law that later norms
+    repeal in part (or in full, without the flag) is reported as ``partially_repealed`` rather
+    than ``in_force``.
     """
     # Order encodes how strong each signal is. The two BOE flags are authoritative, so they come
-    # first and an annulled or repealed law is never reported as "not yet in force". Validity
-    # exhausted (a spent law such as a past budget) comes next. ``fecha_vigencia`` is when the
-    # law *enters* into force, never an end date (api-notes 4), so it only ever yields "not yet".
-    # "partially_repealed" is a heuristic read from the amendment references, so it is checked
-    # last: it must not mask a stronger flag, and it downgrades only a law that would otherwise
-    # be shown as plainly in force (the repeal flag covers whole-law repeals only, api-notes 4).
+    # first and an annulled or repealed law is never reported as "not yet in force". The repeal
+    # note is as strong as the repeal flag: some wholly repealed laws carry only the note
+    # (LO 15/1999, flag N), others only the flag (Ley 30/2007, no note); neither signal is
+    # complete alone (api-notes, "Initial note"). Validity exhausted (a spent law such as a past
+    # budget) comes next. ``fecha_vigencia`` is when the law *enters* into force, never an end
+    # date (api-notes 4), so it only ever yields "not yet". "partially_repealed" is a heuristic
+    # read from the amendment references, so it is checked last: it must not mask a stronger
+    # signal, and it downgrades only a law that would otherwise be shown as plainly in force.
     if metadata.annulled:
         return "annulled", "The BOE flags this law as annulled (declared void)."
     if metadata.repealed:
         when = f" on {metadata.repealed_on.isoformat()}" if metadata.repealed_on else ""
         return "repealed", f"The BOE flags this law as repealed{when}."
+    if repeal_note is not None:
+        return (
+            "repealed",
+            "The BOE's consolidated text opens with a repeal note "
+            f'("{_first_sentence(repeal_note)}"), even though the BOE metadata flag is not set.',
+        )
     if metadata.validity_exhausted:
         return (
             "validity_exhausted",
@@ -176,6 +217,36 @@ def derive_status(
         "repealing it. Individual provisions may still have been amended: check the "
         "amendment summary.",
     )
+
+
+def _truncate(text: str, limit: int) -> str:
+    """Cut ``text`` to at most ``limit`` characters, ending with an ellipsis when it was cut."""
+    return text if len(text) <= limit else text[: limit - 1].rstrip() + "\u2026"
+
+
+def _first_sentence(version: BlockVersion) -> str:
+    """The first sentence of a note version, at most ``_QUOTE_LIMIT`` characters."""
+    # The note's first paragraph is the announcement; it is followed by a "Ref. BOE-..." link
+    # text after a full stop, which the cut at the first ". " leaves out.
+    first = version.paragraphs[0].text if version.paragraphs else ""
+    end = first.find(". ")
+    return _truncate(first if end < 0 else first[: end + 1], _QUOTE_LIMIT)
+
+
+def _initial_note_text(note: Block | None) -> str | None:
+    """The text of the latest version of the initial note, capped, or ``None`` without a note."""
+    # ``Block.versions`` is ascending by start date, so the last one is the current note.
+    text = note.versions[-1].text if note is not None and note.versions else ""
+    return _truncate(text, _INITIAL_NOTE_LIMIT) if text else None
+
+
+def _repealed_on(
+    metadata: LawMetadata, status: LawStatus, repeal_version: BlockVersion | None
+) -> date | None:
+    """The repeal date: the metadata's, else (for a repealed law) the note version's start."""
+    if metadata.repealed_on is not None or status != "repealed" or repeal_version is None:
+        return metadata.repealed_on
+    return repeal_version.effective_from or repeal_version.published_on
 
 
 def _repeal_reference_count(analysis: LawAnalysis) -> int:
@@ -244,7 +315,7 @@ async def search_legislation(
         # ``consumed`` counts upstream records, including any dropped by the rank filter, so
         # the next page resumes exactly after the last record this page looked at.
         next_offset=offset + consumed if has_more else None,
-        provenance=Provenance(generated_at=_utc(now), data_updated_at=_newest_update(kept)),
+        provenance=Provenance(generated_at=utc_now(now), data_updated_at=_newest_update(kept)),
     )
 
 
@@ -285,7 +356,7 @@ async def resolve_reference(
     text = reference.strip()
     if not text:
         raise ValueError("reference must not be empty")
-    provenance_time = _utc(now)
+    provenance_time = utc_now(now)
     parsed = parse_reference(text)
     if parsed is None:
         return await _resolve_by_title(client, reference, text, provenance_time)
@@ -359,7 +430,7 @@ async def find_codes(
         matches=shown,
         returned=len(shown),
         total_matches=len(found),
-        provenance=Provenance(generated_at=_utc(now)),
+        provenance=Provenance(generated_at=utc_now(now)),
     )
 
 
@@ -478,17 +549,25 @@ async def _exact_number_matches(
         scope_code=scope_code,
         sort_by="published_on",
     )
-    hits = await client.search_laws(query, limit=MAX_LIMIT)
-    # The API matches the number as a loose phrase (api-notes 2), so check the number again, and
-    # the rank, since the rank filter is approximate. Only the first MAX_LIMIT hits are looked at.
-    return [
-        law
-        for law in hits
-        if law.official_number == parsed.official_number
-        and (
-            parsed.rank_code is None or (law.rank is not None and law.rank.code == parsed.rank_code)
+    matches: list[LawSummary] = []
+    # The API matches the number as a loose phrase (api-notes 2), so a common number such as 1/2020
+    # can have more hits than one page, and the exact match may sit further down. Read pages until
+    # a short one (the end) or ``_MAX_NUMBER_HITS`` hits, which bounds the requests of one lookup.
+    for offset in range(0, _MAX_NUMBER_HITS, MAX_LIMIT):
+        page = await client.search_laws(query, offset=offset, limit=MAX_LIMIT)
+        # Check the number again, and the rank, since the rank filter is approximate.
+        matches.extend(
+            law
+            for law in page
+            if law.official_number == parsed.official_number
+            and (
+                parsed.rank_code is None
+                or (law.rank is not None and law.rank.code == parsed.rank_code)
+            )
         )
-    ]
+        if len(page) < MAX_LIMIT:
+            break
+    return matches
 
 
 async def _resolve_by_title(
@@ -546,24 +625,52 @@ def _amendment_summary(analysis: LawAnalysis) -> AmendmentSummary:
     )
 
 
-async def _fetch_both(client: BoeClient, law_id: str) -> tuple[LawMetadata, LawAnalysis]:
-    """Fetch metadata and analysis together; if one fails the other is cancelled.
+@dataclass(frozen=True)
+class _LawData:
+    """What the overview needs from the API: the three concurrent fetches."""
+
+    metadata: LawMetadata
+    analysis: LawAnalysis
+    note: Block | None
+    note_checked: bool
+    """False when the initial note could not be fetched (``note`` is then ``None``)."""
+
+
+async def _fetch_note(client: BoeClient, law_id: str) -> tuple[Block | None, bool]:
+    """Fetch the initial note; a BOE failure gives ``(None, False)`` instead of raising."""
+    # The note is extra information. It must not fail the overview, and, inside the task group,
+    # an exception would also cancel the metadata and analysis requests that did succeed.
+    try:
+        return await client.get_initial_note(law_id), True
+    except BoeError:
+        return None, False
+
+
+async def _fetch_law(client: BoeClient, law_id: str) -> _LawData:
+    """Fetch metadata, analysis and initial note together; metadata or analysis failure cancels.
 
     The original error (not an ``ExceptionGroup``) is raised, preferring the metadata's.
     """
-    # The two requests are independent, so they run concurrently (the client's rate limiter
-    # still spaces them). TaskGroup gives the cancellation: when one fails it cancels the other,
-    # so no request is left running for a result nobody will use.
+    # The three requests are independent, so they run concurrently (the client's rate limiter
+    # still spaces them). TaskGroup gives the cancellation: when metadata or analysis fails it
+    # cancels the others, so no request is left running for a result nobody will use.
+    metadata: asyncio.Task[LawMetadata] | None = None
     try:
         async with asyncio.TaskGroup() as group:
             metadata = group.create_task(client.get_law_metadata(law_id))
             analysis = group.create_task(client.get_law_analysis(law_id))
+            note = group.create_task(_fetch_note(client, law_id))
     except ExceptionGroup as failures:
         # TaskGroup always wraps failures in an ExceptionGroup. Callers and ``server._guard``
-        # catch ``BoeError`` and ``ValueError`` by type, so re-raise the first member. A cancelled
-        # sibling is not part of the group, so normally there is exactly one.
+        # catch ``BoeError`` and ``ValueError`` by type, so re-raise a member. When both calls
+        # failed in the same turn the group lists them in completion order, which is arbitrary:
+        # the metadata error is the one that says whether the law exists, so it wins.
+        if metadata is not None and metadata.done() and not metadata.cancelled():
+            error = metadata.exception()
+            if error is not None:
+                raise error from None
         raise failures.exceptions[0] from None
-    return metadata.result(), analysis.result()
+    return _LawData(metadata.result(), analysis.result(), *note.result())
 
 
 async def get_law_overview(
@@ -580,16 +687,21 @@ async def get_law_overview(
     """
     # A malformed identifier is passed through unchanged so that the client's own check raises
     # the ``ValueError`` for it.
-    metadata, analysis = await _fetch_both(client, normalise_identifier(law_id) or law_id)
-    moment = _utc(now)
-    # The BOE works in Madrid time, so "today" is the Madrid date, not the UTC one. Madrid is
-    # one or two hours ahead, so for a short window around midnight UTC the dates differ, and a
-    # law taking effect "tomorrow" in UTC terms may already be in force. ``today`` overrides this.
+    data = await _fetch_law(client, normalise_identifier(law_id) or law_id)
+    metadata, analysis = data.metadata, data.analysis
+    moment = utc_now(now)
+    repeal_version = repeal_note(data.note)
     status, note = derive_status(
         metadata,
-        today if today is not None else moment.astimezone(_MADRID).date(),
+        madrid_today(moment, today),
         _repeal_reference_count(analysis),
+        repeal_version,
     )
+    if not data.note_checked:
+        note += (
+            " The BOE's initial note could not be checked, so a repeal announced only there "
+            "would not show here."
+        )
     brief = _brief(metadata)
     return LawOverview(
         identifier=metadata.identifier,
@@ -603,7 +715,8 @@ async def get_law_overview(
         effective_from=metadata.effective_from,
         status=status,
         status_note=note,
-        repealed_on=metadata.repealed_on,
+        repealed_on=_repealed_on(metadata, status, repeal_version),
+        initial_note=_initial_note_text(data.note),
         consolidation_state=(
             metadata.consolidation_state.text if metadata.consolidation_state else None
         ),
@@ -611,4 +724,85 @@ async def get_law_overview(
         url=metadata.html_url,
         eli_url=metadata.eli_url,
         provenance=Provenance(generated_at=moment, data_updated_at=metadata.updated_at),
+    )
+
+
+def relation_group(relation: str) -> AmendmentGroup:
+    """The group of an amendment relation text such as ``SE MODIFICA``; ``other`` if unknown."""
+    folded = fold(relation)
+    for group, keywords in _GROUP_KEYWORDS:
+        if any(keyword in folded for keyword in keywords):
+            return group
+    return "other"
+
+
+def _year_of(law_id: str) -> int | None:
+    """The 4-digit year in an identifier such as ``BOE-A-2020-123``, or ``None``."""
+    found = _YEAR_IN_ID.search(law_id)
+    return int(found.group(1)) if found else None
+
+
+def _amendment_items(analysis: LawAnalysis) -> list[AmendmentItem]:
+    """Every later reference as an item, newest year first; the API order breaks ties."""
+    items = [
+        AmendmentItem(
+            law_id=reference.law_id,
+            year=_year_of(reference.law_id),
+            relation=reference.relation.text.strip(),
+            group=relation_group(reference.relation.text),
+            text=reference.text,
+        )
+        for reference in analysis.later
+    ]
+    # ``sorted`` is stable. Items without a year sort after every dated one.
+    return sorted(items, key=lambda item: -item.year if item.year is not None else 1)
+
+
+def _year_counts(items: Iterable[AmendmentItem]) -> list[YearCount]:
+    """Count items per year, newest first, with the undated ones last."""
+    counts = Counter(item.year for item in items)
+    return [
+        YearCount(year=year, count=counts[year])
+        for year in sorted(counts, key=lambda year: -year if year is not None else 1)
+    ]
+
+
+async def get_amendment_history(
+    client: BoeClient,
+    law_id: str,
+    group: AmendmentFilter = "all",
+    limit: int = 50,
+    offset: int = 0,
+    *,
+    now: datetime | None = None,
+) -> AmendmentHistoryResult:
+    """List the later norms that affect a whole law, newest first, one page at a time.
+
+    Built from the analysis only (no text requests). ``groups`` counts all later references,
+    while ``total``, ``by_year`` and ``items`` follow the ``group`` filter. Raises ``ValueError``
+    for invalid arguments or a malformed identifier and ``BoeNotFoundError`` for an unknown law.
+    """
+    if group not in get_args(AmendmentFilter):
+        raise ValueError(f"group must be one of {', '.join(get_args(AmendmentFilter))}")
+    if not 1 <= limit <= MAX_AMENDMENT_LIMIT:
+        raise ValueError(f"limit must be between 1 and {MAX_AMENDMENT_LIMIT}")
+    if offset < 0:
+        raise ValueError("offset must not be negative")
+    law_id = normalise_identifier(law_id) or law_id
+    analysis = await client.get_law_analysis(law_id)
+    everything = _amendment_items(analysis)
+    selected = [item for item in everything if group in ("all", item.group)]
+    counts = Counter(item.group for item in everything)
+    page = selected[offset : offset + limit]
+    has_more = offset + limit < len(selected)
+    return AmendmentHistoryResult(
+        law_id=law_id,
+        group=group,
+        total=len(selected),
+        groups={name: counts[name] for name in get_args(AmendmentGroup)},
+        by_year=_year_counts(selected),
+        items=page,
+        has_more=has_more,
+        next_offset=offset + limit if has_more else None,
+        provenance=Provenance(generated_at=utc_now(now)),
     )

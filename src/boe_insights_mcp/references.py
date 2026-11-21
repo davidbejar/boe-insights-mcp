@@ -3,11 +3,11 @@
 No I/O happens here. A reference is either a BOE identifier (``BOE-A-2015-10566``) or an
 official number (``40/2015``), optionally preceded by a rank word (``Ley``, ``RDL``, ...).
 
-``parse_reference`` returns a ``ParsedReference`` (or ``None``) and ``normalise_identifier``
-canonicalises identifiers; ``fold`` is the shared accent-stripping helper. ``legislation`` uses
-the result to build exact-number searches and to decide how confident a match can be. The rank
-codes come from the BOE ``rangos`` table (``docs/api-notes.md`` section 3). It imports only the
-identifier pattern from ``client`` and does no I/O.
+``parse_reference`` returns a ``ParsedReference`` (or ``None``); ``fold`` is the shared
+accent-stripping helper. ``legislation`` uses the result to build exact-number searches and to
+decide how confident a match can be. The rank codes come from the BOE ``rangos`` table
+(``docs/api-notes.md`` section 3). Identifiers are recognised through ``identifiers``, so this
+module does not depend on ``client``.
 """
 
 from __future__ import annotations
@@ -17,12 +17,9 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Literal
 
-from boe_insights_mcp.client import LAW_ID
+from boe_insights_mcp.identifiers import normalise_identifier
 
-__all__ = ["ParsedReference", "fold", "normalise_identifier", "parse_reference"]
-
-# BOE ids are `<gazette>-<series letter>-<year>-<number>`; accept any letter case when typed.
-_IDENTIFIER = re.compile(LAW_ID.pattern, re.IGNORECASE)
+__all__ = ["ParsedReference", "fold", "parse_reference"]
 
 # (BOE `rangos` code, canonical name, regexes for the rank words). The regexes run on text that
 # is lower-cased and stripped of accents; dots in abbreviations are optional. The regional
@@ -126,20 +123,6 @@ def fold(text: str) -> str:
     """Lower-case ``text`` and strip accents, so ``Orgánica`` matches ``organica``."""
     decomposed = unicodedata.normalize("NFD", text.lower())
     return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
-
-
-def normalise_identifier(text: str) -> str | None:
-    """Return ``text`` as a canonical BOE identifier, or ``None`` if it is not one.
-
-    Surrounding whitespace is ignored; the BOE series letter is upper-case, others as given
-    (``boe-a-2015-10566`` gives ``BOE-A-2015-10566``). Every entry point that takes an
-    identifier goes through this function, so they all accept the same spellings.
-    """
-    text = text.strip()
-    if not _IDENTIFIER.fullmatch(text):
-        return None
-    prefix, _, rest = text.partition("-")
-    return f"{prefix}-{rest}".upper() if prefix.upper() == "BOE" else f"{prefix.upper()}-{rest}"
 
 
 def _parse_identifier(text: str) -> ParsedReference | None:

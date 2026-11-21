@@ -7,11 +7,11 @@ after they have parsed and validated.
 Two wire formats share one request path: the JSON endpoints and the XML-only block endpoint
 (api-notes 6).
 
-Public names: ``BoeClient`` (the endpoint methods), the ``*_TTL`` cache lifetimes, ``LAW_ID``
-(the identifier pattern, reused by ``references``) and ``ClientStats``. Layering: ``legislation``
-calls this module; this module composes ``cache`` (raw bodies), ``ratelimit`` (spacing and
-concurrency) and ``httpx``, and parses into the ``models`` types. Response quirks that explain
-the code here are written up in ``docs/api-notes.md`` (cited below as "api-notes").
+Public names: ``BoeClient`` (the endpoint methods), the ``*_TTL`` cache lifetimes and
+``ClientStats``. Layering: ``legislation`` calls this module; this module composes ``cache``
+(raw bodies), ``ratelimit`` (spacing and concurrency) and ``httpx``, and parses into the
+``models`` types. Response quirks that explain the code here are written up in
+``docs/api-notes.md`` (cited below as "api-notes").
 """
 
 from __future__ import annotations
@@ -41,6 +41,7 @@ from boe_insights_mcp.errors import (
     BoeResponseError,
     BoeUnavailableError,
 )
+from boe_insights_mcp.identifiers import LAW_ID
 from boe_insights_mcp.models import (
     Block,
     IndexEntry,
@@ -59,7 +60,6 @@ __all__ = [
     "BASE_URL",
     "DEFAULT_USER_AGENT",
     "INITIAL_NOTE_TTL",
-    "LAW_ID",
     "METADATA_TTL",
     "SEARCH_TTL",
     "TEXT_BLOCK_TTL",
@@ -118,7 +118,6 @@ _NO_NOTE = b"boe-insights-mcp: no initial note"
 _MAX_RETRY_AFTER = 60.0
 _JITTER_FRACTION = 0.25
 _MAX_LIMIT = 1000
-LAW_ID = re.compile(r"[A-Z]{2,6}-[A-Za-z]-[0-9]{4}-[0-9]{1,6}")
 _RETRY_AFTER_SECONDS = re.compile(r"[0-9]+")
 # Only the shape ``<status>...<text>MESSAGE</text>`` is read from error bodies (api-notes 2, 9).
 _ERROR_TEXT = re.compile(r"<status>.*?<text>([^<]*)</text>", re.DOTALL)

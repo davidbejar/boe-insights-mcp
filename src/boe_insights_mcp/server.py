@@ -1,11 +1,13 @@
 """The MCP server: tool registration, client lifecycle and error translation.
 
 This layer is deliberately thin. Every tool calls a use case in :mod:`boe_insights_mcp.legislation`
-and turns client errors into messages the model can act on.
+or :mod:`boe_insights_mcp.articles` and turns client errors into messages the model can act on.
 
-``create_server`` builds the ``FastMCP`` instance and registers the four tool functions
-(``search_legislation``, ``resolve_reference``, ``get_law_overview``, ``find_codes``); ``main``
-runs it over stdio. Layering: tool functions here -> use cases in ``legislation`` -> ``client``.
+``create_server`` builds the ``FastMCP`` instance and registers the eight tool functions
+(``search_legislation``, ``resolve_reference``, ``get_law_overview``, ``find_codes``,
+``get_amendment_history``, ``read_article``, ``compare_article_versions``,
+``get_article_history``); ``main`` runs it over stdio. Layering: tool functions here -> use cases
+in ``legislation`` and ``articles`` -> ``client``.
 This is also where the cache, rate limiter and client are created, in the lifespan. The tool
 docstrings, ``Field`` descriptions and ``_INSTRUCTIONS`` are sent to the language model, so they
 are model-facing text; explanations for human readers live in ``#`` comments.
@@ -25,16 +27,26 @@ from fastmcp.server.lifespan import lifespan
 from mcp.types import ToolAnnotations
 from pydantic import Field, ValidationError
 
-from boe_insights_mcp import legislation
+from boe_insights_mcp import articles, legislation
 from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
 from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.errors import BoeError
-from boe_insights_mcp.legislation import MAX_LIMIT, RankFilter, ScopeFilter
+from boe_insights_mcp.legislation import (
+    MAX_AMENDMENT_LIMIT,
+    MAX_LIMIT,
+    AmendmentFilter,
+    RankFilter,
+    ScopeFilter,
+)
 from boe_insights_mcp.query import SortField
 from boe_insights_mcp.ratelimit import RateLimiter
 from boe_insights_mcp.schemas import (
+    AmendmentHistoryResult,
+    ArticleHistoryResult,
+    CompareArticleVersionsResult,
     FindCodesResult,
     LawOverview,
+    ReadArticleResult,
     ResolveReferenceResult,
     SearchLegislationResult,
 )
@@ -49,7 +61,10 @@ _INSTRUCTIONS = (
     "legislation open data. Call resolve_reference first to turn a name such as 'Ley 40/2015' "
     "into a BOE identifier, then use that identifier with the other tools. Use "
     "search_legislation to explore by topic, rank, department or date; find_codes looks up the "
-    "department, subject and rank codes its filters take. The status of a law is derived from "
+    "department, subject and rank codes its filters take. read_article gives an article's text "
+    "on a date, compare_article_versions shows what changed between two dates and "
+    "get_article_history lists the amendments of one article; get_amendment_history lists the "
+    "norms that amended a whole law. The status of a law is derived from "
     "BOE flags and amendment references, so treat it as an indication. When quoting results, "
     "pass on the attribution 'Basado en datos de la Agencia Estatal Boletín Oficial del "
     "Estado' (https://www.boe.es) and say that consolidated texts are informational and have "
@@ -79,6 +94,14 @@ _INVALID_QUERY_ADVICE = {
     "identifier, or search by title with search_legislation.",
     "get_law_overview": "Check the identifier (for example BOE-A-2015-10566) or get it again "
     "from resolve_reference.",
+    "get_amendment_history": "Check the identifier (for example BOE-A-2015-10566) or get it "
+    "again from resolve_reference.",
+    "read_article": "Check the identifier and the article wording, or get the identifier again "
+    "from resolve_reference.",
+    "compare_article_versions": "Check the identifier, the article wording and the ISO dates, "
+    "or get the identifier again from resolve_reference.",
+    "get_article_history": "Check the identifier and the article wording, or get the identifier "
+    "again from resolve_reference.",
 }
 
 
@@ -163,7 +186,7 @@ def _client(ctx: Context) -> BoeClient:
     return ctx.lifespan_context["client"]
 
 
-# The four tool functions below are plain module-level coroutines. Their docstrings, parameter
+# The tool functions below are plain module-level coroutines. Their docstrings, parameter
 # ``Field`` descriptions and return types are what the model sees as the tool description and
 # the input and output schemas, so edit those texts deliberately (see CLAUDE.md, "Documentation
 # standard"). Notes for human readers:
@@ -270,11 +293,12 @@ async def get_law_overview(
     """Summarise one law: identity, legal status and how much it has been amended.
 
     Answers 'is this law still in force, and how much has it changed?'. Returns title, rank,
-    dates, a status with a plain-English note, and counts and samples of the norms that amend
-    it or that it amends. The status is derived from the BOE flags (repealed, annulled,
-    validity exhausted) and from the amendment references (later norms that repeal it, giving
-    'partially_repealed'), so it is an indication, not a legal determination: 'in_force' does
-    not mean every provision is current. Get the identifier from resolve_reference.
+    dates, a status with a plain-English note, the BOE's initial note when it has one, and
+    counts and samples of the norms that amend it or that it amends. The status is derived from
+    the BOE flags (repealed, annulled, validity exhausted), from the amendment references (later
+    norms that repeal it, giving 'partially_repealed') and from a repeal note opening the text,
+    so it is an indication, not a legal determination: 'in_force' does not mean every provision
+    is current. Get the identifier from resolve_reference.
     """
     return await _guard(legislation.get_law_overview(_client(ctx), law_id), "get_law_overview")
 
@@ -301,6 +325,143 @@ async def find_codes(
     return await _guard(legislation.find_codes(_client(ctx), kind, text, limit=limit), "find_codes")
 
 
+_LAW_ID = Annotated[
+    str,
+    Field(
+        description="BOE identifier of the law, e.g. BOE-A-2015-10566. "
+        "Get it from resolve_reference."
+    ),
+]
+_ARTICLE = Annotated[
+    str,
+    Field(
+        description="The article as people write it: '46 bis', 'artículo 48', 'disposición "
+        "adicional tercera', 'anexo I', 'preámbulo', or a block_id from candidates."
+    ),
+]
+
+
+async def get_amendment_history(
+    ctx: Context,
+    law_id: _LAW_ID,
+    group: Annotated[
+        AmendmentFilter,
+        Field(
+            description="Kind of amending norm: 'repeals' (also annulments), 'modifies', 'adds', "
+            "'corrections', 'other' or 'all'."
+        ),
+    ] = "all",
+    limit: Annotated[int, Field(ge=1, le=MAX_AMENDMENT_LIMIT, description="Items per page.")] = 50,
+    offset: Annotated[
+        int, Field(ge=0, description="Start position; pass next_offset from the previous page.")
+    ] = 0,
+) -> AmendmentHistoryResult:
+    """List the later norms that amended, repealed or otherwise affected a whole law.
+
+    Answers 'which laws changed Ley 40/2015, and when?'. Get law_id from resolve_reference.
+    Newest first. Filter with group (repeals, modifies, adds, corrections, other; default
+    all). Returns counts per group and per year, then one page of items with law_id, year,
+    relation and text; while has_more is true, pass next_offset as offset. It names the norms,
+    not the articles they touched: for one article use get_article_history. Derived from BOE
+    references, so informational.
+    """
+    return await _guard(
+        legislation.get_amendment_history(_client(ctx), law_id, group, limit, offset),
+        "get_amendment_history",
+    )
+
+
+async def read_article(
+    ctx: Context,
+    law_id: _LAW_ID,
+    article: _ARTICLE,
+    as_of: Annotated[
+        date | None,
+        Field(
+            description="Show the text valid on this date, ISO format, e.g. 2017-01-01. "
+            "Default: today."
+        ),
+    ] = None,
+    max_chars: Annotated[
+        int,
+        Field(
+            ge=articles.MIN_PAGE_CHARS,
+            le=articles.MAX_PAGE_CHARS,
+            description="Largest part of the text to return.",
+        ),
+    ] = articles.DEFAULT_PAGE_CHARS,
+    offset: Annotated[
+        int,
+        Field(
+            ge=0,
+            description="Start character; pass next_offset from the previous part, with the "
+            "same other arguments.",
+        ),
+    ] = 0,
+) -> ReadArticleResult:
+    """Read the text of one article of a law as in force on a date.
+
+    Answers 'what does article 46 bis of Ley 40/2015 say, today or on 2017-01-01?'. Get law_id
+    from resolve_reference. If several blocks match, or none, outcome is 'ambiguous' or
+    'not_found' and candidates lists blocks to retry with. Long texts come in parts: while
+    truncated is true, pass next_offset as offset. For changes over time use
+    compare_article_versions or get_article_history. Consolidated text is informational, not
+    official.
+    """
+    return await _guard(
+        articles.read_article(
+            _client(ctx), law_id, article, as_of=as_of, max_chars=max_chars, offset=offset
+        ),
+        "read_article",
+    )
+
+
+async def compare_article_versions(
+    ctx: Context,
+    law_id: _LAW_ID,
+    article: _ARTICLE,
+    from_date: Annotated[date, Field(description="Earlier date, ISO format, e.g. 2017-01-01.")],
+    to_date: Annotated[
+        date | None, Field(description="Later date, ISO format. Default: today.")
+    ] = None,
+    max_changes: Annotated[
+        int,
+        Field(ge=1, le=articles.MAX_CHANGES, description="Most changed paragraphs to list."),
+    ] = articles.DEFAULT_CHANGES,
+) -> CompareArticleVersionsResult:
+    """Show how one article's text differs between two dates.
+
+    Answers 'what changed in article 48 between 2017-01-01 and today?'. Returns the added,
+    removed and reworded paragraphs (rewordings marked [-old-] {+new+}), a unified diff and the
+    norms that amended the article in between. If the article did not exist on from_date,
+    everything shows as added. Output is capped: see changes_truncated and unified_truncated,
+    and raise max_changes for more. To list every amendment use get_article_history. Consolidated
+    text is informational, not official.
+    """
+    return await _guard(
+        articles.compare_article_versions(
+            _client(ctx), law_id, article, from_date, to_date, max_changes
+        ),
+        "compare_article_versions",
+    )
+
+
+async def get_article_history(
+    ctx: Context, law_id: _LAW_ID, article: _ARTICLE
+) -> ArticleHistoryResult:
+    """List the versions of one article: when each took effect, who amended it, what changed.
+
+    Answers 'when and by which laws was article 48 amended?'. Each event is original, amended
+    or repealed, with the paragraphs added, removed and changed against the previous version. To
+    see what changed between two dates use compare_article_versions; for the amendments of the
+    whole law, not one article, use get_amendment_history. At most the 60 most recent versions
+    are returned; truncated says when older ones are left out. Informational, not official.
+    """
+    return await _guard(
+        articles.get_article_history(_client(ctx), law_id, article), "get_article_history"
+    )
+
+
 # (function, display title). Registered by ``create_server``; every tool is read-only and
 # idempotent, and "open world" because it reads an external service.
 _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
@@ -308,6 +469,10 @@ _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (resolve_reference, "Resolve a law reference"),
     (get_law_overview, "Get a law overview"),
     (find_codes, "Find BOE codes"),
+    (get_amendment_history, "List the amendments of a law"),
+    (read_article, "Read an article"),
+    (compare_article_versions, "Compare article versions"),
+    (get_article_history, "Get an article's history"),
 )
 
 

@@ -17,10 +17,12 @@ import respx
 
 from boe_insights_mcp.cache import MemoryCache
 from boe_insights_mcp.client import BASE_URL, BoeClient
-from boe_insights_mcp.errors import BoeNotFoundError
+from boe_insights_mcp.errors import BoeNotFoundError, BoeUnavailableError
 from boe_insights_mcp.legislation import (
     find_codes,
+    get_amendment_history,
     get_law_overview,
+    relation_group,
     resolve_reference,
     search_legislation,
 )
@@ -805,6 +807,17 @@ async def test_blank_reference_is_rejected_without_a_request(
 # --- get_law_overview -----------------------------------------------------------------------
 
 
+def mock_note(
+    router: respx.MockRouter, load_fixture: Loader, law_id: str, fixture: str | None = None
+) -> respx.Route:
+    """Answer the initial-note request: with a recorded note, or HTTP 404 (the law has none)."""
+    status, name = (200, fixture) if fixture else (404, "error_404_bloque_no_in_force_law.xml")
+    response = httpx.Response(
+        status, content=load_fixture(name), headers={"Content-Type": "application/xml"}
+    )
+    return router.get(f"{SEARCH_URL}/id/{law_id}/texto/bloque/no").mock(return_value=response)
+
+
 def mock_law(
     router: respx.MockRouter,
     json_response: JsonResponse,
@@ -812,13 +825,16 @@ def mock_law(
     law_id: str,
     metadata: str,
     analysis: str = "analisis_ley40_2015.json",
+    note: str | None = None,
 ) -> None:
+    """Mock metadata, analysis and initial note (HTTP 404 unless ``note`` names a fixture)."""
     router.get(f"{SEARCH_URL}/id/{law_id}/metadatos").mock(
         return_value=json_response(load_fixture(metadata))
     )
     router.get(f"{SEARCH_URL}/id/{law_id}/analisis").mock(
         return_value=json_response(load_fixture(analysis))
     )
+    mock_note(router, load_fixture, law_id, note)
 
 
 @pytest.fixture
@@ -878,6 +894,7 @@ def mock_ley_40_with(
     router.get(f"{SEARCH_URL}/id/{LEY_40}/analisis").mock(
         return_value=json_response(analysis_body(*relations))
     )
+    mock_note(router, load_fixture, LEY_40)
 
 
 async def test_overview_without_repeal_references_is_in_force(
@@ -973,6 +990,7 @@ async def test_overview_cancels_the_analysis_request_when_the_metadata_fails(
         return_value=xml_response(load_fixture("error_404_unknown_id.xml"), 404)
     )
     router.get(f"{SEARCH_URL}/id/BOE-A-1999-1/analisis").mock(side_effect=hang)
+    mock_note(router, load_fixture, "BOE-A-1999-1")
 
     with pytest.raises(BoeNotFoundError):  # the original error, not an ExceptionGroup
         await get_law_overview(client, "BOE-A-1999-1")
@@ -1082,6 +1100,460 @@ async def test_overview_accepts_a_lowercase_identifier_like_resolve_reference(
     overview = await get_law_overview(client, f"  {LEY_40.lower()} ", now=NOW)
 
     assert overview.identifier == LEY_40
+
+
+# --- get_law_overview: the initial note ------------------------------------------------------
+
+LOPD = "BOE-A-1999-23750"
+
+
+async def test_overview_of_a_law_repealed_only_by_its_note_is_repealed(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    # LO 15/1999: metadata flag N, yet the consolidated text opens with "Norma derogada...".
+    mock_law(
+        router,
+        json_response,
+        load_fixture,
+        LOPD,
+        "metadatos_superseded_partial_lopd1999.json",
+        note="texto_bloque_no_lopd1999_repealed.xml",
+    )
+
+    overview = await get_law_overview(client, LOPD, now=NOW)
+
+    assert overview.status == "repealed"
+    assert overview.repealed_on == date(2018, 12, 7)
+    assert "opens with a repeal note" in overview.status_note
+    assert overview.initial_note is not None
+    assert overview.initial_note.startswith("Norma derogada, con efectos de 7 de diciembre de 2018")
+
+
+async def test_overview_carries_a_note_that_is_not_a_repeal_without_changing_the_status(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_law(
+        router,
+        json_response,
+        load_fixture,
+        LEY_40,
+        "metadatos_in_force_ley40_2015.json",
+        note="texto_bloque_no_rd424_2005_rename_not_repeal.xml",
+    )
+
+    overview = await get_law_overview(client, LEY_40, today=date(2026, 11, 21), now=NOW)
+
+    assert overview.status == "partially_repealed"  # from the analysis, as without the note
+    assert overview.initial_note is not None
+    assert "pasa a denominarse" in overview.initial_note
+
+
+async def test_overview_initial_note_is_capped_at_600_characters(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_law(
+        router,
+        json_response,
+        load_fixture,
+        LEY_30_1992,
+        "metadatos_repealed_ley30_1992.json",
+        note="texto_bloque_no_ley11_2007_repealed_with_tengase.xml",
+    )
+
+    overview = await get_law_overview(client, LEY_30_1992, now=NOW)
+
+    assert overview.initial_note is not None
+    assert len(overview.initial_note) == 600
+    assert overview.initial_note.endswith("\u2026")
+
+
+async def test_overview_of_a_flagged_law_without_a_note_is_repealed_with_no_note(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    # Ley 30/2007: flag S, and the BOE serves no initial note (HTTP 404).
+    law_id = "BOE-A-2007-18874"
+    mock_law(
+        router,
+        json_response,
+        load_fixture,
+        law_id,
+        "metadatos_repealed_ley30_2007_no_initial_note.json",
+    )
+
+    overview = await get_law_overview(client, law_id, now=NOW)
+
+    assert overview.status == "repealed"
+    assert overview.initial_note is None
+    assert "could not be checked" not in overview.status_note
+
+
+async def test_overview_fetches_metadata_analysis_and_note_concurrently(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    note_requested = asyncio.Event()
+
+    async def metadata_waits_for_the_note(request: httpx.Request) -> httpx.Response:
+        # A sequential implementation would never request the note while this call waits.
+        await asyncio.wait_for(note_requested.wait(), timeout=5)
+        return json_response(load_fixture("metadatos_in_force_ley40_2015.json"))
+
+    async def note_signals(request: httpx.Request) -> httpx.Response:
+        note_requested.set()
+        return httpx.Response(
+            404,
+            content=load_fixture("error_404_bloque_no_in_force_law.xml"),
+            headers={"Content-Type": "application/xml"},
+        )
+
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/metadatos").mock(side_effect=metadata_waits_for_the_note)
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/analisis").mock(
+        return_value=json_response(load_fixture("analisis_ley40_2015.json"))
+    )
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/texto/bloque/no").mock(side_effect=note_signals)
+
+    overview = await get_law_overview(client, LEY_40, now=NOW)
+
+    assert overview.identifier == LEY_40
+
+
+@pytest.mark.parametrize("status_code", [400, 503])
+async def test_overview_survives_a_failing_note_request(
+    router: respx.MockRouter,
+    http: httpx.AsyncClient,
+    json_response: JsonResponse,
+    xml_response: XmlResponse,
+    load_fixture: Loader,
+    status_code: int,
+) -> None:
+    no_retries = BoeClient(
+        cache=MemoryCache(), limiter=RateLimiter(min_interval=0), http=http, max_retries=0
+    )
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/metadatos").mock(
+        return_value=json_response(load_fixture("metadatos_in_force_ley40_2015.json"))
+    )
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/analisis").mock(
+        return_value=json_response(load_fixture("analisis_ley40_2015.json"))
+    )
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/texto/bloque/no").mock(
+        return_value=xml_response(load_fixture("error_404_unknown_id.xml"), status_code)
+    )
+
+    overview = await get_law_overview(no_retries, LEY_40, today=date(2026, 11, 21), now=NOW)
+
+    assert overview.status == "partially_repealed"
+    assert overview.initial_note is None
+    assert "initial note could not be checked" in overview.status_note
+    assert overview.amendments.affected_by_count > 0
+
+
+class _FailingClient(BoeClient):
+    """A client whose three law calls fail as scripted, to test which error is reported."""
+
+    def __init__(self, http: httpx.AsyncClient, *, metadata_late: bool) -> None:
+        super().__init__(cache=MemoryCache(), limiter=RateLimiter(min_interval=0), http=http)
+        self._metadata_late = metadata_late
+
+    async def get_law_metadata(self, law_id: str) -> Any:
+        if self._metadata_late:
+            # One event-loop turn later than the analysis, but before the cancellation arrives.
+            await asyncio.sleep(0)
+        raise BoeNotFoundError("metadata: no such law")
+
+    async def get_law_analysis(self, law_id: str) -> Any:
+        raise BoeUnavailableError("analysis: down")
+
+    async def get_initial_note(self, law_id: str) -> Any:
+        raise BoeUnavailableError("note: down")
+
+
+@pytest.mark.parametrize("metadata_late", [True, False])
+async def test_overview_reports_the_metadata_error_when_several_calls_fail(
+    http: httpx.AsyncClient, metadata_late: bool
+) -> None:
+    failing = _FailingClient(http, metadata_late=metadata_late)
+
+    with pytest.raises(BoeNotFoundError, match="metadata"):
+        await get_law_overview(failing, LEY_40)
+
+
+async def test_overview_reports_the_first_failure_when_metadata_succeeded(
+    http: httpx.AsyncClient,
+    router: respx.MockRouter,
+    json_response: JsonResponse,
+    load_fixture: Loader,
+) -> None:
+    client = BoeClient(
+        cache=MemoryCache(), limiter=RateLimiter(min_interval=0), http=http, max_retries=0
+    )
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/metadatos").mock(
+        return_value=json_response(load_fixture("metadatos_in_force_ley40_2015.json"))
+    )
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/analisis").mock(return_value=httpx.Response(503))
+    mock_note(router, load_fixture, LEY_40)
+
+    with pytest.raises(BoeUnavailableError):
+        await get_law_overview(client, LEY_40)
+
+
+# --- resolve_reference: exact-number matches beyond the first page ---------------------------
+
+
+def numbered_hits(start: int, count: int) -> list[dict[str, Any]]:
+    """Hits that match a loose number search but are not the number asked for."""
+    return [raw_hit(f"BOE-A-2000-{start + n}", number=f"{start + n}/2000") for n in range(count)]
+
+
+async def test_an_exact_number_beyond_the_first_page_is_found(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse
+) -> None:
+    route = mock_searches(
+        router,
+        json_response,
+        search_body(*numbered_hits(1, 50)),
+        search_body(*numbered_hits(51, 10), raw_hit("BOE-A-2018-16673", number="3/2018")),
+    )
+
+    result = await resolve_reference(client, "Ley 3/2018")
+
+    assert result.status == "resolved"
+    assert [m.identifier for m in result.matches] == ["BOE-A-2018-16673"]
+    assert [sent_params(route, n)["offset"] for n in range(2)] == ["0", "50"]
+
+
+async def test_paging_stops_at_the_first_short_page(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse
+) -> None:
+    route = mock_searches(
+        router,
+        json_response,
+        search_body(*numbered_hits(1, 50)),
+        search_body(*numbered_hits(51, 49)),  # short page: the state search ends here
+        search_body(),  # the any-scope fallback
+    )
+
+    result = await resolve_reference(client, "Ley 3/2018")
+
+    assert result.status == "not_found"
+    assert route.call_count == 3
+
+
+async def test_paging_stops_after_200_hits(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse
+) -> None:
+    pages = [search_body(*numbered_hits(1 + 50 * n, 50)) for n in range(8)]
+    route = mock_searches(router, json_response, *pages)
+
+    result = await resolve_reference(client, "Ley 3/2018")
+
+    assert result.status == "not_found"
+    assert route.call_count == 8  # 4 pages of 50 in each of the two scopes, never a 5th
+
+
+# --- get_amendment_history --------------------------------------------------------------------
+
+# Expected group of every relation text of the BOE "relaciones-posteriores" table (the fixture
+# holds all 50), by relation code. A new code in the table makes the first test fail, so a relation
+# can never silently land in "other".
+RELATION_GROUPS = {
+    **dict.fromkeys(("201", "202", "203", "204"), "corrections"),
+    **dict.fromkeys(("210", "211", "212", "213", "214", "215", "216", "217"), "repeals"),
+    **dict.fromkeys(("220", "221", "230", "235"), "repeals"),  # annulled, set aside, suppressed
+    **dict.fromkeys(("245", "270", "271", "272", "404"), "modifies"),
+    **dict.fromkeys(("406", "407", "408"), "adds"),
+    **dict.fromkeys(
+        (
+            *("231", "247", "300", "301", "303", "330", "331", "400", "401", "402", "420"),
+            *("421", "422", "426", "427", "430", "440", "470", "480", "490", "520", "530"),
+            *("540", "552", "693", "694"),
+        ),
+        "other",
+    ),
+}
+
+
+def test_every_relation_of_the_boe_table_has_an_expected_group(
+    load_json: Callable[[str], Any],
+) -> None:
+    table = load_json("aux_relaciones_posteriores.json")["data"]
+
+    assert set(table) == set(RELATION_GROUPS)
+
+
+@pytest.mark.parametrize("code", sorted(RELATION_GROUPS))
+def test_relation_texts_land_in_the_expected_group(
+    load_json: Callable[[str], Any], code: str
+) -> None:
+    relation = load_json("aux_relaciones_posteriores.json")["data"][code]
+
+    assert relation_group(relation) == RELATION_GROUPS[code], relation
+
+
+def later_body(*references: tuple[str, str, str]) -> bytes:
+    """An analysis whose later norms are ``(identifier, relation text, reference text)``."""
+    later = [
+        {"id_norma": law_id, "relacion": {"codigo": "270", "texto": relation}, "texto": text}
+        for law_id, relation, text in references
+    ]
+    document = {
+        "status": {"code": "200", "text": "ok"},
+        "data": [{"referencias": {"posteriores": [{"posterior": later}]}}],
+    }
+    return json.dumps(document).encode()
+
+
+HISTORY = (
+    ("BOE-A-2018-1", "SE MODIFICA", "art. 1"),
+    ("BOE-A-2020-2", "SE DEROGA", "art. 2"),
+    ("BOE-A-2020-3", "SE MODIFICA", "art. 3"),
+    ("BOE-A-2015-4", "SE AÑADE", "art. 4"),
+    ("BOE-A-2020-5", "CORRECCIÓN de errores", "art. 5"),
+    ("DOUE-L-2019-6", "SE DICTA", "art. 6"),
+    ("BOE-X-NOYEAR", "SE MODIFICA", "art. 7"),
+)
+
+
+@pytest.fixture
+def history_routes(router: respx.MockRouter, json_response: JsonResponse) -> None:
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/analisis").mock(
+        return_value=json_response(later_body(*HISTORY))
+    )
+
+
+@pytest.mark.usefixtures("history_routes")
+async def test_amendment_history_counts_every_group_over_all_references(client: BoeClient) -> None:
+    result = await get_amendment_history(client, LEY_40, group="repeals", now=NOW)
+
+    assert result.groups == {
+        "repeals": 1,
+        "modifies": 3,
+        "adds": 1,
+        "corrections": 1,
+        "other": 1,
+    }
+    assert result.total == 1
+    assert [item.law_id for item in result.items] == ["BOE-A-2020-2"]
+
+
+@pytest.mark.usefixtures("history_routes")
+async def test_amendment_history_lists_newest_year_first_keeping_the_api_order(
+    client: BoeClient,
+) -> None:
+    result = await get_amendment_history(client, LEY_40, now=NOW)
+
+    assert [item.law_id for item in result.items] == [
+        "BOE-A-2020-2",
+        "BOE-A-2020-3",
+        "BOE-A-2020-5",
+        "DOUE-L-2019-6",
+        "BOE-A-2018-1",
+        "BOE-A-2015-4",
+        "BOE-X-NOYEAR",
+    ]
+    assert result.items[0].year == 2020
+    assert result.items[-1].year is None
+    assert (result.items[0].relation, result.items[0].group) == ("SE DEROGA", "repeals")
+    assert result.items[0].text == "art. 2"
+    assert result.total == 7
+
+
+@pytest.mark.usefixtures("history_routes")
+async def test_amendment_history_counts_per_year_newest_first_with_undated_last(
+    client: BoeClient,
+) -> None:
+    result = await get_amendment_history(client, LEY_40, now=NOW)
+
+    assert [(y.year, y.count) for y in result.by_year] == [
+        (2020, 3),
+        (2019, 1),
+        (2018, 1),
+        (2015, 1),
+        (None, 1),
+    ]
+
+
+@pytest.mark.usefixtures("history_routes")
+async def test_amendment_history_by_year_follows_the_selected_group(client: BoeClient) -> None:
+    result = await get_amendment_history(client, LEY_40, group="modifies", now=NOW)
+
+    assert [(y.year, y.count) for y in result.by_year] == [(2020, 1), (2018, 1), (None, 1)]
+    assert result.total == 3
+
+
+@pytest.mark.usefixtures("history_routes")
+async def test_amendment_history_pages_with_has_more_and_next_offset(client: BoeClient) -> None:
+    first = await get_amendment_history(client, LEY_40, limit=3, now=NOW)
+    last = await get_amendment_history(client, LEY_40, limit=3, offset=6, now=NOW)
+
+    assert (len(first.items), first.has_more, first.next_offset) == (3, True, 3)
+    assert (len(last.items), last.has_more, last.next_offset) == (1, False, None)
+
+
+@pytest.mark.usefixtures("history_routes")
+async def test_amendment_history_pages_cover_every_item_once(client: BoeClient) -> None:
+    seen: list[str] = []
+    offset: int | None = 0
+    while offset is not None:
+        page = await get_amendment_history(client, LEY_40, limit=2, offset=offset, now=NOW)
+        seen.extend(item.law_id for item in page.items)
+        offset = page.next_offset
+
+    assert sorted(seen) == sorted(law_id for law_id, _, _ in HISTORY)
+
+
+@pytest.mark.usefixtures("history_routes")
+async def test_amendment_history_offset_past_the_end_is_an_empty_page(client: BoeClient) -> None:
+    result = await get_amendment_history(client, LEY_40, offset=50, now=NOW)
+
+    assert (result.items, result.has_more, result.next_offset, result.total) == ([], False, None, 7)
+
+
+async def test_amendment_history_of_a_law_nobody_amended_is_empty(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse
+) -> None:
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/analisis").mock(
+        return_value=json_response(analysis_body())
+    )
+
+    result = await get_amendment_history(client, LEY_40, now=NOW)
+
+    assert (result.total, result.items, result.by_year) == (0, [], [])
+    assert set(result.groups.values()) == {0}
+
+
+@pytest.mark.usefixtures("history_routes")
+async def test_amendment_history_uses_only_the_analysis_request_and_stamps_provenance(
+    client: BoeClient, router: respx.MockRouter
+) -> None:
+    result = await get_amendment_history(client, f" {LEY_40.lower()} ", now=NOW)
+
+    assert [call.request.url.path.rsplit("/", 1)[-1] for call in router.calls] == ["analisis"]
+    assert result.law_id == LEY_40
+    assert result.provenance.generated_at == NOW
+    assert result.provenance.attribution.startswith("Basado en datos")
+
+
+async def test_amendment_history_of_an_unknown_law_raises_not_found(
+    client: BoeClient, router: respx.MockRouter, xml_response: XmlResponse, load_fixture: Loader
+) -> None:
+    router.get(f"{SEARCH_URL}/id/BOE-A-1999-1/analisis").mock(
+        return_value=xml_response(load_fixture("error_404_unknown_id.xml"), 404)
+    )
+
+    with pytest.raises(BoeNotFoundError):
+        await get_amendment_history(client, "BOE-A-1999-1")
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [{"limit": 0}, {"limit": 101}, {"offset": -1}, {"group": "everything"}],
+)
+async def test_amendment_history_rejects_invalid_arguments_without_a_request(
+    client: BoeClient, router: respx.MockRouter, arguments: dict[str, Any]
+) -> None:
+    with pytest.raises(ValueError):
+        await get_amendment_history(client, LEY_40, **arguments)
+
+    assert router.calls.call_count == 0
 
 
 # --- find_codes -------------------------------------------------------------------------------
