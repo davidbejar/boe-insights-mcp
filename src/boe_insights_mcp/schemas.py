@@ -2,6 +2,11 @@
 
 Every tool result embeds a :class:`Provenance`, which carries the attribution and the
 "informational only" notice the BOE reuse conditions require.
+
+These are the return types of the four tools in ``server``; ``legislation`` builds them from the
+client's ``models`` types. FastMCP derives each tool's output schema from them, so the class
+docstrings and ``Field`` descriptions here are sent to the language model and are model-facing
+text (see CLAUDE.md, "Documentation standard"); notes for human readers go in ``#`` comments.
 """
 
 from __future__ import annotations

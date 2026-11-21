@@ -4,6 +4,10 @@ Stores bytes keyed by strings so repeated questions do not hit the BOE API again
 backends share the :class:`Cache` protocol: :class:`MemoryCache` (in-process, LRU) and
 :class:`DiskCache` (persistent, backed by the ``diskcache`` library). :func:`make_key` derives
 a stable key from a request, and :func:`default_cache_dir` picks the on-disk location.
+
+The cache holds raw response bodies, not parsed models. It sits below ``client.BoeClient``, the
+only place that reads or writes it; ``settings`` supplies the backend choice and directory, and
+``server`` builds the instance. Time-to-live lengths are decided by the client, per endpoint.
 """
 
 from __future__ import annotations
@@ -79,6 +83,7 @@ class MemoryCache:
         self._entries: OrderedDict[str, tuple[bytes, float | None]] = OrderedDict()
 
     def _is_live(self, expires_at: float | None) -> bool:
+        """Whether an entry with this expiry time is still valid."""
         return expires_at is None or self._clock() < expires_at
 
     async def get(self, key: str) -> bytes | None:
@@ -90,12 +95,15 @@ class MemoryCache:
         if not self._is_live(expires_at):
             del self._entries[key]
             return None
+        # The OrderedDict is kept in recency order: the oldest-used key first, the newest last.
         self._entries.move_to_end(key)
         return value
 
     async def set(self, key: str, value: bytes, ttl: float | None = None) -> None:
         """Store ``value`` under ``key``, evicting the least recently used entries if full."""
         if ttl is not None and ttl <= 0:
+            # "Already expired": store nothing, and drop any older value so it cannot outlive the
+            # write that replaced it.
             self._entries.pop(key, None)
             return
         expires_at = None if ttl is None else self._clock() + ttl
@@ -105,6 +113,9 @@ class MemoryCache:
             self._evict()
 
     def _evict(self) -> None:
+        """Shrink to ``max_entries``: expired entries go first, then the least recently used."""
+        # Expired entries are only removed lazily on ``get``, so they may still occupy space;
+        # dropping them first avoids throwing out a live entry to make room for a dead one.
         now = self._clock()
         expired = [
             key
@@ -133,6 +144,11 @@ class DiskCache:
     """Persistent cache stored in ``directory`` via ``diskcache``.
 
     Blocking ``diskcache`` calls run in a worker thread so the event loop is never blocked.
+
+    ``diskcache`` does synchronous SQLite and file I/O, which would stall every other coroutine
+    (including the rate limiter's timing) for the duration of a disk read, hence
+    ``asyncio.to_thread`` around each call. ``diskcache`` is itself safe to use from threads.
+    It applies the expiry and the size limit (least recently stored entries are culled).
     """
 
     def __init__(self, directory: Path, size_limit_bytes: int = 256 * 1024 * 1024) -> None:
@@ -140,6 +156,7 @@ class DiskCache:
         self._cache = diskcache.Cache(str(directory), size_limit=size_limit_bytes)
 
     def _read(self, key: str) -> bytes | None:
+        """Blocking read of ``key``; returns ``None`` on a miss or a non-bytes value."""
         # diskcache is untyped; keep only values that are actually bytes.
         value = self._cache.get(key)
         return value if isinstance(value, bytes) else None
@@ -179,6 +196,8 @@ def make_key(
     strings (so ``50`` and ``"50"`` match). The digest is taken over a JSON encoding, so name
     and value boundaries cannot collide.
     """
+    # Sorting makes the key independent of dict order; JSON (rather than joining strings with a
+    # separator) keeps ("a", "b=c") and ("a=b", "c") from producing the same text.
     pairs = sorted(
         [name, str(value)] for name, value in (params or {}).items() if value is not None
     )

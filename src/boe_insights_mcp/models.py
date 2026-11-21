@@ -3,6 +3,12 @@
 The API uses Spanish field names and a few serialisation quirks (``yyyymmdd`` dates, ``S``/``N``
 flags, single-element lists collapsed into objects, empty lists as ``""``). The models absorb
 all of that: they validate from the raw API objects and dump with English names.
+
+Public names: ``LawSummary`` (a search hit), ``LawMetadata`` (a summary plus repeal status),
+``LawAnalysis`` with ``LawReference`` (subjects and amendment cross-references), ``CodedValue``
+and the ``as_list`` helper. ``client`` builds these from response bodies; ``legislation``
+consumes them and converts them to the tool-facing ``schemas``. They are not sent to the model
+directly. Quirks are described in ``docs/api-notes.md`` section 0 and the sections cited below.
 """
 
 from __future__ import annotations
@@ -33,6 +39,8 @@ __all__ = [
 
 def as_list(value: Any) -> list[Any]:
     """Normalise the API's collapsed collections: ``None``, ``""``, one object or a list."""
+    # The API converts XML to JSON, so a collection with exactly one element arrives as a bare
+    # object and an empty one as ``""`` or null (api-notes 0). Callers must always get a list.
     if value is None or value == "":
         return []
     if isinstance(value, list):
@@ -42,13 +50,18 @@ def as_list(value: Any) -> list[Any]:
 
 def _blank_to_none(value: Any) -> Any:
     """Turn the API's empty elements (``""``) into ``None``."""
+    # An empty XML element is serialised as ``""`` whatever its type, which would fail
+    # validation as a date or as a nested object.
     if isinstance(value, str) and not value.strip():
         return None
     return value
 
 
 def _parse_date(value: Any) -> Any:
-    """Parse a ``yyyymmdd`` string; blank means no date. Other values are left to pydantic."""
+    """Parse a ``yyyymmdd`` string; blank means no date. Other values are left to pydantic.
+
+    A malformed date raises ``ValueError``, which pydantic reports as a validation error.
+    """
     value = _blank_to_none(value)
     if isinstance(value, str):
         return datetime.strptime(value, "%Y%m%d").date()
@@ -64,7 +77,11 @@ def _parse_timestamp(value: Any) -> Any:
 
 
 def _parse_flag(value: Any) -> Any:
-    """Parse the API's ``"S"``/``"N"`` (yes/no) flags."""
+    """Parse the API's ``"S"``/``"N"`` (yes/no) flags.
+
+    Any other string is rejected rather than guessed at, so an unexpected API value surfaces
+    as a parse error instead of a silently wrong legal status.
+    """
     if isinstance(value, str):
         if value not in ("S", "N"):
             raise ValueError(f"expected 'S' or 'N', got {value!r}")
@@ -77,6 +94,10 @@ def _unwrapper(key: str) -> Callable[[Any], list[Any]]:
 
     Items that are not wrapped (no ``key``) are kept as they are.
     """
+    # Shape being flattened (api-notes 5): ``referencias.anteriores`` is
+    # ``[{"anterior": [ref, ref, ...]}, ...]`` and ``materias`` is ``[{"materia": {...}}]``,
+    # each level collapsing to a bare object when it has one element. Every combination of
+    # list/object at both levels must come out as one flat list.
 
     def unwrap(value: Any) -> list[Any]:
         items: list[Any] = []
@@ -100,6 +121,9 @@ _Flag = Annotated[bool, BeforeValidator(_parse_flag)]
 
 class _ApiModel(BaseModel):
     """Frozen base: reads Spanish API names or English names, ignores unknown fields."""
+
+    # ``extra="ignore"``: the API returns many fields we do not use, and new ones must not break
+    # parsing. ``validate_by_name`` lets code and tests build models with the English names.
 
     model_config = ConfigDict(frozen=True, validate_by_name=True, extra="ignore")
 
@@ -141,6 +165,9 @@ class LawSummary(_ApiModel):
 
 class LawMetadata(LawSummary):
     """The metadata of one law, which adds the repeal and annulment status to a summary."""
+
+    # Only ``/metadatos`` carries these; search hits do not (api-notes 1, 4). The repeal flag
+    # means "wholly repealed", not "superseded" (api-notes 4).
 
     repealed: _Flag = Field(default=False, validation_alias="estatus_derogacion")
     repealed_on: _OptionalDate = Field(default=None, validation_alias="fecha_derogacion")

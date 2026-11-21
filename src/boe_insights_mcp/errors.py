@@ -2,6 +2,10 @@
 
 Every error derives from :class:`BoeError` and carries a stable machine-readable ``code`` and a
 ``retryable`` flag, so callers (such as MCP tools) can map failures without parsing messages.
+
+``client`` raises them (``_error_for`` maps HTTP statuses onto the classes, and its retry loop
+retries only those with ``retryable`` true). ``server`` turns them into tool errors using the
+``code``, never the raw message, so API text is not forwarded to the model.
 """
 
 from __future__ import annotations

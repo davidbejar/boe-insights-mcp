@@ -2,6 +2,13 @@
 
 This layer is deliberately thin. Every tool calls a use case in :mod:`boe_insights_mcp.legislation`
 and turns client errors into messages the model can act on.
+
+``create_server`` builds the ``FastMCP`` instance and registers the four tool functions
+(``search_legislation``, ``resolve_reference``, ``get_law_overview``, ``find_codes``); ``main``
+runs it over stdio. Layering: tool functions here -> use cases in ``legislation`` -> ``client``.
+This is also where the cache, rate limiter and client are created, in the lifespan. The tool
+docstrings, ``Field`` descriptions and ``_INSTRUCTIONS`` are sent to the language model, so they
+are model-facing text; explanations for human readers live in ``#`` comments.
 """
 
 from __future__ import annotations
@@ -51,6 +58,9 @@ _INSTRUCTIONS = (
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
 
+# Tool error messages are assembled from these fixed texts, keyed by ``BoeError.code``. The API's
+# own message is deliberately not included: it is Spanish, and can leak internals such as the
+# index name ``TITULOS`` (api-notes 2, "Errors"). Only what to *do* about it is told to the model.
 _ERROR_SUMMARIES = {
     "not_found": "BOE has no law with that identifier",
     "invalid_query": "BOE rejected the search",
@@ -90,17 +100,26 @@ async def _guard(call: Awaitable[_T], tool: str) -> _T:
     model. A pydantic ``ValidationError`` is a ``ValueError`` too, but here it means a bug in
     our own models and carries input values, so it propagates to be masked.
     """
+    # The server is created with ``mask_error_details=True``: FastMCP shows the model only the
+    # message of a ``ToolError`` and replaces any other exception with a generic one, so
+    # internals (paths, input values, stack details) never leave the process. ``_guard`` is where
+    # the exceptions we *want* the model to see are turned into ``ToolError``:
+    #   BoeError    -> a curated message with code, retryability and next step;
+    #   ValueError  -> bad arguments detected by the use cases or the client;
+    # and everything else, including ``ValidationError``, propagates to be masked.
     try:
         return await call
     except BoeError as error:
         raise ToolError(_boe_error_message(error, tool)) from error
     except ValidationError:
+        # Must come before ``except ValueError``, which it would otherwise be caught by.
         raise
     except ValueError as error:
         raise ToolError(f"Invalid argument (invalid_argument, not retryable): {error}") from error
 
 
 def _build_cache(settings: Settings) -> Cache:
+    """Create the cache backend that ``settings`` selects."""
     if settings.cache_backend == "memory":
         return MemoryCache()
     return DiskCache(settings.cache_dir)
@@ -112,15 +131,24 @@ def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
     An injected client is used as it is and never closed. Otherwise the cache, limiter and
     client are created when the server starts and closed when it stops.
     """
+    # Why a lifespan: the client owns long-lived state (an HTTP connection pool, the disk cache,
+    # the rate limiter's timing) that every tool call must share. Creating it per call would
+    # defeat caching and rate limiting, and creating it at import time would touch the disk and
+    # network before the server runs. The lifespan opens it when the server starts and closes it
+    # when it stops; tools reach it through ``ctx.lifespan_context``.
 
     @lifespan
     async def client_lifespan(server: FastMCP) -> AsyncIterator[dict[str, BoeClient]]:
+        """Provide ``{"client": ...}`` to the tools while the server runs."""
         if client is not None:
+            # Injected (tests): the caller owns it, so it is not closed here.
             yield {"client": client}
             return
         config = settings if settings is not None else Settings.from_env()
         cache = _build_cache(config)
         limiter = RateLimiter(config.min_interval, config.max_concurrency)
+        # The BoeClient context closes its HTTP client; the cache is not part of it, so the
+        # ``finally`` closes it even if the server stops with an error.
         try:
             async with BoeClient(cache=cache, limiter=limiter) as own_client:
                 yield {"client": own_client}
@@ -131,9 +159,18 @@ def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
 
 
 def _client(ctx: Context) -> BoeClient:
+    """Return the shared client that the lifespan stored in the request context."""
     return ctx.lifespan_context["client"]
 
 
+# The four tool functions below are plain module-level coroutines. Their docstrings, parameter
+# ``Field`` descriptions and return types are what the model sees as the tool description and
+# the input and output schemas, so edit those texts deliberately (see CLAUDE.md, "Documentation
+# standard"). Notes for human readers:
+#   - ``ctx: Context`` is injected by FastMCP and is not part of the tool's input schema.
+#   - Each body only delegates to ``legislation`` through ``_guard``, which converts expected
+#     failures into ``ToolError`` messages.
+#   - They are registered in ``create_server`` from ``_TOOLS``, not with decorators.
 async def search_legislation(
     ctx: Context,
     title: Annotated[
@@ -264,6 +301,8 @@ async def find_codes(
     return await _guard(legislation.find_codes(_client(ctx), kind, text, limit=limit), "find_codes")
 
 
+# (function, display title). Registered by ``create_server``; every tool is read-only and
+# idempotent, and "open world" because it reads an external service.
 _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (search_legislation, "Search Spanish legislation"),
     (resolve_reference, "Resolve a law reference"),
@@ -279,6 +318,7 @@ def create_server(*, client: BoeClient | None = None, settings: Settings | None 
     the environment) when the server starts. An injected ``client`` is used as it is and left
     open.
     """
+    # ``mask_error_details=True``: see ``_guard``.
     server = FastMCP(
         "boe-insights",
         instructions=_INSTRUCTIONS,
