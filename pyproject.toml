@@ -32,6 +32,7 @@ dependencies = [
     "diskcache",
     "platformdirs",
     "tzdata>=2026.6 ; sys_platform == 'win32'",
+    "defusedxml>=0.7.1",
 ]
 
 [project.urls]
@@ -49,6 +50,7 @@ dev = [
     "respx",
     "ruff",
     "pyright",
+    "types-defusedxml>=0.7.0.20260504",
 ]
 
 [tool.hatch.build.targets.wheel]

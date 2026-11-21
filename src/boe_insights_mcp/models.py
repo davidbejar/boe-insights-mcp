@@ -6,9 +6,12 @@ all of that: they validate from the raw API objects and dump with English names.
 
 Public names: ``LawSummary`` (a search hit), ``LawMetadata`` (a summary plus repeal status),
 ``LawAnalysis`` with ``LawReference`` (subjects and amendment cross-references), ``CodedValue``
-and the ``as_list`` helper. ``client`` builds these from response bodies; ``legislation``
-consumes them and converts them to the tool-facing ``schemas``. They are not sent to the model
-directly. Quirks are described in ``docs/api-notes.md`` section 0 and the sections cited below.
+and the ``as_list`` helper. The text models are ``IndexEntry`` (one row of a law's block index),
+``Paragraph``, ``BlockVersion`` and ``Block`` (one block of text with all its versions); the
+latter three are built by ``textparse`` from the XML of ``/texto/bloque`` (api-notes 6).
+``client`` builds these from response bodies; ``legislation`` consumes them and converts them to
+the tool-facing ``schemas``. They are not sent to the model directly. Quirks are described in
+``docs/api-notes.md`` section 0 and the sections cited below.
 """
 
 from __future__ import annotations
@@ -27,13 +30,18 @@ from pydantic import (
 )
 
 __all__ = [
+    "Block",
+    "BlockVersion",
     "CodedValue",
+    "IndexEntry",
     "LawAnalysis",
     "LawMetadata",
     "LawReference",
     "LawSummary",
+    "Paragraph",
     "StrippedText",
     "as_list",
+    "collapse_whitespace",
 ]
 
 
@@ -46,6 +54,22 @@ def as_list(value: Any) -> list[Any]:
     if isinstance(value, list):
         return value
     return [value]
+
+
+def collapse_whitespace(value: str) -> str:
+    """Collapse every run of whitespace, non-breaking spaces included, into one space."""
+    # ``str.split()`` with no argument treats U+00A0 as whitespace, and the API uses NBSP in
+    # titles such as ``Artículo\xa046`` (api-notes 6), so one call handles both.
+    return " ".join(value.split())
+
+
+def _normalise_title(value: Any) -> Any:
+    """Normalise a block title; a missing title (blocks without one) becomes ``""``."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return collapse_whitespace(value)
+    return value
 
 
 def _blank_to_none(value: Any) -> Any:
@@ -117,6 +141,7 @@ StrippedText = Annotated[str, StringConstraints(strip_whitespace=True)]
 _OptionalText = Annotated[str | None, BeforeValidator(_blank_to_none)]
 _OptionalDate = Annotated[date | None, BeforeValidator(_parse_date)]
 _Flag = Annotated[bool, BeforeValidator(_parse_flag)]
+_Title = Annotated[str, BeforeValidator(_normalise_title)]
 
 
 class _ApiModel(BaseModel):
@@ -197,3 +222,64 @@ class LawAnalysis(_ApiModel):
     later: Annotated[list[LawReference], BeforeValidator(_unwrapper("posterior"))] = Field(
         default_factory=list, validation_alias=AliasPath("referencias", "posteriores")
     )
+
+
+class IndexEntry(_ApiModel):
+    """One row of a law's block index (``/texto/indice``)."""
+
+    block_id: str = Field(validation_alias="id")
+    title: _Title = Field(default="", validation_alias="titulo")
+    updated_on: _OptionalDate = Field(default=None, validation_alias="fecha_actualizacion")
+
+
+class Paragraph(_ApiModel):
+    """One paragraph of a block version, as plain text."""
+
+    kind: str
+    """The element's ``class`` (``articulo``, ``parrafo``, ``nota_pie``...), else its tag name."""
+    text: str
+    quoted: bool = False
+    """True when the paragraph sat inside a ``<blockquote>`` (footnotes and citations)."""
+
+
+def _is_footnote(paragraph: Paragraph) -> bool:
+    """Whether a paragraph is a footnote (``nota_pie``, ``nota_pie_2``...)."""
+    # ``nota_inicial`` and ``siempreSeVe`` are body text (the note that opens a repealed law),
+    # so the test is the ``nota_pie`` prefix and not "looks like a note" (api-notes 6.1).
+    return paragraph.kind.startswith("nota_pie")
+
+
+class BlockVersion(_ApiModel):
+    """The complete text of a block as amended by one norm, from ``effective_from`` on."""
+
+    source_law_id: str
+    """``id_norma``: the norm that introduced this version."""
+    published_on: date | None
+    effective_from: date | None
+    paragraphs: tuple[Paragraph, ...]
+
+    @property
+    def body(self) -> tuple[Paragraph, ...]:
+        """The paragraphs that are not footnotes, quoted ones included."""
+        return tuple(p for p in self.paragraphs if not _is_footnote(p))
+
+    @property
+    def text(self) -> str:
+        """The body paragraphs joined by blank lines; quoted ones are prefixed with ``> ``."""
+        return "\n\n".join(f"> {p.text}" if p.quoted else p.text for p in self.body)
+
+    @property
+    def notes(self) -> tuple[str, ...]:
+        """The texts of the footnote paragraphs, in order."""
+        return tuple(p.text for p in self.paragraphs if _is_footnote(p))
+
+
+class Block(_ApiModel):
+    """One block of a law's text (article, heading, provision...) with all its versions."""
+
+    block_id: str
+    kind: str
+    """``tipo`` (``precepto``, ``nota_inicial``, ``preambulo``...), ``""`` when absent."""
+    title: _Title
+    versions: tuple[BlockVersion, ...]
+    """Ascending by ``effective_from`` (undated first), document order kept for ties."""
