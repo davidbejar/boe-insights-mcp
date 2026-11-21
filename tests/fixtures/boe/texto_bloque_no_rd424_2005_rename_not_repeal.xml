@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="no" tipo="nota_inicial">
+      <version id_norma="BOE-A-2026-24190" fpub="" fecha_publicacion="20261119" fecha_vigencia="20270101">
+        <p class="siempreSeVe">Con efectos de 1 de enero de 2027, esta norma pasa a denominarse <strong>"Real Decreto 424/2005, de 15 de abril, por el que se aprueba el Reglamento sobre las condiciones para la prestación de servicios de comunicaciones electrónicas y la protección de los usuarios"</strong>, según establece la disposición final 1 del Real Decreto 1026/2026, de 18 de noviembre. <a class="refPost">Ref. BOE-A-2026-24190#df</a></p>
+      </version>
+    </bloque>
+  </data>
+</response>

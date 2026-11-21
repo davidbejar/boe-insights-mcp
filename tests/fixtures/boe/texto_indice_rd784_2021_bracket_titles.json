@@ -1,0 +1,246 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "bloque": [
+                {
+                    "id": "pr",
+                    "titulo": "[preambulo]",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/pr"
+                },
+                {
+                    "id": "au",
+                    "titulo": "Artículo único",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/au"
+                },
+                {
+                    "id": "dt",
+                    "titulo": "Disposición transitoria primera",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/dt"
+                },
+                {
+                    "id": "dt-2",
+                    "titulo": "Disposición transitoria segunda",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/dt-2"
+                },
+                {
+                    "id": "dd",
+                    "titulo": "Disposición derogatoria única",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/dd"
+                },
+                {
+                    "id": "df",
+                    "titulo": "Disposición final primera",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/df"
+                },
+                {
+                    "id": "df-2",
+                    "titulo": "Disposición final segunda",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/df-2"
+                },
+                {
+                    "id": "fi",
+                    "titulo": "[firma]",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/fi"
+                },
+                {
+                    "id": "re",
+                    "titulo": "REGLAMENTO",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/re"
+                },
+                {
+                    "id": "ci",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/ci"
+                },
+                {
+                    "id": "a1",
+                    "titulo": "Artículo 1",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1"
+                },
+                {
+                    "id": "a2",
+                    "titulo": "Artículo 2",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a2"
+                },
+                {
+                    "id": "a3",
+                    "titulo": "Artículo 3",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a3"
+                },
+                {
+                    "id": "a4",
+                    "titulo": "Artículo 4",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a4"
+                },
+                {
+                    "id": "a5",
+                    "titulo": "Artículo 5",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a5"
+                },
+                {
+                    "id": "ci-2",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/ci-2"
+                },
+                {
+                    "id": "a6",
+                    "titulo": "Artículo 6",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a6"
+                },
+                {
+                    "id": "a7",
+                    "titulo": "Artículo 7",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a7"
+                },
+                {
+                    "id": "a8",
+                    "titulo": "Artículo 8",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a8"
+                },
+                {
+                    "id": "a9",
+                    "titulo": "Artículo 9",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a9"
+                },
+                {
+                    "id": "a1-2",
+                    "titulo": "Artículo 10",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-2"
+                },
+                {
+                    "id": "a1-3",
+                    "titulo": "Artículo 11",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-3"
+                },
+                {
+                    "id": "a1-4",
+                    "titulo": "Artículo 12",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-4"
+                },
+                {
+                    "id": "a1-5",
+                    "titulo": "Artículo 13",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-5"
+                },
+                {
+                    "id": "ci-3",
+                    "titulo": "CAPÍTULO III",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/ci-3"
+                },
+                {
+                    "id": "a1-6",
+                    "titulo": "Artículo 14",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-6"
+                },
+                {
+                    "id": "a1-7",
+                    "titulo": "Artículo 15",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-7"
+                },
+                {
+                    "id": "ci-4",
+                    "titulo": "CAPÍTULO IV",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/ci-4"
+                },
+                {
+                    "id": "a1-8",
+                    "titulo": "Artículo 16",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-8"
+                },
+                {
+                    "id": "a1-9",
+                    "titulo": "Artículo 17",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-9"
+                },
+                {
+                    "id": "a1-10",
+                    "titulo": "Artículo 18",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-10"
+                },
+                {
+                    "id": "a1-11",
+                    "titulo": "Artículo 19",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a1-11"
+                },
+                {
+                    "id": "a2-2",
+                    "titulo": "Artículo 20",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a2-2"
+                },
+                {
+                    "id": "cv",
+                    "titulo": "CAPÍTULO V",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/cv"
+                },
+                {
+                    "id": "a2-3",
+                    "titulo": "Artículo 21",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a2-3"
+                },
+                {
+                    "id": "a2-4",
+                    "titulo": "Artículo 22",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a2-4"
+                },
+                {
+                    "id": "a2-5",
+                    "titulo": "Artículo 23",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a2-5"
+                },
+                {
+                    "id": "a2-6",
+                    "titulo": "Artículo 24",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a2-6"
+                },
+                {
+                    "id": "a2-7",
+                    "titulo": "Artículo 25",
+                    "fecha_actualizacion": "20211002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2021-16031/texto/bloque/a2-7"
+                }
+            ]
+        }
+    ]
+}

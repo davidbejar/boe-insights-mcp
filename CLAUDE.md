@@ -30,6 +30,23 @@ data: law version history, amendment analysis and legislative trends.
 - FastMCP 4.x: check the live docs at https://gofastmcp.com before using any API. Most online
   examples target older versions.
 
+## Documentation standard
+
+- Every module has a docstring saying what it is responsible for and how it relates to its
+  neighbours.
+- Every function, method and class has a docstring, private helpers included. One line is enough
+  when the name and signature already say most of it; say what it returns and what it raises when
+  that is not obvious.
+- Non-obvious logic gets a `#` comment that explains WHY, not what: API quirks (cite the section
+  of `docs/api-notes.md`), concurrency and cancellation reasoning, precedence rules, deliberate
+  trade-offs, anything a reader would otherwise have to reverse-engineer. Do not write comments
+  that restate the code.
+- Model-facing text is different from code documentation. The docstrings of the tool functions in
+  `server.py`, the `Field(description=...)` texts on tool parameters and on the result models in
+  `schemas.py`, and the server instructions are sent to the language model on every session. Keep
+  them short and precise, change them only deliberately, and never put developer notes in them:
+  explain those functions to human readers with `#` comments instead.
+
 ## BOE reuse conditions (every tool result must honour these)
 
 - Include the attribution "Basado en datos de la Agencia Estatal Boletín Oficial del Estado",

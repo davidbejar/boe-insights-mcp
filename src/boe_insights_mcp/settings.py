@@ -1,4 +1,10 @@
-"""Runtime configuration read from environment variables."""
+"""Runtime configuration read from environment variables.
+
+``Settings`` is a frozen dataclass; ``Settings.from_env`` builds it from ``BOE_INSIGHTS_*``
+variables and validates them, failing at startup with a message naming the bad variable. It is
+consumed by ``server`` when the lifespan creates the cache, rate limiter and client, and it
+takes its default cache directory from ``cache``.
+"""
 
 from __future__ import annotations
 
@@ -50,6 +56,7 @@ class Settings:
 
 
 def _backend(value: str | None, default: CacheBackend) -> CacheBackend:
+    """Parse ``BOE_INSIGHTS_CACHE`` (case-insensitive); unset or empty gives ``default``."""
     if not value:
         return default
     for backend in _BACKENDS:
@@ -59,11 +66,13 @@ def _backend(value: str | None, default: CacheBackend) -> CacheBackend:
 
 
 def _min_interval(value: str | None, default: float) -> float:
+    """Parse ``BOE_INSIGHTS_MIN_INTERVAL`` as a finite number of seconds >= 0."""
     if not value:
         return default
     try:
         seconds = float(value)
     except ValueError:
+        # NaN fails the isfinite check below, so unparseable text and "nan"/"inf" share one error.
         seconds = math.nan
     if not math.isfinite(seconds) or seconds < 0:
         raise ValueError(
@@ -73,6 +82,7 @@ def _min_interval(value: str | None, default: float) -> float:
 
 
 def _max_concurrency(value: str | None, default: int) -> int:
+    """Parse ``BOE_INSIGHTS_MAX_CONCURRENCY`` as an integer >= 1."""
     if not value:
         return default
     try:

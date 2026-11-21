@@ -1,7 +1,16 @@
 """The MCP server: tool registration, client lifecycle and error translation.
 
 This layer is deliberately thin. Every tool calls a use case in :mod:`boe_insights_mcp.legislation`
-and turns client errors into messages the model can act on.
+or :mod:`boe_insights_mcp.articles` and turns client errors into messages the model can act on.
+
+``create_server`` builds the ``FastMCP`` instance and registers the eight tool functions
+(``search_legislation``, ``resolve_reference``, ``get_law_overview``, ``find_codes``,
+``get_amendment_history``, ``read_article``, ``compare_article_versions``,
+``get_article_history``); ``main`` runs it over stdio. Layering: tool functions here -> use cases
+in ``legislation`` and ``articles`` -> ``client``.
+This is also where the cache, rate limiter and client are created, in the lifespan. The tool
+docstrings, ``Field`` descriptions and ``_INSTRUCTIONS`` are sent to the language model, so they
+are model-facing text; explanations for human readers live in ``#`` comments.
 """
 
 from __future__ import annotations
@@ -18,16 +27,26 @@ from fastmcp.server.lifespan import lifespan
 from mcp.types import ToolAnnotations
 from pydantic import Field, ValidationError
 
-from boe_insights_mcp import legislation
+from boe_insights_mcp import articles, legislation
 from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
 from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.errors import BoeError
-from boe_insights_mcp.legislation import MAX_LIMIT, RankFilter, ScopeFilter
+from boe_insights_mcp.legislation import (
+    MAX_AMENDMENT_LIMIT,
+    MAX_LIMIT,
+    AmendmentFilter,
+    RankFilter,
+    ScopeFilter,
+)
 from boe_insights_mcp.query import SortField
 from boe_insights_mcp.ratelimit import RateLimiter
 from boe_insights_mcp.schemas import (
+    AmendmentHistoryResult,
+    ArticleHistoryResult,
+    CompareArticleVersionsResult,
     FindCodesResult,
     LawOverview,
+    ReadArticleResult,
     ResolveReferenceResult,
     SearchLegislationResult,
 )
@@ -42,7 +61,10 @@ _INSTRUCTIONS = (
     "legislation open data. Call resolve_reference first to turn a name such as 'Ley 40/2015' "
     "into a BOE identifier, then use that identifier with the other tools. Use "
     "search_legislation to explore by topic, rank, department or date; find_codes looks up the "
-    "department, subject and rank codes its filters take. The status of a law is derived from "
+    "department, subject and rank codes its filters take. read_article gives an article's text "
+    "on a date, compare_article_versions shows what changed between two dates and "
+    "get_article_history lists the amendments of one article; get_amendment_history lists the "
+    "norms that amended a whole law. The status of a law is derived from "
     "BOE flags and amendment references, so treat it as an indication. When quoting results, "
     "pass on the attribution 'Basado en datos de la Agencia Estatal Boletín Oficial del "
     "Estado' (https://www.boe.es) and say that consolidated texts are informational and have "
@@ -51,6 +73,9 @@ _INSTRUCTIONS = (
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
 
+# Tool error messages are assembled from these fixed texts, keyed by ``BoeError.code``. The API's
+# own message is deliberately not included: it is Spanish, and can leak internals such as the
+# index name ``TITULOS`` (api-notes 2, "Errors"). Only what to *do* about it is told to the model.
 _ERROR_SUMMARIES = {
     "not_found": "BOE has no law with that identifier",
     "invalid_query": "BOE rejected the search",
@@ -69,6 +94,14 @@ _INVALID_QUERY_ADVICE = {
     "identifier, or search by title with search_legislation.",
     "get_law_overview": "Check the identifier (for example BOE-A-2015-10566) or get it again "
     "from resolve_reference.",
+    "get_amendment_history": "Check the identifier (for example BOE-A-2015-10566) or get it "
+    "again from resolve_reference.",
+    "read_article": "Check the identifier and the article wording, or get the identifier again "
+    "from resolve_reference.",
+    "compare_article_versions": "Check the identifier, the article wording and the ISO dates, "
+    "or get the identifier again from resolve_reference.",
+    "get_article_history": "Check the identifier and the article wording, or get the identifier "
+    "again from resolve_reference.",
 }
 
 
@@ -90,17 +123,26 @@ async def _guard(call: Awaitable[_T], tool: str) -> _T:
     model. A pydantic ``ValidationError`` is a ``ValueError`` too, but here it means a bug in
     our own models and carries input values, so it propagates to be masked.
     """
+    # The server is created with ``mask_error_details=True``: FastMCP shows the model only the
+    # message of a ``ToolError`` and replaces any other exception with a generic one, so
+    # internals (paths, input values, stack details) never leave the process. ``_guard`` is where
+    # the exceptions we *want* the model to see are turned into ``ToolError``:
+    #   BoeError    -> a curated message with code, retryability and next step;
+    #   ValueError  -> bad arguments detected by the use cases or the client;
+    # and everything else, including ``ValidationError``, propagates to be masked.
     try:
         return await call
     except BoeError as error:
         raise ToolError(_boe_error_message(error, tool)) from error
     except ValidationError:
+        # Must come before ``except ValueError``, which it would otherwise be caught by.
         raise
     except ValueError as error:
         raise ToolError(f"Invalid argument (invalid_argument, not retryable): {error}") from error
 
 
 def _build_cache(settings: Settings) -> Cache:
+    """Create the cache backend that ``settings`` selects."""
     if settings.cache_backend == "memory":
         return MemoryCache()
     return DiskCache(settings.cache_dir)
@@ -112,15 +154,24 @@ def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
     An injected client is used as it is and never closed. Otherwise the cache, limiter and
     client are created when the server starts and closed when it stops.
     """
+    # Why a lifespan: the client owns long-lived state (an HTTP connection pool, the disk cache,
+    # the rate limiter's timing) that every tool call must share. Creating it per call would
+    # defeat caching and rate limiting, and creating it at import time would touch the disk and
+    # network before the server runs. The lifespan opens it when the server starts and closes it
+    # when it stops; tools reach it through ``ctx.lifespan_context``.
 
     @lifespan
     async def client_lifespan(server: FastMCP) -> AsyncIterator[dict[str, BoeClient]]:
+        """Provide ``{"client": ...}`` to the tools while the server runs."""
         if client is not None:
+            # Injected (tests): the caller owns it, so it is not closed here.
             yield {"client": client}
             return
         config = settings if settings is not None else Settings.from_env()
         cache = _build_cache(config)
         limiter = RateLimiter(config.min_interval, config.max_concurrency)
+        # The BoeClient context closes its HTTP client; the cache is not part of it, so the
+        # ``finally`` closes it even if the server stops with an error.
         try:
             async with BoeClient(cache=cache, limiter=limiter) as own_client:
                 yield {"client": own_client}
@@ -131,9 +182,18 @@ def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
 
 
 def _client(ctx: Context) -> BoeClient:
+    """Return the shared client that the lifespan stored in the request context."""
     return ctx.lifespan_context["client"]
 
 
+# The tool functions below are plain module-level coroutines. Their docstrings, parameter
+# ``Field`` descriptions and return types are what the model sees as the tool description and
+# the input and output schemas, so edit those texts deliberately (see CLAUDE.md, "Documentation
+# standard"). Notes for human readers:
+#   - ``ctx: Context`` is injected by FastMCP and is not part of the tool's input schema.
+#   - Each body only delegates to ``legislation`` through ``_guard``, which converts expected
+#     failures into ``ToolError`` messages.
+#   - They are registered in ``create_server`` from ``_TOOLS``, not with decorators.
 async def search_legislation(
     ctx: Context,
     title: Annotated[
@@ -233,11 +293,12 @@ async def get_law_overview(
     """Summarise one law: identity, legal status and how much it has been amended.
 
     Answers 'is this law still in force, and how much has it changed?'. Returns title, rank,
-    dates, a status with a plain-English note, and counts and samples of the norms that amend
-    it or that it amends. The status is derived from the BOE flags (repealed, annulled,
-    validity exhausted) and from the amendment references (later norms that repeal it, giving
-    'partially_repealed'), so it is an indication, not a legal determination: 'in_force' does
-    not mean every provision is current. Get the identifier from resolve_reference.
+    dates, a status with a plain-English note, the BOE's initial note when it has one, and
+    counts and samples of the norms that amend it or that it amends. The status is derived from
+    the BOE flags (repealed, annulled, validity exhausted), from the amendment references (later
+    norms that repeal it, giving 'partially_repealed') and from a repeal note opening the text,
+    so it is an indication, not a legal determination: 'in_force' does not mean every provision
+    is current. Get the identifier from resolve_reference.
     """
     return await _guard(legislation.get_law_overview(_client(ctx), law_id), "get_law_overview")
 
@@ -264,11 +325,185 @@ async def find_codes(
     return await _guard(legislation.find_codes(_client(ctx), kind, text, limit=limit), "find_codes")
 
 
+_LAW_ID = Annotated[
+    str,
+    Field(
+        description="BOE identifier of the law, e.g. BOE-A-2015-10566. "
+        "Get it from resolve_reference."
+    ),
+]
+_ARTICLE = Annotated[
+    str | None,
+    Field(
+        description="The article or provision designation, e.g. '46 bis', 'art. 1.902', "
+        "'disposición adicional tercera'. Give this or block_id."
+    ),
+]
+_BLOCK_ID = Annotated[
+    str | None,
+    Field(description="Exact block_id taken from candidates. Give this or article, not both."),
+]
+
+
+async def get_amendment_history(
+    ctx: Context,
+    law_id: _LAW_ID,
+    group: Annotated[
+        AmendmentFilter,
+        Field(
+            description="Kind of amending norm: 'repeals' (also annulments), 'modifies', 'adds', "
+            "'corrections', 'other' or 'all'."
+        ),
+    ] = "all",
+    limit: Annotated[int, Field(ge=1, le=MAX_AMENDMENT_LIMIT, description="Items per page.")] = 50,
+    offset: Annotated[
+        int, Field(ge=0, description="Start position; pass next_offset from the previous page.")
+    ] = 0,
+) -> AmendmentHistoryResult:
+    """List the later norms that amended, repealed or otherwise affected a whole law.
+
+    Answers 'which laws changed Ley 40/2015, and when?'. Get law_id from resolve_reference.
+    Newest first. Filter with group (repeals, modifies, adds, corrections, other; default
+    all). Returns counts per group and per year, then one page of items with law_id, year,
+    relation and text; while has_more is true, pass next_offset as offset. It names the norms,
+    not the articles they touched: for one article use get_article_history. Derived from BOE
+    references, so informational.
+    """
+    return await _guard(
+        legislation.get_amendment_history(_client(ctx), law_id, group, limit, offset),
+        "get_amendment_history",
+    )
+
+
+async def read_article(
+    ctx: Context,
+    law_id: _LAW_ID,
+    article: _ARTICLE = None,
+    block_id: _BLOCK_ID = None,
+    as_of: Annotated[
+        date | None,
+        Field(
+            description="Show the text valid on this date, ISO format, e.g. 2017-01-01. "
+            "Default: today."
+        ),
+    ] = None,
+    max_chars: Annotated[
+        int,
+        Field(
+            ge=articles.MIN_PAGE_CHARS,
+            le=articles.MAX_PAGE_CHARS,
+            description="Largest part of the text to return.",
+        ),
+    ] = articles.DEFAULT_PAGE_CHARS,
+    offset: Annotated[
+        int,
+        Field(
+            ge=0,
+            description="Start character; pass next_offset from the previous part, with the "
+            "same other arguments.",
+        ),
+    ] = 0,
+) -> ReadArticleResult:
+    """Read the text of one article of a law as in force on a date.
+
+    Answers 'what does article 46 bis of Ley 40/2015 say, today or on 2017-01-01?'. Get law_id
+    from resolve_reference. If several blocks match, or none, outcome is 'ambiguous' or
+    'not_found' and candidates lists blocks to retry with as block_id. When the whole law is
+    repealed, state is 'repealed' although the article shows no marker. Long texts come in
+    parts: while truncated is true, pass next_offset as offset. For changes over time use
+    compare_article_versions or get_article_history. Consolidated text is informational, not
+    official.
+    """
+    return await _guard(
+        articles.read_article(
+            _client(ctx),
+            law_id,
+            article,
+            block_id=block_id,
+            as_of=as_of,
+            max_chars=max_chars,
+            offset=offset,
+        ),
+        "read_article",
+    )
+
+
+async def compare_article_versions(
+    ctx: Context,
+    law_id: _LAW_ID,
+    from_date: Annotated[date, Field(description="Earlier date, ISO format, e.g. 2017-01-01.")],
+    article: _ARTICLE = None,
+    block_id: _BLOCK_ID = None,
+    to_date: Annotated[
+        date | None, Field(description="Later date, ISO format. Default: today.")
+    ] = None,
+    max_changes: Annotated[
+        int,
+        Field(ge=1, le=articles.MAX_CHANGES, description="Most changed paragraphs to list."),
+    ] = articles.DEFAULT_CHANGES,
+    max_chars: Annotated[
+        int,
+        Field(
+            ge=articles.MIN_COMPARE_CHARS,
+            le=articles.MAX_COMPARE_CHARS,
+            description="Largest total text of the listed changes.",
+        ),
+    ] = articles.DEFAULT_COMPARE_CHARS,
+) -> CompareArticleVersionsResult:
+    """Show how one article's text differs between two dates.
+
+    Answers 'what changed in article 48 between 2017-01-01 and today?'. Returns the added,
+    removed and reworded paragraphs (rewordings marked [-old-] {+new+}; tables give both
+    texts), a unified diff and the norms that amended the article in between. If the article
+    did not exist on from_date, everything shows as added. If the whole law was repealed, note
+    says so. Output is capped: see changes_truncated and unified_truncated, and raise
+    max_changes or max_chars for more. To list every amendment use get_article_history.
+    Consolidated text is informational, not official.
+    """
+    return await _guard(
+        articles.compare_article_versions(
+            _client(ctx),
+            law_id,
+            article,
+            from_date,
+            to_date,
+            max_changes,
+            max_chars,
+            block_id=block_id,
+        ),
+        "compare_article_versions",
+    )
+
+
+async def get_article_history(
+    ctx: Context, law_id: _LAW_ID, article: _ARTICLE = None, block_id: _BLOCK_ID = None
+) -> ArticleHistoryResult:
+    """List the versions of one article: when each took effect, who amended it, what changed.
+
+    Answers 'when and by which laws was article 48 amended?'. Each event is original, amended
+    or repealed, with the paragraphs added, removed and changed against the previous version. To
+    see what changed between two dates use compare_article_versions; for the amendments of the
+    whole law, not one article, use get_amendment_history. At most the 60 most recent versions
+    are returned; truncated says when older ones are left out. current_state is 'repealed' also
+    when the whole law is repealed. Informational, not official.
+    """
+    return await _guard(
+        articles.get_article_history(_client(ctx), law_id, article, block_id=block_id),
+        "get_article_history",
+    )
+
+
+# (function, display title). Registered by ``create_server``; every tool is read-only and
+# idempotent, and "open world" because it reads an external service.
 _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (search_legislation, "Search Spanish legislation"),
     (resolve_reference, "Resolve a law reference"),
     (get_law_overview, "Get a law overview"),
     (find_codes, "Find BOE codes"),
+    (get_amendment_history, "List the amendments of a law"),
+    (read_article, "Read an article"),
+    (compare_article_versions, "Compare article versions"),
+    (get_article_history, "Get an article's history"),
 )
 
 
@@ -279,6 +514,7 @@ def create_server(*, client: BoeClient | None = None, settings: Settings | None 
     the environment) when the server starts. An injected ``client`` is used as it is and left
     open.
     """
+    # ``mask_error_details=True``: see ``_guard``.
     server = FastMCP(
         "boe-insights",
         instructions=_INSTRUCTIONS,

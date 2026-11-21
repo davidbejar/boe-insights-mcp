@@ -2,6 +2,10 @@
 
 Provides law version history, amendment analysis and legislative trends for the
 Boletín Oficial del Estado (BOE). Informational only; not an official source.
+
+This file only exposes ``__version__``, read from the installed package metadata (it is also
+what the client puts in its User-Agent). The code lives in the sibling modules: tools in
+``server``, use cases in ``legislation``, HTTP access in ``client``.
 """
 
 from importlib.metadata import PackageNotFoundError, version

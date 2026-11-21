@@ -7,7 +7,7 @@
 
 An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that gives AI assistants such as Claude analytical tools over the open data of Spain's BOE (Boletín Oficial del Estado). Instead of one tool per API endpoint, the tools are shaped around the questions people actually ask: "is this law still in force?", "what changed in this article?", "how has legislation on X evolved?".
 
-**Status:** early development. Four tools are available today (law lookup, search, status overview and code lookup); everything else is on the [roadmap](#roadmap). Not yet published on PyPI: run it from source.
+**Status:** early development. Eight tools are available today (law lookup, search, status overview and code lookup; amendment history; and reading, comparing and tracing the history of single articles); everything else is on the [roadmap](#roadmap). Not yet published on PyPI: run it from source.
 
 ## What you can ask
 
@@ -17,11 +17,16 @@ An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that g
 | "Is Ley 40/2015 still in force, and how much has it been amended?" | `resolve_reference`, then `get_law_overview` |
 | "Was Ley 30/1992 repealed, and on what date?" | `resolve_reference`, then `get_law_overview` |
 | "Which organic laws about data protection are in the consolidated legislation?" | `search_legislation` |
-| "List the state laws on energy published in 2020." | `search_legislation` |
-| "What are the most recently published laws?" | `search_legislation` |
 | "Which department code does the Agencia Española de Protección de Datos have?" | `find_codes`, then `search_legislation` |
+| "What does article 46 bis of Ley 40/2015 say?" | `resolve_reference`, then `read_article` |
+| "What did article 48 of Ley 40/2015 say on 1 January 2017?" | `read_article` with `as_of` |
+| "What changed in article 48 of Ley 40/2015 between 2016 and today?" | `compare_article_versions` |
+| "When was article 48 of Ley 40/2015 last changed, and by which law?" | `get_article_history` |
+| "Which laws have amended Ley 40/2015, and in which years?" | `get_amendment_history` |
 
 ## Tools
+
+### Finding laws
 
 | Tool | Question it answers | Key parameters |
 |---|---|---|
@@ -30,26 +35,80 @@ An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that g
 | `get_law_overview` | Is this law in force, and how much has it changed? | `law_id` (e.g. `BOE-A-2015-10566`) |
 | `find_codes` | What is the code of this department, subject or rank (for the `search_legislation` filters)? | `kind` (`department`, `subject` or `rank`), `text`, `limit` (1-50) |
 
-All four tools are read-only. `resolve_reference` returns `resolved`, `ambiguous` (with candidates and a hint) or `not_found`. `search_legislation` pages with `next_offset`, because the API gives no total count. `get_law_overview` returns a `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` or `not_yet_in_force`) derived from the BOE flags and the amendment references (so it is an indication, not a legal determination), with a plain-English note, plus counts and samples of the norms that amend the law or that it amends.
+### Reading and tracking changes
 
-`find_codes` returns the matching `{code, text}` pairs. Every result carries a `provenance` block. Trimmed output of `get_law_overview` for `BOE-A-2015-10566` (recorded test fixtures, no live request):
+| Tool | Question it answers | Key parameters |
+|---|---|---|
+| `read_article` | What does this article say, today or on a past date? | `law_id`, `article` or `block_id`, `as_of`, `max_chars` (500-20000), `offset` |
+| `compare_article_versions` | What changed in this article between two dates? | `law_id`, `article` or `block_id`, `from_date`, `to_date`, `max_changes` (1-200), `max_chars` (1000-30000) |
+| `get_article_history` | When did this article change, and which law changed it? | `law_id`, `article` or `block_id` |
+| `get_amendment_history` | Which norms have affected this law, by kind and by year? | `law_id`, `group` (`all`, `repeals`, `modifies`, `adds`, `corrections` or `other`), `limit` (1-100), `offset` |
+
+All eight tools are read-only. `resolve_reference` returns `resolved`, `ambiguous` (with candidates and a hint) or `not_found`. `search_legislation` pages with `next_offset`, because the API gives no total count. `find_codes` returns the matching `{code, text}` pairs.
+
+**Law status.** `get_law_overview` returns a `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` or `not_yet_in_force`) with a plain-English note, the BOE's initial note when the text has one, and counts and samples of the norms that amend the law or that it amends. The status is derived from the BOE flags and the amendment references, so it is an indication, not a legal determination. A whole repeal is also detected from the opening note of the consolidated text ("Norma derogada..."), because some wholly repealed laws carry only that note and not the metadata flag.
+
+**Article states.** `read_article` reports the article's `state` on the requested date and `get_article_history` its `current_state`: `in_force`, `repealed`, `not_yet_in_force` (text published but not yet effective) or `did_not_exist` (the date precedes the article's first version). An article of a law repealed as a whole carries no repeal marker, so the article tools also check the law (its metadata and, when the text has one, its initial note): from the repeal date on, the state is `repealed` (the last text is still returned), `law_repealed` and `law_repealed_on` say so, and `note` explains it. A repeal dated in the future is only announced, and if that check cannot be done `law_repealed` is `null` and `note` says so.
+
+**Naming an article.** The `article` argument (at most 200 characters) accepts the wording people use: `46 bis`, `art. 12`, `art. 1.902`, `artículo 48`, `disposición adicional tercera` (or `DA 3`), `anexo I`, `preámbulo`. Anything after the designation, such as a paragraph number (`46.2`, `149.1.18ª`) or a context (`14 de la Constitución`), is ignored, because the tools return whole articles; `note` says what was ignored. To pick an exact block, pass its `block_id` from `candidates` instead of `article` (exactly one of the two is required). If the wording matches several blocks (`ambiguous`) or none (`not_found`), the result is not an error: `outcome` says so and `candidates` lists blocks to retry with, using their `block_id`.
+
+Every result carries a `provenance` block. Trimmed output of `compare_article_versions` for article 48 of `BOE-A-2015-10566` between 2016-10-02 and 2026-11-21 (recorded test fixtures, no live request). Long strings (`inline`, `unified_diff`) are shortened here with `…`. `[-old-] {+new+}` marks a rewording inside a paragraph: a reworded paragraph is returned as `inline` alone (`old_text` and `new_text` are `null`), except tables, which return both texts and no `inline`:
 
 ```json
 {
-  "identifier": "BOE-A-2015-10566",
-  "title": "Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público.",
-  "rank": "Ley",
-  "status": "partially_repealed",
-  "status_note": "The BOE analysis has 1 reference in which later norms repeal this law or parts of it. The BOE flag only marks whole repeals and is not set here, so the law may be repealed in full or in part: check the amendment summary.",
-  "amendments": { "affected_by_count": 24, "affects_count": 19 },
+  "law_id": "BOE-A-2015-10566",
+  "outcome": "found",
+  "block_id": "a48",
+  "block_title": "Artículo 48",
+  "candidates": [],
+  "hint": null,
   "provenance": {
     "source": "Agencia Estatal Boletín Oficial del Estado",
     "attribution": "Basado en datos de la Agencia Estatal Boletín Oficial del Estado",
     "source_url": "https://www.boe.es",
-    "generated_at": "2026-11-21T06:51:30.747423Z",
-    "data_updated_at": "2026-11-20T08:50:00Z",
+    "generated_at": "2026-11-21T12:41:13.262679Z",
+    "data_updated_at": "2020-12-31T00:00:00Z",
     "notice": "Consolidated texts are provided for information only and have no official legal value. Only the texts published in the official gazette are authentic."
-  }
+  },
+  "law_repealed": false,
+  "law_repealed_on": null,
+  "note": null,
+  "from_date": "2016-10-02",
+  "to_date": "2026-11-21",
+  "from_version": {
+    "index": 1,
+    "starts_on": "2016-10-02",
+    "effective_from": "2016-10-02",
+    "published_on": "2015-10-02",
+    "introduced_by": "BOE-A-2015-10566"
+  },
+  "to_version": {
+    "index": 2,
+    "starts_on": "2021-01-01",
+    "effective_from": "2021-01-01",
+    "published_on": "2020-12-31",
+    "introduced_by": "BOE-A-2020-17340"
+  },
+  "identical": false,
+  "added": 0,
+  "removed": 0,
+  "changed": 1,
+  "unchanged": 11,
+  "changes": [
+    {
+      "op": "changed",
+      "old_text": null,
+      "new_text": null,
+      "inline": "… resultarán eficaces una vez [-inscritos-] {+inscritos, en el plazo de 5 días hábiles desde su formalización,+} en el Registro Electrónico estatal de Órganos e Instrumentos de Cooperación del sector público estatal, al que se …"
+    }
+  ],
+  "changes_truncated": false,
+  "intermediate_versions": 0,
+  "amending_laws": [
+    "BOE-A-2020-17340"
+  ],
+  "unified_diff": "--- old\n+++ new\n@@ -8,5 +8,5 @@\n …",
+  "unified_truncated": false
 }
 ```
 
@@ -123,16 +182,22 @@ Optional environment variables; unset or empty variables keep their defaults, an
 ```text
 MCP tools            server.py        thin: parameters, descriptions, error translation
    |
-use-case functions   legislation.py   plain functions returning typed pydantic models
+use-case functions   legislation.py   laws, search, amendments: plain functions returning typed pydantic models
+                     articles.py      article text, comparison, history, built on locator.py and versions.py
    |
-BOE client           client.py        BOE API calls, parsing, retries
+BOE client           client.py        BOE API calls, retries; textparse.py parses the text XML
    |
 cache + rate limiter                  disk or memory cache; minimum interval and concurrency cap
    |
 BOE open data API    https://www.boe.es/datosabiertos/
 ```
 
-- **Cache-first.** Responses are cached (searches for 30 minutes, law metadata and amendment analysis for 6 hours), so repeated questions do not reach the BOE.
+The article tools add three pieces: an XML parser for the BOE's text blocks (`textparse.py`), an article locator (`locator.py`) and the version logic (`versions.py`: selection, repeal detection, diff and history). The last two are pure functions with no I/O.
+
+- **Cache-first.** Responses are cached (searches for 30 minutes; law metadata, amendment analysis and the text index for 6 hours; article text for 6 hours, or 30 days when the index's update date is known), so repeated questions do not reach the BOE.
+- **Articles are found by title.** The BOE's block ids are opaque (article 46 bis of Ley 40/2015 is `a4-2`), so the server reads the law's text index and matches the wording against the block titles instead of building an id.
+- **Versions are selected by start date.** Each version of an article starts on its effective date (the publication date when that is missing), and the text in force on a date is the latest version that started on or before it.
+- **Long articles come in pages.** `read_article` returns at most `max_chars` characters, with `truncated` and `next_offset` to fetch the rest; `compare_article_versions` and `get_article_history` cap their output and say so with `changes_truncated`, `unified_truncated` and `truncated`.
 - **Polite by default.** The BOE publishes no rate limit, so the server imposes its own: at least one second between requests and at most two at a time.
 - **Typed, structured results.** Every tool returns a pydantic model with a declared output schema, not free text.
 - **Actionable errors.** Failures say what happened, whether retrying makes sense and what to do next (for example, "use `resolve_reference` to find the correct identifier").
@@ -150,8 +215,8 @@ Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](
 
 ## Roadmap
 
-- [x] 1. Thin slice: client, cache, rate limiter and three tools
-- [ ] 2. Article reading and version history: read an article as of a date, article diff, change timeline, amendment history
+- [x] 1. Thin slice: client, cache, rate limiter and four tools
+- [x] 2. Article reading and version history: read an article as of a date, article diff, change timeline, amendment history
 - [ ] 3. Trend analytics: legislation over time, top departments, compare topics, explain a spike, most-amended laws
 - [ ] 4. Citation verification, amendment chain explorer, gazette scanning
 - [ ] 5. MCP resources, prompts and stored watchlists

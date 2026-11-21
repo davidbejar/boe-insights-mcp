@@ -2,6 +2,12 @@
 
 Every tool result embeds a :class:`Provenance`, which carries the attribution and the
 "informational only" notice the BOE reuse conditions require.
+
+These are the return types of the tools in ``server``; ``legislation`` and ``articles`` build
+them from the client's ``models`` types. FastMCP derives each tool's output schema from them, so
+the class docstrings and ``Field`` descriptions here are sent to the language model and are
+model-facing text (see CLAUDE.md, "Documentation standard"); notes for human readers go in ``#``
+comments.
 """
 
 from __future__ import annotations
@@ -11,18 +17,34 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from boe_insights_mcp.versions import ArticleState
+
 __all__ = [
+    "AmendmentGroup",
+    "AmendmentHistoryResult",
+    "AmendmentItem",
     "AmendmentSummary",
+    "ArticleCandidate",
+    "ArticleChange",
+    "ArticleHistoryEvent",
+    "ArticleHistoryResult",
+    "ArticleLocation",
+    "ArticleResult",
+    "ArticleState",
     "CodeMatch",
+    "CompareArticleVersionsResult",
     "FindCodesResult",
     "LawBrief",
     "LawOverview",
     "LawStatus",
     "Provenance",
+    "ReadArticleResult",
     "ReferenceBrief",
     "RelationCount",
     "ResolveReferenceResult",
     "SearchLegislationResult",
+    "VersionInfo",
+    "YearCount",
 ]
 
 LawStatus = Literal[
@@ -174,8 +196,231 @@ class LawOverview(_Output):
     )
     status_note: str = Field(description="Plain-English explanation of the status, with caveats.")
     repealed_on: date | None = None
+    initial_note: str | None = Field(
+        default=None,
+        description="The note the BOE shows above the law's text (a repeal, a rename, a "
+        "correction notice), up to 600 characters; None when there is none.",
+    )
     consolidation_state: str | None = None
     amendments: AmendmentSummary
     url: str | None = None
     eli_url: str | None = Field(default=None, description="European Legislation Identifier URL.")
     provenance: Provenance
+
+
+AmendmentGroup = Literal["repeals", "modifies", "adds", "corrections", "other"]
+
+
+class YearCount(_Output):
+    """How many amendment references come from norms of one year."""
+
+    year: int | None = Field(description="Year of the amending norm; None when its id has none.")
+    count: int
+
+
+class AmendmentItem(_Output):
+    """One later norm that affects the law."""
+
+    law_id: str = Field(description="Identifier of the amending norm.")
+    year: int | None = Field(description="Year taken from the identifier; None if it has none.")
+    relation: str = Field(description="The BOE's relation text, e.g. 'SE MODIFICA'.")
+    group: AmendmentGroup
+    text: str = Field(description="What it affects, as published (Spanish).")
+
+
+class AmendmentHistoryResult(_Output):
+    """The later norms that affect a whole law, newest first."""
+
+    law_id: str
+    group: Literal["all", "repeals", "modifies", "adds", "corrections", "other"] = Field(
+        description="The group filter that was applied."
+    )
+    total: int = Field(description="Number of references in the selected group.")
+    groups: dict[AmendmentGroup, int] = Field(
+        description="References per group over all later norms, whatever the filter. "
+        "'repeals' also covers annulments and suppressions."
+    )
+    by_year: list[YearCount] = Field(
+        description="References of the selected group per year of the amending norm, newest first."
+    )
+    items: list[AmendmentItem] = Field(description="One page, newest year first.")
+    has_more: bool = Field(description="True when more items follow; pass next_offset.")
+    next_offset: int | None
+    provenance: Provenance
+
+
+class ArticleCandidate(_Output):
+    """A block of the law's text that may be the one meant."""
+
+    block_id: str = Field(description="Pass this as `block_id` to select the block exactly.")
+    title: str = Field(description="The block's title in the law's index, e.g. 'Artículo 46 bis'.")
+
+
+class ArticleLocation(_Output):
+    """Which block of the law an article tool found for the wording given."""
+
+    law_id: str
+    outcome: Literal["found", "ambiguous", "not_found"] = Field(
+        description="'ambiguous' and 'not_found' are normal answers: see candidates and hint."
+    )
+    block_id: str | None = Field(default=None, description="The block found; None otherwise.")
+    block_title: str | None = None
+    candidates: list[ArticleCandidate] = Field(
+        default_factory=list,
+        description="When ambiguous: every match (at most 10). When not found: the closest 8.",
+    )
+    hint: str | None = Field(default=None, description="What to do next when nothing was found.")
+    provenance: Provenance
+
+
+class ArticleResult(ArticleLocation):
+    """An article result: the location plus what is known of a repeal of the whole law."""
+
+    law_repealed: bool | None = Field(
+        default=None,
+        description="True when the whole law is repealed (an article then shows no marker); "
+        "None when that could not be checked.",
+    )
+    law_repealed_on: date | None = Field(
+        default=None,
+        description="When the whole law is repealed, if known; a future date is an announced "
+        "repeal.",
+    )
+    note: str | None = Field(
+        default=None,
+        description="Explains an empty, upcoming, truncated or special result, or a repeal of "
+        "the whole law.",
+    )
+
+
+class VersionInfo(_Output):
+    """One version of an article: the text as amended by one norm."""
+
+    index: int = Field(description="1-based position among the article's versions, oldest first.")
+    starts_on: date | None = Field(
+        description="When this version starts to apply: effective_from, else published_on."
+    )
+    effective_from: date | None = Field(description="The BOE's effective date; may be missing.")
+    published_on: date | None
+    introduced_by: str = Field(description="Identifier of the norm that introduced this version.")
+
+
+class ReadArticleResult(ArticleResult):
+    """The text of one article as in force on a date."""
+
+    as_of: date = Field(description="The date the text is valid for.")
+    state: ArticleState | None = Field(
+        default=None,
+        description="On as_of: in_force, repealed, not_yet_in_force or did_not_exist.",
+    )
+    version: VersionInfo | None = Field(
+        default=None,
+        description="The version returned; for not_yet_in_force, the upcoming one.",
+    )
+    version_count: int = Field(default=0, description="Number of versions the article has.")
+    is_latest: bool | None = Field(
+        default=None, description="True when no later version exists, even a future one."
+    )
+    superseded_on: date | None = Field(
+        default=None, description="When the next version starts; None if this is the latest."
+    )
+    text: str = Field(
+        default="",
+        description="Body text of the version (Spanish), paragraphs separated by blank lines; "
+        "quoted paragraphs start with '> '. Joining the pages gives the full text.",
+    )
+    notes: list[str] = Field(
+        default_factory=list,
+        description="Footnotes of the version, up to 2000 characters in all; only on the first "
+        "page.",
+    )
+    notes_truncated: bool = Field(default=False, description="True when notes were cut.")
+    total_chars: int = Field(default=0, description="Length of the whole text.")
+    truncated: bool = Field(default=False, description="True when text is only a part.")
+    next_offset: int | None = Field(
+        default=None, description="Pass as offset, with the same other arguments, for the rest."
+    )
+
+
+class ArticleChange(_Output):
+    """What changed in one paragraph between two versions."""
+
+    op: Literal["added", "removed", "changed"]
+    old_text: str | None = Field(
+        description="Paragraph before; None when added, or when 'inline' shows the change."
+    )
+    new_text: str | None = Field(
+        description="Paragraph after; None when removed, or when 'inline' shows the change."
+    )
+    inline: str | None = Field(
+        description="For a 'changed' paragraph: the new paragraph with removed words as [-...-] "
+        "and added words as {+...+}. None for multi-line paragraphs (tables): see old_text and "
+        "new_text. Text cut to fit the size budget ends in '…[truncated]'."
+    )
+
+
+class CompareArticleVersionsResult(ArticleResult):
+    """The difference between an article's text on two dates."""
+
+    from_date: date
+    to_date: date
+    from_version: VersionInfo | None = Field(
+        default=None, description="Version in force on from_date; None if there was none."
+    )
+    to_version: VersionInfo | None = None
+    identical: bool | None = Field(
+        default=None,
+        description="True when both dates select the same text; None if nothing to compare.",
+    )
+    added: int = Field(default=0, description="Paragraphs added.")
+    removed: int = Field(default=0, description="Paragraphs removed.")
+    changed: int = Field(default=0, description="Paragraphs reworded.")
+    unchanged: int = Field(default=0, description="Paragraphs left as they were.")
+    changes: list[ArticleChange] = Field(
+        default_factory=list,
+        description="The paragraphs that differ, in reading order, within max_changes and "
+        "max_chars.",
+    )
+    changes_truncated: bool = Field(
+        default=False,
+        description="True when more changes exist than max_changes or max_chars allowed.",
+    )
+    intermediate_versions: int = Field(
+        default=0, description="Versions strictly between the two compared."
+    )
+    amending_laws: list[str] = Field(
+        default_factory=list,
+        description="Norms that introduced the versions after from_version, up to to_version.",
+    )
+    unified_diff: str = Field(
+        default="", description="Unified diff of the body text, one paragraph per line."
+    )
+    unified_truncated: bool = Field(
+        default=False, description="True when unified_diff was cut at 6000 characters."
+    )
+
+
+class ArticleHistoryEvent(_Output):
+    """One version of an article in its amendment history."""
+
+    index: int = Field(description="1-based position among the article's versions.")
+    kind: Literal["original", "amended", "repealed"]
+    effective_from: date | None
+    published_on: date | None
+    introduced_by: str = Field(description="Identifier of the norm that introduced the version.")
+    added: int = Field(description="Paragraphs added versus the previous version.")
+    removed: int
+    changed: int
+
+
+class ArticleHistoryResult(ArticleResult):
+    """When and by which norm an article was amended."""
+
+    version_count: int = Field(default=0, description="Number of versions the article has.")
+    events: list[ArticleHistoryEvent] = Field(
+        default_factory=list, description="Oldest first; at most the 60 most recent versions."
+    )
+    truncated: bool = Field(default=False, description="True when older versions were left out.")
+    current_state: ArticleState | None = Field(
+        default=None, description="State of the article today."
+    )

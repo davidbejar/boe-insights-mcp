@@ -1,0 +1,589 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="a21" tipo="precepto" titulo="Artículo 21">
+      <version id_norma="BOE-A-1987-28141" fecha_publicacion="19871219" fecha_vigencia="19880101">
+        <p class="articulo">Artículo 21. Tarifa.</p>
+        <p class="parrafo">La cuota íntegra del impuesto se obtendrá aplicando a la base liquidable, calculada según lo dispuesto en el artículo anterior, la siguiente escala:</p>
+        <table class="tabla" border="0" summary="Tabla de datos">
+          <tbody>
+            <tr>
+              <th>
+                <p class="cabeza_tabla">Base liquidable</p>
+                <p class="cabeza_tabla">hasta pesetas</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Tipo medio</p>
+                <p class="cabeza_tabla">-</p>
+                <p class="cabeza_tabla">%</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Cuota</p>
+                <p class="cabeza_tabla">íntegra</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Resto base</p>
+                <p class="cabeza_tabla">-</p>
+                <p class="cabeza_tabla">Millones</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Tipo marginal</p>
+                <p class="cabeza_tabla">-</p>
+                <p class="cabeza_tabla">%</p>
+              </th>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_centro">-</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_centro">-</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_centro">-</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7,65</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Un millón</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7,65</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">76,500</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">8,50</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Dos millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">8,08</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">161.500</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">9,35</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Tres millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">8,50</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">255.000</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">10,20</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Cuatro millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">8,93</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">357.000</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">11,05</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Cinco millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">9,35</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">467.500</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">11,90</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Seis millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">9,78</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">586.500</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">12,75</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Siete millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">10,20</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">714.000</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">13,60</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Ocho millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">10,63</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">850.000</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">14,45</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Nueve millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">11,05</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">994.500</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">15,30</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Diez millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">11,48</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1.147.500</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">16,15</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Quince millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">13,03</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1.955.000</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">18,70</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Veinte millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">14,45</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">2.890.000</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">21,25</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Treinta millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">16,72</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">5.015.000</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">20</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">25,50</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Cincuenta millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">20,23</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">10.115.000</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">50</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">29,75</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">Cien millones</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">24,99</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">24.990.000</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Exceso</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">34,00</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </version>
+      <version id_norma="BOE-A-2001-24962" fecha_publicacion="20011231" fecha_vigencia="20020101">
+        <p class="articulo">Artículo 21. Tarifa.</p>
+        <p class="parrafo">1. La cuota íntegra del impuesto se obtendrá aplicando a la base liquidable, calculada según lo dispuesto en el artículo anterior, la escala que, conforme a lo previsto en la Ley 21/2001, de 27 de diciembre, por la que se regulan las medidas fiscales y administrativas del nuevo sistema de financiación de las Comunidades Autónomas de régimen común y Ciudades con Estatuto de Autonomía, haya sido aprobada por la Comunidad Autónoma.</p>
+        <p class="parrafo">2. Si la Comunidad Autónoma no hubiese aprobado la escala a que se refiere el apartado anterior o si aquélla no hubiese asumido competencias normativas en materia de Impuesto sobre Sucesiones y Donaciones o no resultase aplicable a los sujetos pasivos la normativa propia de la Comunidad, la base liquidable será gravada a los tipos que se indican en la siguiente escala:</p>
+        <table class="tabla" border="0" summary="Tabla de datos">
+          <tbody>
+            <tr>
+              <th>
+                <p class="cabeza_tabla">Base liquidable</p>
+                <p class="cabeza_tabla">-</p>
+                <p class="cabeza_tabla">Hasta euros</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Cuota íntegra</p>
+                <p class="cabeza_tabla">–</p>
+                <p class="cabeza_tabla">Euros</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Resto base liquidable</p>
+                <p class="cabeza_tabla">–</p>
+                <p class="cabeza_tabla">Hasta euros</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Tipo aplicable</p>
+                <p class="cabeza_tabla">–</p>
+                <p class="cabeza_tabla">Porcentaje</p>
+              </th>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">0,00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der"> </p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.993,46</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7,65</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">7.993,46</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">611,50</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.987,45</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">8,50</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">15.980,91</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">1.290,43</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.987,45</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">9,35</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">23.968,36</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">2.037,26</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.987,45</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">10,20</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">31.955,81</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">2.851,98</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.987,45</p>
+              </td>
+              <td class="cuerpo_tabla_der">
+                <p class="cuerpo_tabla_der">11,05</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">39.943,26</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">3.734,59</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.987,45</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">11,90</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">47.930,72</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">4.685,10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.987,45</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">12,75</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">55.918,17</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">5.703,50</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.987,45</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">13,60</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">63.905,62</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">6.789,79</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.987,45</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">14,45</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">71.893,07</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.943,98</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">7.987,45</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">15,30</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">79.880,52</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">9.166,06</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">39.877,15</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">16,15</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">119.757,67</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">15.606,22</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">39.877,16</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">18,70</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">159.634,83</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">23.063,25</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">79.754,30</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">21,25</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">239.389,13</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">40.011,04</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">159.388,41</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">25,50</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">398.777,54</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">80.655,08</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">398.777,54</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">29,75</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">797.555,08</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">199.291,40</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_centro">en adelante</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_der">34,00</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="parrafo">3. En el caso de obligación real de contribuir, la tarifa aplicable será la establecida en el apartado anterior. La misma tarifa será aplicable, en el supuesto de obligación personal de contribuir, en los casos de donación de bienes inmuebles situados en el extranjero o cuando el sujeto pasivo o el causante fuesen no residentes en territorio español.</p>
+        <blockquote>
+          <p class="nota_pie">Se modifica el apartado 1 por el art. 61.2 de la Ley 21/2001, de 27 de diciembre. <a class="refPost">Ref. BOE-A-2001-24962</a>.</p>
+          <p class="nota_pie">Se convierten a euros las cuantías contempladas en el apartado 2 por el punto 4.1 de la Resolución de 27 de abril de 2001. <a class="refPost">Ref. BOE-A-2001-8543</a>.</p>
+          <p class="nota_pie">Se modifica el apartado 2, con efectos desde el 1 de enero de 2000, por el art. 67 de la Ley 54/1999, de 29 de diciembre. <a class="refPost">Ref. BOE-A-1999-24785</a></p>
+          <p class="nota_pie">Se modifica el apartado 2, con efectos desde el 1 de enero de 1999, por el art. 65 de la Ley 49/1998, de 30 de diciembre. <a class="refPost">Ref. BOE-A-1998-30154</a></p>
+          <p class="nota_pie_2">Redactado conforme a la corrección de errores publicada en BOE núm. 65, de 17 de marzo de 1999. <a class="refPost">Ref. BOE-A-1999-6373</a></p>
+          <p class="nota_pie">Se modifica por el art. 29.3 de la Ley 14/1996, de 30 de diciembre. <a class="refPost">Ref. BOE-A-1996-29118</a></p>
+          <p class="nota_pie">Se modifica por el art. 23 del Real Decreto-Ley 12/1995, de 28 de diciembre. <a class="refPost">Ref. BOE-A-1995-27964</a></p>
+          <p class="nota_pie_2">Redactado conforme a la corrección de errores publicada en BOE núm. 16, de 18 de enero de 1996. <a class="refPost">Ref. BOE-A-1996-1219</a></p>
+          <p class="nota_pie">Se modifica, con efectos a partir del 1 de enero de 1995, por el art. 70 de la Ley 41/1994, de 30 de diciembre. <a class="refPost">Ref. BOE-A-1994-28967</a></p>
+          <p class="nota_pie_2">Redactado conforme a la corrección de errores publicada en BOE núm. 38, de 14 de febrero de 1995. <a class="refPost">Ref. BOE-A-1995-3864</a></p>
+          <p class="nota_pie">Se modifica por el art. 75 de la Ley 31/1991, de 30 de diciembre. <a class="refPost">Ref. BOE-A-1991-30903</a></p>
+          <p class="nota_pie">Se modifica por el art. 68 de la ley 31/1990, de 27 de diciembre. <a class="refPost">Ref. BOE-A-1990-31180</a></p>
+          <p class="nota_pie">Se modifica por el art. 23 de la Ley 5/1990, de 29 de junio. <a class="refPost">Ref. BOE-A-1990-15348</a></p>
+          <p class="nota_pie">Se modifica por el art. 27 del Real Decreto-Ley 7/1989, de 29 de diciembre. <a class="refPost">Ref. BOE-A-1989-30591</a></p>
+          <p class="nota_pie">Se modifica por el art. 94 de la Ley 37/1988, de 28 de diciembre. <a class="refPost">Ref. BOE-A-1988-29563</a></p>
+        </blockquote>
+      </version>
+    </bloque>
+  </data>
+</response>

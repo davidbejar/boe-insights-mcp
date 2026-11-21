@@ -2,6 +2,12 @@
 
 No I/O happens here. A reference is either a BOE identifier (``BOE-A-2015-10566``) or an
 official number (``40/2015``), optionally preceded by a rank word (``Ley``, ``RDL``, ...).
+
+``parse_reference`` returns a ``ParsedReference`` (or ``None``); ``fold`` is the shared
+accent-stripping helper. ``legislation`` uses the result to build exact-number searches and to
+decide how confident a match can be. The rank codes come from the BOE ``rangos`` table
+(``docs/api-notes.md`` section 3). Identifiers are recognised through ``identifiers``, so this
+module does not depend on ``client``.
 """
 
 from __future__ import annotations
@@ -11,17 +17,19 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Literal
 
-from boe_insights_mcp.client import LAW_ID
+from boe_insights_mcp.identifiers import normalise_identifier
 
-__all__ = ["ParsedReference", "fold", "normalise_identifier", "parse_reference"]
-
-# BOE ids are `<gazette>-<series letter>-<year>-<number>`; accept any letter case when typed.
-_IDENTIFIER = re.compile(LAW_ID.pattern, re.IGNORECASE)
+__all__ = ["ParsedReference", "fold", "parse_reference"]
 
 # (BOE `rangos` code, canonical name, regexes for the rank words). The regexes run on text that
 # is lower-cased and stripped of accents; dots in abbreviations are optional. The regional
 # ranks come last. Alternatives are tried with the number that must follow, so the longest
 # rank wins ("Real Decreto-ley 6/2019" is never read as "Decreto-ley" or "Real Decreto").
+# The mechanism: ``re`` takes the first alternative that lets the whole pattern match, not the
+# longest, but each rank word must be directly followed by a number. A shorter rank ("Ley")
+# that is the start of a longer one ("Ley Foral 1/2020") therefore fails on the word that
+# follows it and the engine moves on to the longer alternative. Because of that requirement,
+# the order of this tuple does not decide between prefix-related ranks.
 _RANKS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     ("1290", "Ley Orgánica", (r"ley\s+organica", r"l\.?o\.?")),
     ("1320", "Real Decreto-ley", (r"real\s+decreto[\s-]+ley", r"rd[\s-]*ley", r"r\.?d\.?l\.?")),
@@ -46,6 +54,7 @@ _RANKS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 _RANK_NAMES = {code: name for code, name, _ in _RANKS}
 # Ranks that only regional (autonomous community) legislation uses; state laws never carry them
 # in the consolidated legislation except for a few pre-1978 decrees.
+# Together with ``_REGION`` and ``unrecognised_rank_word`` this feeds ``may_be_regional``.
 _REGIONAL_RANKS = frozenset({"1450", "1470", "1480", "1500", "1325", "1510"})
 
 # The 17 autonomous communities (Spanish, Catalan, Basque, Galician and Valencian forms) and
@@ -101,6 +110,10 @@ class ParsedReference:
     @property
     def may_be_regional(self) -> bool:
         """Whether the text signals that the law may be regional rather than state."""
+        # A signal, not a verdict: any of the three clues is enough, because regional laws are
+        # numbered independently of state laws (api-notes 3) and a wrong "state" answer would
+        # look as certain as a right one. ``legislation`` reacts by widening the search scope and
+        # refusing to call a single hit "resolved".
         return (
             self.regional_rank or self.unrecognised_rank_word is not None or self.region is not None
         )
@@ -112,21 +125,8 @@ def fold(text: str) -> str:
     return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
 
 
-def normalise_identifier(text: str) -> str | None:
-    """Return ``text`` as a canonical BOE identifier, or ``None`` if it is not one.
-
-    Surrounding whitespace is ignored; the BOE series letter is upper-case, others as given
-    (``boe-a-2015-10566`` gives ``BOE-A-2015-10566``). Every entry point that takes an
-    identifier goes through this function, so they all accept the same spellings.
-    """
-    text = text.strip()
-    if not _IDENTIFIER.fullmatch(text):
-        return None
-    prefix, _, rest = text.partition("-")
-    return f"{prefix}-{rest}".upper() if prefix.upper() == "BOE" else f"{prefix.upper()}-{rest}"
-
-
 def _parse_identifier(text: str) -> ParsedReference | None:
+    """Return an ``identifier`` reference if the whole text is a BOE identifier, else ``None``."""
     identifier = normalise_identifier(text)
     if identifier is None:
         return None
@@ -141,6 +141,7 @@ def parse_reference(text: str) -> ParsedReference | None:
     number pair wins; without a rank word the first number is used. Years must have four
     digits (1800-2100).
     """
+    # An identifier must be the entire text; numbers are searched inside longer phrases.
     identifier = _parse_identifier(text.strip())
     if identifier is not None:
         return identifier
@@ -149,6 +150,7 @@ def parse_reference(text: str) -> ParsedReference | None:
     region_text = region.group(0) if region else None
     with_rank = _RANK_AND_NUMBER.search(folded)
     if with_rank is not None:
+        # Exactly one ``r<code>`` group took part in the match; find which one.
         code = next(code for code, _, _ in _RANKS if with_rank.group(f"r{code}"))
         return ParsedReference(
             kind="numbered",
@@ -157,6 +159,9 @@ def parse_reference(text: str) -> ParsedReference | None:
             official_number=with_rank.group("number").upper(),
             region=region_text,
         )
+    # No known rank word: fall back to the first bare number. The word before it is kept as a
+    # hint, because an unknown rank ("Decreto Foral 3/2000") means the search cannot filter by
+    # rank and the match must not be presented as certain.
     bare = _NUMBER_ONLY.search(folded)
     if bare is None:
         return None
@@ -170,6 +175,7 @@ def parse_reference(text: str) -> ParsedReference | None:
 
 def _word_before(prefix: str) -> str | None:
     """Return the word just before a number if it could be a rank (not a connector word)."""
+    # "n.º" / "núm." before the number is dropped first, so "Decreto nº 5/2000" yields "decreto".
     word = _LAST_WORD.search(_NUMBER_MARK.sub("", prefix.rstrip()))
     if word is None or word.group(1) in _CONNECTORS:
         return None

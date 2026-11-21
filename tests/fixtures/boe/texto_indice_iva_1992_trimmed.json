@@ -1,0 +1,696 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "bloque": [
+                {
+                    "id": "preambulo",
+                    "titulo": "",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/preambulo"
+                },
+                {
+                    "id": "pr",
+                    "titulo": "",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/pr"
+                },
+                {
+                    "id": "tpreliminar",
+                    "titulo": "Título preliminar",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tpreliminar"
+                },
+                {
+                    "id": "a1",
+                    "titulo": "Artículo 1",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a1"
+                },
+                {
+                    "id": "a2",
+                    "titulo": "Artículo 2",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a2"
+                },
+                {
+                    "id": "a3",
+                    "titulo": "Artículo 3",
+                    "fecha_actualizacion": "20200205",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a3"
+                },
+                {
+                    "id": "ti",
+                    "titulo": "Título I",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/ti"
+                },
+                {
+                    "id": "ci",
+                    "titulo": "Capítulo I",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/ci"
+                },
+                {
+                    "id": "a4",
+                    "titulo": "Artículo 4",
+                    "fecha_actualizacion": "20121030",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a4"
+                },
+                {
+                    "id": "a5",
+                    "titulo": "Artículo 5",
+                    "fecha_actualizacion": "20100302",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a5"
+                },
+                {
+                    "id": "a6",
+                    "titulo": "Artículo 6",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a6"
+                },
+                {
+                    "id": "a7",
+                    "titulo": "Artículo 7",
+                    "fecha_actualizacion": "20221220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a7"
+                },
+                {
+                    "id": "a8",
+                    "titulo": "Artículo 8",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a8"
+                },
+                {
+                    "id": "a8-2",
+                    "titulo": "Artículo 8 bis",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a8-2"
+                },
+                {
+                    "id": "a9",
+                    "titulo": "Artículo 9",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a9"
+                },
+                {
+                    "id": "a9-2",
+                    "titulo": "Artículo 9 bis",
+                    "fecha_actualizacion": "20200205",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a9-2"
+                },
+                {
+                    "id": "a10",
+                    "titulo": "Artículo 10",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a10"
+                },
+                {
+                    "id": "a11",
+                    "titulo": "Artículo 11",
+                    "fecha_actualizacion": "20021231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a11"
+                },
+                {
+                    "id": "a12",
+                    "titulo": "Artículo 12",
+                    "fecha_actualizacion": "20061130",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a12"
+                },
+                {
+                    "id": "cii",
+                    "titulo": "Capítulo II",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/cii"
+                },
+                {
+                    "id": "a13",
+                    "titulo": "Artículo 13",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a13"
+                },
+                {
+                    "id": "a14",
+                    "titulo": "Artículo 14",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a14"
+                },
+                {
+                    "id": "a15",
+                    "titulo": "Artículo 15",
+                    "fecha_actualizacion": "20200205",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a15"
+                },
+                {
+                    "id": "a16",
+                    "titulo": "Artículo 16",
+                    "fecha_actualizacion": "20221224",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a16"
+                },
+                {
+                    "id": "ciii",
+                    "titulo": "Capítulo III",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/ciii"
+                },
+                {
+                    "id": "a17",
+                    "titulo": "Artículo 17",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a17"
+                },
+                {
+                    "id": "a18",
+                    "titulo": "Artículo 18",
+                    "fecha_actualizacion": "20230525",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a18"
+                },
+                {
+                    "id": "a19",
+                    "titulo": "Artículo 19",
+                    "fecha_actualizacion": "20250123",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a19"
+                },
+                {
+                    "id": "tii",
+                    "titulo": "Título II",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tii"
+                },
+                {
+                    "id": "ci-2",
+                    "titulo": "Capítulo I",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/ci-2"
+                },
+                {
+                    "id": "a2-2",
+                    "titulo": "Artículo 20 bis",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a2-2"
+                },
+                {
+                    "id": "cii-2",
+                    "titulo": "Capítulo II",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/cii-2"
+                },
+                {
+                    "id": "ciii-2",
+                    "titulo": "Capítulo III",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/ciii-2"
+                },
+                {
+                    "id": "tiii",
+                    "titulo": "Título III",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tiii"
+                },
+                {
+                    "id": "ci-3",
+                    "titulo": "Capítulo I",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/ci-3"
+                },
+                {
+                    "id": "tiv",
+                    "titulo": "Título IV",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tiv"
+                },
+                {
+                    "id": "tv",
+                    "titulo": "Título V",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tv"
+                },
+                {
+                    "id": "tvi",
+                    "titulo": "Título VI",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tvi"
+                },
+                {
+                    "id": "civ",
+                    "titulo": "Capítulo IV",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/civ"
+                },
+                {
+                    "id": "cv",
+                    "titulo": "Capítulo V",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/cv"
+                },
+                {
+                    "id": "tvii",
+                    "titulo": "Título VII",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tvii"
+                },
+                {
+                    "id": "tviii",
+                    "titulo": "Título VIII",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tviii"
+                },
+                {
+                    "id": "tix",
+                    "titulo": "Título IX",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tix"
+                },
+                {
+                    "id": "a140ter",
+                    "titulo": "Artículo 140 ter",
+                    "fecha_actualizacion": "19991230",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a140ter"
+                },
+                {
+                    "id": "a140cuarter",
+                    "titulo": "Artículo 140 cuarter",
+                    "fecha_actualizacion": "19991230",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a140cuarter"
+                },
+                {
+                    "id": "a140quinque",
+                    "titulo": "Artículo 140 quinque",
+                    "fecha_actualizacion": "19991230",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a140quinque"
+                },
+                {
+                    "id": "a140sexies",
+                    "titulo": "Artículo 140 sexies",
+                    "fecha_actualizacion": "20021231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a140sexies"
+                },
+                {
+                    "id": "cvi",
+                    "titulo": "Capítulo VI",
+                    "fecha_actualizacion": "20141128",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/cvi"
+                },
+                {
+                    "id": "cvii",
+                    "titulo": "Capítulo VII",
+                    "fecha_actualizacion": "19991230",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/cvii"
+                },
+                {
+                    "id": "s1",
+                    "titulo": "Sección 1",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/s1"
+                },
+                {
+                    "id": "cviii",
+                    "titulo": "Capítulo VIII",
+                    "fecha_actualizacion": "20141128",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/cviii"
+                },
+                {
+                    "id": "as163bisa163quater",
+                    "titulo": "Artículos 163 bis a 163 quáter",
+                    "fecha_actualizacion": "20141128",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/as163bisa163quater"
+                },
+                {
+                    "id": "a163quater",
+                    "titulo": "Artículo 163 quáter",
+                    "fecha_actualizacion": "20100302",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163quater"
+                },
+                {
+                    "id": "cix",
+                    "titulo": "Capítulo IX",
+                    "fecha_actualizacion": "20061130",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/cix"
+                },
+                {
+                    "id": "a163quinquies",
+                    "titulo": "Artículo 163 quinquies",
+                    "fecha_actualizacion": "20141128",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163quinquies"
+                },
+                {
+                    "id": "a163septies",
+                    "titulo": "Artículo 163 septies",
+                    "fecha_actualizacion": "20061130",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163septies"
+                },
+                {
+                    "id": "a163octies",
+                    "titulo": "Artículo 163 octies",
+                    "fecha_actualizacion": "20141128",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163octies"
+                },
+                {
+                    "id": "a163nonies",
+                    "titulo": "Artículo 163 nonies",
+                    "fecha_actualizacion": "20210710",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163nonies"
+                },
+                {
+                    "id": "cx",
+                    "titulo": "Capítulo X",
+                    "fecha_actualizacion": "20130928",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/cx"
+                },
+                {
+                    "id": "a163decies",
+                    "titulo": "Artículo 163 decies",
+                    "fecha_actualizacion": "20130928",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163decies"
+                },
+                {
+                    "id": "a163undecies",
+                    "titulo": "Artículo 163 undecies",
+                    "fecha_actualizacion": "20130928",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163undecies"
+                },
+                {
+                    "id": "a163duodecies",
+                    "titulo": "Artículo 163 duodecies",
+                    "fecha_actualizacion": "20130928",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163duodecies"
+                },
+                {
+                    "id": "a163terdecies",
+                    "titulo": "Artículo 163 terdecies",
+                    "fecha_actualizacion": "20130928",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163terdecies"
+                },
+                {
+                    "id": "a163quaterdecies",
+                    "titulo": "Artículo 163 quaterdecies",
+                    "fecha_actualizacion": "20130928",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163quaterdecies"
+                },
+                {
+                    "id": "a163quinquiesdecies",
+                    "titulo": "Artículo 163 quinquiesdecies",
+                    "fecha_actualizacion": "20130928",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163quinquiesdecies"
+                },
+                {
+                    "id": "a163sexiesdecies",
+                    "titulo": "Artículo 163 sexiesdecies",
+                    "fecha_actualizacion": "20130928",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163sexiesdecies"
+                },
+                {
+                    "id": "cxi",
+                    "titulo": "CAPÍTULO XI",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/cxi"
+                },
+                {
+                    "id": "s1a",
+                    "titulo": "Sección 1ª",
+                    "fecha_actualizacion": "20141128",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/s1a"
+                },
+                {
+                    "id": "a163septiesdecies",
+                    "titulo": "Artículo 163 septiesdecies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163septiesdecies"
+                },
+                {
+                    "id": "a163octiesdecies",
+                    "titulo": "Artículo 163 octiesdecies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163octiesdecies"
+                },
+                {
+                    "id": "a163noniesdecies",
+                    "titulo": "Artículo 163 noniesdecies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163noniesdecies"
+                },
+                {
+                    "id": "a163vicies",
+                    "titulo": "Artículo 163 vicies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163vicies"
+                },
+                {
+                    "id": "a163unvicies",
+                    "titulo": "Artículo 163 unvicies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163unvicies"
+                },
+                {
+                    "id": "a163duovicies",
+                    "titulo": "Artículo 163 duovicies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163duovicies"
+                },
+                {
+                    "id": "a163tervicies",
+                    "titulo": "Artículo 163 tervicies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163tervicies"
+                },
+                {
+                    "id": "a163quatervicies",
+                    "titulo": "Artículo 163 quatervicies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a163quatervicies"
+                },
+                {
+                    "id": "a1-2",
+                    "titulo": "Artículo 163 quinvicies",
+                    "fecha_actualizacion": "20230525",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a1-2"
+                },
+                {
+                    "id": "a1-3",
+                    "titulo": "Artículo 163 sexvivies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a1-3"
+                },
+                {
+                    "id": "a1-4",
+                    "titulo": "Artículo 163 septvicies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a1-4"
+                },
+                {
+                    "id": "a1-5",
+                    "titulo": "Artículo 163 octovicies",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a1-5"
+                },
+                {
+                    "id": "tx",
+                    "titulo": "Título X",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/tx"
+                },
+                {
+                    "id": "a1-9",
+                    "titulo": "Artículo 166 quater ",
+                    "fecha_actualizacion": "20230509",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/a1-9"
+                },
+                {
+                    "id": "txi",
+                    "titulo": "Título XI",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/txi"
+                },
+                {
+                    "id": "txii",
+                    "titulo": "Título XII",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/txii"
+                },
+                {
+                    "id": "txiii",
+                    "titulo": "Título XIII",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/txiii"
+                },
+                {
+                    "id": "daprimera",
+                    "titulo": "Disposición adicional primera",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/daprimera"
+                },
+                {
+                    "id": "dasegunda",
+                    "titulo": "Disposición adicional segunda",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dasegunda"
+                },
+                {
+                    "id": "datercera",
+                    "titulo": "Disposición adicional tercera",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/datercera"
+                },
+                {
+                    "id": "dacuarta",
+                    "titulo": "Disposición adicional cuarta",
+                    "fecha_actualizacion": "20101223",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dacuarta"
+                },
+                {
+                    "id": "daquinta",
+                    "titulo": "Disposición adicional quinta",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/daquinta"
+                },
+                {
+                    "id": "dasexta",
+                    "titulo": "Disposición adicional sexta",
+                    "fecha_actualizacion": "20131226",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dasexta"
+                },
+                {
+                    "id": "daseptima",
+                    "titulo": "Disposición adicional séptima",
+                    "fecha_actualizacion": "20131228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/daseptima"
+                },
+                {
+                    "id": "daoctava",
+                    "titulo": "Disposición adicional octava",
+                    "fecha_actualizacion": "20141128",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/daoctava"
+                },
+                {
+                    "id": "dtprimera",
+                    "titulo": "Disposición transitoria primera",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtprimera"
+                },
+                {
+                    "id": "dtsegunda",
+                    "titulo": "Disposición transitoria segunda",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtsegunda"
+                },
+                {
+                    "id": "dttercera",
+                    "titulo": "Disposición transitoria tercera",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dttercera"
+                },
+                {
+                    "id": "dtcuarta",
+                    "titulo": "Disposición transitoria cuarta",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtcuarta"
+                },
+                {
+                    "id": "dtquinta",
+                    "titulo": "Disposición transitoria quinta",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtquinta"
+                },
+                {
+                    "id": "dtsexta",
+                    "titulo": "Disposición transitoria sexta",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtsexta"
+                },
+                {
+                    "id": "dtseptima",
+                    "titulo": "Disposición transitoria séptima",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtseptima"
+                },
+                {
+                    "id": "dtoctava",
+                    "titulo": "Disposición transitoria octava",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtoctava"
+                },
+                {
+                    "id": "dtnovena",
+                    "titulo": "Disposición transitoria novena",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtnovena"
+                },
+                {
+                    "id": "dtdecima",
+                    "titulo": "Disposición transitoria décima",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtdecima"
+                },
+                {
+                    "id": "dtundecima",
+                    "titulo": "Disposición transitoria undécima",
+                    "fecha_actualizacion": "20120714",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtundecima"
+                },
+                {
+                    "id": "dtduodecima",
+                    "titulo": "Disposición transitoria duodécima",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtduodecima"
+                },
+                {
+                    "id": "dtdecimotercera",
+                    "titulo": "Disposición transitoria decimotercera",
+                    "fecha_actualizacion": "20260228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dtdecimotercera"
+                },
+                {
+                    "id": "ddprimera",
+                    "titulo": "Disposición derogatoria primera",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/ddprimera"
+                },
+                {
+                    "id": "ddsegunda",
+                    "titulo": "Disposición derogatoria segunda",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/ddsegunda"
+                },
+                {
+                    "id": "dfprimera",
+                    "titulo": "Disposición final primera",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dfprimera"
+                },
+                {
+                    "id": "dfsegunda",
+                    "titulo": "Disposición final segunda",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/dfsegunda"
+                },
+                {
+                    "id": "df",
+                    "titulo": "Disposición final tercera",
+                    "fecha_actualizacion": "20210428",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/df"
+                },
+                {
+                    "id": "firma",
+                    "titulo": "",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/firma"
+                },
+                {
+                    "id": "an",
+                    "titulo": "ANEXO",
+                    "fecha_actualizacion": "20260228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/an"
+                },
+                {
+                    "id": "informacionrelacionada",
+                    "titulo": "[Información relacionada]",
+                    "fecha_actualizacion": "19921229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28740/texto/bloque/informacionrelacionada"
+                }
+            ]
+        }
+    ]
+}

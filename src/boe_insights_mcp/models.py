@@ -3,6 +3,15 @@
 The API uses Spanish field names and a few serialisation quirks (``yyyymmdd`` dates, ``S``/``N``
 flags, single-element lists collapsed into objects, empty lists as ``""``). The models absorb
 all of that: they validate from the raw API objects and dump with English names.
+
+Public names: ``LawSummary`` (a search hit), ``LawMetadata`` (a summary plus repeal status),
+``LawAnalysis`` with ``LawReference`` (subjects and amendment cross-references), ``CodedValue``
+and the ``as_list`` helper. The text models are ``IndexEntry`` (one row of a law's block index),
+``Paragraph``, ``BlockVersion`` and ``Block`` (one block of text with all its versions); the
+latter three are built by ``textparse`` from the XML of ``/texto/bloque`` (api-notes 6).
+``client`` builds these from response bodies; ``legislation`` consumes them and converts them to
+the tool-facing ``schemas``. They are not sent to the model directly. Quirks are described in
+``docs/api-notes.md`` section 0 and the sections cited below.
 """
 
 from __future__ import annotations
@@ -21,18 +30,25 @@ from pydantic import (
 )
 
 __all__ = [
+    "Block",
+    "BlockVersion",
     "CodedValue",
+    "IndexEntry",
     "LawAnalysis",
     "LawMetadata",
     "LawReference",
     "LawSummary",
+    "Paragraph",
     "StrippedText",
     "as_list",
+    "collapse_whitespace",
 ]
 
 
 def as_list(value: Any) -> list[Any]:
     """Normalise the API's collapsed collections: ``None``, ``""``, one object or a list."""
+    # The API converts XML to JSON, so a collection with exactly one element arrives as a bare
+    # object and an empty one as ``""`` or null (api-notes 0). Callers must always get a list.
     if value is None or value == "":
         return []
     if isinstance(value, list):
@@ -40,15 +56,36 @@ def as_list(value: Any) -> list[Any]:
     return [value]
 
 
+def collapse_whitespace(value: str) -> str:
+    """Collapse every run of whitespace, non-breaking spaces included, into one space."""
+    # ``str.split()`` with no argument treats U+00A0 as whitespace, and the API uses NBSP in
+    # titles such as ``Artículo\xa046`` (api-notes 6), so one call handles both.
+    return " ".join(value.split())
+
+
+def _normalise_title(value: Any) -> Any:
+    """Normalise a block title; a missing title (blocks without one) becomes ``""``."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return collapse_whitespace(value)
+    return value
+
+
 def _blank_to_none(value: Any) -> Any:
     """Turn the API's empty elements (``""``) into ``None``."""
+    # An empty XML element is serialised as ``""`` whatever its type, which would fail
+    # validation as a date or as a nested object.
     if isinstance(value, str) and not value.strip():
         return None
     return value
 
 
 def _parse_date(value: Any) -> Any:
-    """Parse a ``yyyymmdd`` string; blank means no date. Other values are left to pydantic."""
+    """Parse a ``yyyymmdd`` string; blank means no date. Other values are left to pydantic.
+
+    A malformed date raises ``ValueError``, which pydantic reports as a validation error.
+    """
     value = _blank_to_none(value)
     if isinstance(value, str):
         return datetime.strptime(value, "%Y%m%d").date()
@@ -64,7 +101,11 @@ def _parse_timestamp(value: Any) -> Any:
 
 
 def _parse_flag(value: Any) -> Any:
-    """Parse the API's ``"S"``/``"N"`` (yes/no) flags."""
+    """Parse the API's ``"S"``/``"N"`` (yes/no) flags.
+
+    Any other string is rejected rather than guessed at, so an unexpected API value surfaces
+    as a parse error instead of a silently wrong legal status.
+    """
     if isinstance(value, str):
         if value not in ("S", "N"):
             raise ValueError(f"expected 'S' or 'N', got {value!r}")
@@ -77,6 +118,10 @@ def _unwrapper(key: str) -> Callable[[Any], list[Any]]:
 
     Items that are not wrapped (no ``key``) are kept as they are.
     """
+    # Shape being flattened (api-notes 5): ``referencias.anteriores`` is
+    # ``[{"anterior": [ref, ref, ...]}, ...]`` and ``materias`` is ``[{"materia": {...}}]``,
+    # each level collapsing to a bare object when it has one element. Every combination of
+    # list/object at both levels must come out as one flat list.
 
     def unwrap(value: Any) -> list[Any]:
         items: list[Any] = []
@@ -96,10 +141,14 @@ StrippedText = Annotated[str, StringConstraints(strip_whitespace=True)]
 _OptionalText = Annotated[str | None, BeforeValidator(_blank_to_none)]
 _OptionalDate = Annotated[date | None, BeforeValidator(_parse_date)]
 _Flag = Annotated[bool, BeforeValidator(_parse_flag)]
+_Title = Annotated[str, BeforeValidator(_normalise_title)]
 
 
 class _ApiModel(BaseModel):
     """Frozen base: reads Spanish API names or English names, ignores unknown fields."""
+
+    # ``extra="ignore"``: the API returns many fields we do not use, and new ones must not break
+    # parsing. ``validate_by_name`` lets code and tests build models with the English names.
 
     model_config = ConfigDict(frozen=True, validate_by_name=True, extra="ignore")
 
@@ -142,6 +191,9 @@ class LawSummary(_ApiModel):
 class LawMetadata(LawSummary):
     """The metadata of one law, which adds the repeal and annulment status to a summary."""
 
+    # Only ``/metadatos`` carries these; search hits do not (api-notes 1, 4). The repeal flag
+    # means "wholly repealed", not "superseded" (api-notes 4).
+
     repealed: _Flag = Field(default=False, validation_alias="estatus_derogacion")
     repealed_on: _OptionalDate = Field(default=None, validation_alias="fecha_derogacion")
     annulled: _Flag = Field(default=False, validation_alias="estatus_anulacion")
@@ -170,3 +222,77 @@ class LawAnalysis(_ApiModel):
     later: Annotated[list[LawReference], BeforeValidator(_unwrapper("posterior"))] = Field(
         default_factory=list, validation_alias=AliasPath("referencias", "posteriores")
     )
+
+
+class IndexEntry(_ApiModel):
+    """One row of a law's block index (``/texto/indice``)."""
+
+    block_id: str = Field(validation_alias="id")
+    title: _Title = Field(default="", validation_alias="titulo")
+    updated_on: _OptionalDate = Field(default=None, validation_alias="fecha_actualizacion")
+
+
+class Paragraph(_ApiModel):
+    """One paragraph of a block version, as plain text."""
+
+    kind: str
+    """The element's ``class`` (``articulo``, ``parrafo``, ``nota_pie``...), else its tag name."""
+    text: str
+    quoted: bool = False
+    """True when the paragraph sat inside a ``<blockquote>`` (footnotes and citations)."""
+
+
+def _is_footnote(paragraph: Paragraph) -> bool:
+    """Whether a paragraph is a footnote (``nota_pie``, ``nota_pie_2``...)."""
+    # ``nota_inicial`` and ``siempreSeVe`` are body text (the note that opens a repealed law),
+    # so the test is the ``nota_pie`` prefix and not "looks like a note" (api-notes 6.1).
+    return paragraph.kind.startswith("nota_pie")
+
+
+class BlockVersion(_ApiModel):
+    """The complete text of a block as amended by one norm, from ``effective_from`` on."""
+
+    source_law_id: str
+    """``id_norma``: the norm that introduced this version."""
+    published_on: date | None
+    effective_from: date | None
+    paragraphs: tuple[Paragraph, ...]
+
+    @property
+    def starts_on(self) -> date | None:
+        """When this version starts to apply: ``effective_from``, else ``published_on``."""
+        # Why the fallback: ``fecha_vigencia`` is sometimes empty on a first or last version while
+        # ``fecha_publicacion`` is present, and versions are not reliably in order in the XML, so
+        # ordering and selection need one date that is almost always there (api-notes 6.1).
+        return self.effective_from or self.published_on
+
+    @property
+    def start_key(self) -> tuple[bool, date]:
+        """Sort key placing versions without any start date before dated ones."""
+        return (self.starts_on is not None, self.starts_on or date.min)
+
+    @property
+    def body(self) -> tuple[Paragraph, ...]:
+        """The paragraphs that are not footnotes, quoted ones included."""
+        return tuple(p for p in self.paragraphs if not _is_footnote(p))
+
+    @property
+    def text(self) -> str:
+        """The body paragraphs joined by blank lines; quoted ones are prefixed with ``> ``."""
+        return "\n\n".join(f"> {p.text}" if p.quoted else p.text for p in self.body)
+
+    @property
+    def notes(self) -> tuple[str, ...]:
+        """The texts of the footnote paragraphs, in order."""
+        return tuple(p.text for p in self.paragraphs if _is_footnote(p))
+
+
+class Block(_ApiModel):
+    """One block of a law's text (article, heading, provision...) with all its versions."""
+
+    block_id: str
+    kind: str
+    """``tipo`` (``precepto``, ``nota_inicial``, ``preambulo``...), ``""`` when absent."""
+    title: _Title
+    versions: tuple[BlockVersion, ...]
+    """Ascending by ``starts_on`` (undated first), document order kept for ties."""

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Callable
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -18,8 +19,12 @@ from boe_insights_mcp.client import BASE_URL, BoeClient
 from boe_insights_mcp.models import LawSummary
 from boe_insights_mcp.ratelimit import RateLimiter
 from boe_insights_mcp.schemas import (
+    AmendmentHistoryResult,
+    ArticleHistoryResult,
+    CompareArticleVersionsResult,
     FindCodesResult,
     LawOverview,
+    ReadArticleResult,
     ResolveReferenceResult,
     SearchLegislationResult,
 )
@@ -28,7 +33,14 @@ from boe_insights_mcp.settings import Settings
 
 SEARCH_URL = f"{BASE_URL}legislacion-consolidada"
 LEY_40 = "BOE-A-2015-10566"
-TOOL_NAMES = {"search_legislation", "resolve_reference", "get_law_overview", "find_codes"}
+OLD_TOOL_NAMES = {"search_legislation", "resolve_reference", "get_law_overview", "find_codes"}
+NEW_TOOL_NAMES = {
+    "get_amendment_history",
+    "read_article",
+    "compare_article_versions",
+    "get_article_history",
+}
+TOOL_NAMES = OLD_TOOL_NAMES | NEW_TOOL_NAMES
 MAX_DESCRIPTION_WORDS = 120
 
 Loader = Callable[[str], bytes]
@@ -63,7 +75,10 @@ async def tools(mcp: Client[Any]) -> dict[str, Tool]:
 
 @pytest.fixture
 def ley_40_routes(
-    router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+    router: respx.MockRouter,
+    json_response: JsonResponse,
+    xml_response: XmlResponse,
+    load_fixture: Loader,
 ) -> None:
     prefix = f"{SEARCH_URL}/id/{LEY_40}"
     router.get(f"{prefix}/metadatos").mock(
@@ -72,12 +87,16 @@ def ley_40_routes(
     router.get(f"{prefix}/analisis").mock(
         return_value=json_response(load_fixture("analisis_ley40_2015.json"))
     )
+    # Ley 40/2015 has no initial note: the BOE answers 404 for block "no".
+    router.get(f"{prefix}/texto/bloque/no").mock(
+        return_value=xml_response(load_fixture("error_404_bloque_no_in_force_law.xml"), 404)
+    )
 
 
 # --- Discovery: what the model sees ---------------------------------------------------------
 
 
-async def test_server_exposes_exactly_the_four_tools(tools: dict[str, Tool]) -> None:
+async def test_server_exposes_exactly_the_eight_tools(tools: dict[str, Tool]) -> None:
     assert set(tools) == TOOL_NAMES
 
 
@@ -107,6 +126,74 @@ async def test_descriptions_point_to_the_right_neighbouring_tool(tools: dict[str
     assert "search_legislation" in (tools["resolve_reference"].description or "")
     assert "resolve_reference" in (tools["get_law_overview"].description or "")
     assert "search_legislation" in (tools["find_codes"].description or "")
+
+
+async def test_new_descriptions_point_to_their_siblings(tools: dict[str, Tool]) -> None:
+    descriptions = {name: (tool.description or "") for name, tool in tools.items()}
+
+    assert "resolve_reference" in descriptions["read_article"]
+    assert "compare_article_versions" in descriptions["read_article"]
+    assert "get_article_history" in descriptions["compare_article_versions"]
+    assert "get_amendment_history" in descriptions["get_article_history"]
+    assert "compare_article_versions" in descriptions["get_article_history"]
+    assert "get_article_history" in descriptions["get_amendment_history"]
+    assert "resolve_reference" in descriptions["get_amendment_history"]
+    for name in NEW_TOOL_NAMES:
+        assert (
+            "informational" in descriptions[name].lower() or "informational" in descriptions[name]
+        )
+
+
+async def test_article_parameters_show_accepted_wordings_and_formats(
+    tools: dict[str, Tool],
+) -> None:
+    properties = tools["read_article"].input_schema["properties"]
+
+    assert "46 bis" in properties["article"]["description"]
+    assert "art. 1.902" in properties["article"]["description"]
+    assert "block_id" in properties["article"]["description"]
+    assert "candidates" in properties["block_id"]["description"]
+    assert "ISO" in properties["as_of"]["description"]
+    assert "resolve_reference" in properties["law_id"]["description"]
+    assert (properties["max_chars"]["minimum"], properties["max_chars"]["maximum"]) == (500, 20000)
+    assert properties["max_chars"]["default"] == 6000
+
+
+async def test_compare_and_amendment_parameter_bounds_and_defaults(
+    tools: dict[str, Tool],
+) -> None:
+    compare = tools["compare_article_versions"].input_schema
+    history = tools["get_amendment_history"].input_schema["properties"]
+
+    # article and block_id are both optional in the schema: exactly one is checked by the use case.
+    assert compare["required"] == ["law_id", "from_date"]
+    assert (
+        compare["properties"]["max_changes"]["maximum"],
+        compare["properties"]["max_changes"]["default"],
+    ) == (200, 40)
+    assert (
+        compare["properties"]["max_chars"]["minimum"],
+        compare["properties"]["max_chars"]["maximum"],
+        compare["properties"]["max_chars"]["default"],
+    ) == (1000, 30000, 8000)
+    assert history["group"]["enum"] == [
+        "all",
+        "repeals",
+        "modifies",
+        "adds",
+        "corrections",
+        "other",
+    ]
+    assert (history["limit"]["minimum"], history["limit"]["maximum"]) == (1, 100)
+    assert tools["get_article_history"].input_schema["required"] == ["law_id"]
+
+
+async def test_instructions_mention_the_article_tools(boe_client: BoeClient) -> None:
+    async with Client(create_server(client=boe_client)) as client:
+        instructions = client.instructions or ""
+
+    for name in NEW_TOOL_NAMES:
+        assert name in instructions
 
 
 async def test_search_code_parameters_point_to_find_codes(tools: dict[str, Tool]) -> None:
@@ -143,6 +230,7 @@ async def test_required_parameters(tools: dict[str, Tool]) -> None:
     assert tools["resolve_reference"].input_schema["required"] == ["reference"]
     assert tools["get_law_overview"].input_schema["required"] == ["law_id"]
     assert tools["find_codes"].input_schema["required"] == ["kind", "text"]
+    assert tools["read_article"].input_schema["required"] == ["law_id"]
 
 
 async def test_find_codes_kind_is_an_enum_and_limit_is_bounded(tools: dict[str, Tool]) -> None:
@@ -293,6 +381,220 @@ async def test_date_arguments_are_parsed_from_iso_strings(
     )
 
     assert '"gte":"20200101","lte":"20201231"' in route.calls[0].request.url.params["query"]
+
+
+# --- Calls: the article and amendment-history tools ----------------------------------------
+
+
+@pytest.fixture
+def ley_40_text_routes(
+    router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    prefix = f"{SEARCH_URL}/id/{LEY_40}"
+    router.get(f"{prefix}/texto/indice").mock(
+        return_value=json_response(load_fixture("texto_indice_ley40_2015_trimmed.json"))
+    )
+    for block_id, fixture in (
+        ("a4-2", "texto_bloque_a4-2_articulo46bis.xml"),
+        ("a48", "texto_bloque_a48_two_versions.xml"),
+    ):
+        router.get(f"{prefix}/texto/bloque/{block_id}").mock(
+            return_value=httpx.Response(
+                200, content=load_fixture(fixture), headers={"Content-Type": "application/xml"}
+            )
+        )
+    # Article tools also check whether the whole law is repealed.
+    router.get(f"{prefix}/metadatos").mock(
+        return_value=json_response(load_fixture("metadatos_in_force_ley40_2015.json"))
+    )
+
+
+@pytest.mark.usefixtures("ley_40_text_routes")
+async def test_read_article_returns_structured_content(mcp: Client[Any]) -> None:
+    result = await mcp.call_tool(
+        "read_article", {"law_id": LEY_40, "article": "46 bis", "as_of": "2020-01-01"}
+    )
+
+    article = ReadArticleResult.model_validate(result.structured_content)
+    assert (article.outcome, article.block_id, article.state) == ("found", "a4-2", "in_force")
+    assert article.version is not None
+    assert article.version.introduced_by == "BOE-A-2019-15790"
+    assert article.text.startswith("Artículo 46 bis.")
+    assert article.provenance.attribution.startswith("Basado en datos")
+    assert result.structured_content is not None
+    assert result.structured_content["version"]["effective_from"] == "2019-11-06"
+
+
+@pytest.mark.usefixtures("ley_40_text_routes")
+async def test_read_article_not_found_is_a_result_with_candidates_not_an_error(
+    mcp: Client[Any],
+) -> None:
+    result = await mcp.call_tool("read_article", {"law_id": LEY_40, "article": "artículo 9999"})
+
+    article = ReadArticleResult.model_validate(result.structured_content)
+    assert article.outcome == "not_found"
+    assert article.candidates
+    assert article.hint
+
+
+@pytest.mark.usefixtures("ley_40_text_routes")
+async def test_compare_article_versions_returns_structured_content(mcp: Client[Any]) -> None:
+    result = await mcp.call_tool(
+        "compare_article_versions",
+        {"law_id": LEY_40, "article": "48", "from_date": "2017-01-01", "to_date": "2022-01-01"},
+    )
+
+    comparison = CompareArticleVersionsResult.model_validate(result.structured_content)
+    assert comparison.identical is False
+    assert comparison.amending_laws == ["BOE-A-2020-17340"]
+    assert comparison.changed == 1
+    assert comparison.from_date == date(2017, 1, 1)
+
+
+@pytest.mark.usefixtures("ley_40_text_routes")
+async def test_article_tools_take_a_block_id_instead_of_the_wording(mcp: Client[Any]) -> None:
+    result = await mcp.call_tool("read_article", {"law_id": LEY_40, "block_id": "a4-2"})
+
+    article = ReadArticleResult.model_validate(result.structured_content)
+    assert (article.outcome, article.block_id) == ("found", "a4-2")
+    assert article.law_repealed is False
+
+
+@pytest.mark.usefixtures("ley_40_text_routes")
+@pytest.mark.parametrize(
+    "arguments",
+    [{}, {"article": "48", "block_id": "a48"}, {"article": "x" * 201}],
+    ids=["neither", "both", "too-long"],
+)
+@pytest.mark.parametrize("tool", ["read_article", "get_article_history"])
+async def test_article_tools_reject_a_bad_selector_as_an_invalid_argument(
+    mcp: Client[Any], tool: str, arguments: dict[str, Any]
+) -> None:
+    with pytest.raises(ToolError, match="invalid_argument"):
+        await mcp.call_tool(tool, {"law_id": LEY_40, **arguments})
+
+
+@pytest.mark.usefixtures("ley_40_text_routes")
+async def test_get_article_history_returns_structured_content(mcp: Client[Any]) -> None:
+    result = await mcp.call_tool("get_article_history", {"law_id": LEY_40, "article": "48"})
+
+    history = ArticleHistoryResult.model_validate(result.structured_content)
+    assert [e.introduced_by for e in history.events] == ["BOE-A-2015-10566", "BOE-A-2020-17340"]
+    assert [e.kind for e in history.events] == ["original", "amended"]
+
+
+async def test_get_amendment_history_returns_structured_content(
+    mcp: Client[Any], router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/analisis").mock(
+        return_value=json_response(load_fixture("analisis_ley40_2015.json"))
+    )
+
+    result = await mcp.call_tool(
+        "get_amendment_history", {"law_id": LEY_40, "group": "modifies", "limit": 5}
+    )
+
+    history = AmendmentHistoryResult.model_validate(result.structured_content)
+    assert history.group == "modifies"
+    assert history.total > 5
+    assert len(history.items) == 5
+    assert history.has_more is True
+    assert history.next_offset == 5
+    assert {item.group for item in history.items} == {"modifies"}
+
+
+@pytest.mark.parametrize(
+    ("tool", "arguments"),
+    [
+        ("read_article", {"article": "1"}),
+        ("compare_article_versions", {"article": "1", "from_date": "2020-01-01"}),
+        ("get_article_history", {"article": "1"}),
+        ("get_amendment_history", {}),
+    ],
+)
+async def test_unknown_law_error_names_the_tool_advice_for_every_new_tool(
+    mcp: Client[Any],
+    router: respx.MockRouter,
+    xml_response: XmlResponse,
+    load_fixture: Loader,
+    tool: str,
+    arguments: dict[str, Any],
+) -> None:
+    router.get(url__regex=rf"{SEARCH_URL}/id/BOE-A-1999-1/.*").mock(
+        return_value=xml_response(load_fixture("error_404_unknown_id.xml"), 404)
+    )
+
+    with pytest.raises(ToolError) as caught:
+        await mcp.call_tool(tool, {"law_id": "BOE-A-1999-1", **arguments})
+
+    assert "not_found" in str(caught.value)
+    assert "resolve_reference" in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    ("tool", "arguments"),
+    [
+        ("read_article", {"article": "1"}),
+        ("get_article_history", {"article": "1"}),
+        ("get_amendment_history", {}),
+    ],
+)
+async def test_malformed_identifier_is_an_invalid_argument_for_every_new_tool(
+    mcp: Client[Any], tool: str, arguments: dict[str, Any]
+) -> None:
+    with pytest.raises(ToolError, match=r"invalid_argument.*invalid law identifier"):
+        await mcp.call_tool(tool, {"law_id": "Ley 40/2015", **arguments})
+
+
+async def test_rejected_article_request_advice_names_the_article_tools(
+    mcp: Client[Any], router: respx.MockRouter, xml_response: XmlResponse, load_fixture: Loader
+) -> None:
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/texto/indice").mock(
+        return_value=xml_response(load_fixture("error_400_unsupported_accept.xml"), 400)
+    )
+
+    with pytest.raises(ToolError) as caught:
+        await mcp.call_tool("read_article", {"law_id": LEY_40, "article": "1"})
+
+    assert "invalid_query" in str(caught.value)
+    assert "article wording" in str(caught.value)
+    assert "simplify" not in str(caught.value).lower()
+
+
+async def test_inverted_article_dates_are_an_invalid_argument(mcp: Client[Any]) -> None:
+    with pytest.raises(ToolError, match=r"invalid_argument.*from_date"):
+        await mcp.call_tool(
+            "compare_article_versions",
+            {"law_id": LEY_40, "article": "48", "from_date": "2022-01-02", "to_date": "2022-01-01"},
+        )
+
+
+async def test_blank_article_is_an_invalid_argument(mcp: Client[Any]) -> None:
+    with pytest.raises(ToolError, match=r"invalid_argument.*article"):
+        await mcp.call_tool("read_article", {"law_id": LEY_40, "article": "  "})
+
+
+@pytest.mark.parametrize(
+    ("tool", "arguments", "expected"),
+    [
+        ("read_article", {"max_chars": 100}, "max_chars"),
+        ("read_article", {"as_of": "last year"}, "as_of"),
+        ("compare_article_versions", {"from_date": "2020-01-01", "max_changes": 0}, "max_changes"),
+        ("compare_article_versions", {}, "from_date"),
+        ("get_amendment_history", {"group": "everything"}, "group"),
+        ("get_amendment_history", {"limit": 101}, "limit"),
+    ],
+)
+async def test_new_tool_arguments_violating_the_schema_name_the_parameter(
+    mcp: Client[Any], tool: str, arguments: dict[str, Any], expected: str
+) -> None:
+    base = (
+        {"law_id": LEY_40, "article": "48"}
+        if tool != "get_amendment_history"
+        else {"law_id": LEY_40}
+    )
+    with pytest.raises(ToolError, match=expected):
+        await mcp.call_tool(tool, {**base, **arguments})
 
 
 # --- Calls: errors the model can act on -----------------------------------------------------

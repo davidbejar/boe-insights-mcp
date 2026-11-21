@@ -1,0 +1,1217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="an" tipo="encabezado" titulo="ANEXO">
+      <version id_norma="BOE-A-1992-28740" fecha_publicacion="19921229" fecha_vigencia="19930101">
+        <p class="anexo">ANEXO</p>
+        <p class="parrafo">A los efectos de lo dispuesto en esta Ley se considerará:</p>
+        <p class="parrafo_2">Primero. Buques: Los comprendidos en las partidas 89.01; 89.02; 89.03; 89.04 y 89.06.10 del Arancel Aduanero.</p>
+        <p class="parrafo">Segundo. Aeronaves: Los aerodinos que funcionen con ayuda de una máquina propulsora comprendidos en la partida 88.02 del Arancel de Aduanas.</p>
+        <p class="parrafo">Tercero. Productos de avituallamiento: Las provisiones de a bordo, los combustibles, carburantes, lubricantes y demás aceites de uso técnico y los productos accesorios de a bordo.</p>
+        <p class="parrafo">Se entenderá por:</p>
+        <p class="parrafo_2">a) Provisiones de a bordo: Los productos destinados exclusivamente al consumo de la tripulación y de los pasajeros.</p>
+        <p class="parrafo">b) Combustibles, carburantes, lubricantes y demás aceites de uso técnico: Los productos destinados a la alimentación de los órganos de propulsión o al funcionamiento de las demás máquinas y aparatos de a bordo.</p>
+        <p class="parrafo">c) Productos accesorios de a bordo: Los de consumo para uso doméstico, los destinados a la alimentación de los animales transportados y los consumibles utilizados para la conservación, tratamiento y preparación a bordo de las mercancías transportadas.</p>
+        <p class="parrafo_2">Cuarto. Depósitos normales de combustibles y carburantes: Los comunicados directamente con los órganos de propulsión, máquinas y aparatos de a bordo.</p>
+        <p class="parrafo">Quinto. Régimen de depósito distinto de los aduaneros: El definido como tal en la Ley reguladora de los Impuestos Especiales.</p>
+        <p class="parrafo">Sexto. Para la conversión de las cantidades fijadas en Ecus en los artículos 14 y 68 de esta Ley, se aplicará la equivalencia de 1 Ecu igual a 129,98 pesetas.</p>
+        <blockquote>
+          <p class="nota_pie">Redactado el punto 2 conforme a la correción de errores publicada en BOE núm. 33, de 8 de febrero de 1993. <a class="refPost">Ref. BOE-A-1993-3297</a></p>
+        </blockquote>
+      </version>
+      <version id_norma="BOE-A-2014-12329" fecha_publicacion="20141128" fecha_vigencia="20150101">
+        <p class="anexo">ANEXO</p>
+        <p class="parrafo">A los efectos de lo dispuesto en esta Ley se considerará:</p>
+        <p class="parrafo_2">Primero. Buques: Los comprendidos en las partidas 89.01; 89.02; 89.03; 89.04 y 89.06.10 del Arancel Aduanero.</p>
+        <p class="parrafo">Segundo. Aeronaves: Los aerodinos que funcionen con ayuda de una máquina propulsora comprendidos en la partida 88.02 del Arancel de Aduanas.</p>
+        <p class="parrafo">Tercero. Productos de avituallamiento: Las provisiones de a bordo, los combustibles, carburantes, lubricantes y demás aceites de uso técnico y los productos accesorios de a bordo.</p>
+        <p class="parrafo_2">Se entenderá por:</p>
+        <p class="parrafo_2">a) Provisiones de a bordo: Los productos destinados exclusivamente al consumo de la tripulación y de los pasajeros.</p>
+        <p class="parrafo">b) Combustibles, carburantes, lubricantes y demás aceites de uso técnico: Los productos destinados a la alimentación de los órganos de propulsión o al funcionamiento de las demás máquinas y aparatos de a bordo.</p>
+        <p class="parrafo">c) Productos accesorios de a bordo: Los de consumo para uso doméstico, los destinados a la alimentación de los animales transportados y los consumibles utilizados para la conservación, tratamiento y preparación a bordo de las mercancías transportadas.</p>
+        <p class="parrafo_2">Cuarto. Depósitos normales de combustibles y carburantes: Los comunicados directamente con los órganos de propulsión, máquinas y aparatos de a bordo.</p>
+        <p class="parrafo_2">Quinto. Régimen de depósito distinto de los aduaneros:</p>
+        <p class="parrafo_2">Definición del régimen:</p>
+        <p class="parrafo_2">a) En relación con los bienes objeto de Impuestos Especiales, el régimen de depósito distinto de los aduaneros será el régimen suspensivo aplicable en los supuestos de fabricación, transformación o tenencia de productos objeto de los Impuestos Especiales de fabricación en fábricas o depósitos fiscales, de circulación de los referidos productos entre dichos establecimientos y de importación de los mismos con destino a fábrica o depósito fiscal.</p>
+        <p class="parrafo">Lo dispuesto en el párrafo anterior resultará igualmente aplicable al gas natural entregado a través de una red situada en el territorio de la Comunidad o de cualquier red conectada a dicha red.</p>
+        <p class="parrafo">b) En relación con los demás bienes, el régimen de depósito distinto de los aduaneros será el régimen suspensivo aplicable a los bienes excluidos del régimen de depósito aduanero por razón de su origen o procedencia, con sujeción en lo demás, a las mismas normas que regulan el mencionado régimen aduanero.</p>
+        <p class="parrafo">También se incluirán en este régimen los bienes que se negocien en mercados oficiales de futuros y opciones basados en activos no financieros, mientras los referidos bienes no se pongan a disposición del adquirente.</p>
+        <p class="parrafo">El régimen de depósito distinto de los aduaneros a que se refiere esta letra b) no será aplicable a los bienes destinados a su entrega a personas que no actúen como empresarios o profesionales con excepción de los destinados a ser introducidos en las tiendas libres de impuestos.</p>
+        <p class="parrafo">Los titulares de los depósitos a que se refiere este precepto serán responsables subsidiarios del pago de la deuda tributaria que corresponda a la salida o abandono de los bienes de estos depósitos, con excepción de aquéllos a que se refiere la letra a) de esta disposición, independientemente de que puedan actuar como representantes fiscales de los empresarios o profesionales no establecidos en el ámbito espacial del impuesto.</p>
+        <blockquote class="noDesde20160101">
+          <p class="parrafo">Téngase en cuenta que esta modificación del apartado 5 establecida por el art. 41 de la Ley 28/2014, de 27 de noviembre. <a class="refPost">Ref. BOE-A-2014-12329</a>. es aplicable a partir del 1 de enero de 2016.</p>
+          <p class="cita_con_pleca">Redacción anterior:</p>
+          <p class="parrafo">Quinto. Régimen de depósito distinto de los aduaneros:</p>
+          <p class="parrafo">Definición del régimen:</p>
+          <p class="parrafo_2">a) En relación con los bienes objeto de Impuestos Especiales, el régimen de depósito distinto de los aduaneros será el régimen suspensivo aplicable en los supuestos de fabricación, transformación o tenencia de los productos objeto de los Impuestos Especiales de fabricación en fábricas o depósitos fiscales, de circulación de los referidos productos entre dichos establecimientos y de importación de los mismos con destino a fábrica o depósito fiscal.</p>
+          <p class="parrafo">Lo dispuesto en el párrafo anterior resultará igualmente aplicable al gas natural entregado a través de una red situada en el territorio de la Comunidad o de cualquier red conectada a dicha red.</p>
+          <p class="parrafo">b) En relación con los demás bienes, el régimen de depósito distinto de los aduaneros será el régimen suspensivo aplicable a los bienes excluidos del régimen de depósito aduanero por razón de su origen o procedencia con sujeción, en lo demás, a las mismas normas que regulan el mencionado régimen aduanero.</p>
+          <p class="parrafo">También se incluirán en este régimen los bienes que se negocien en mercados oficiales de futuros y opciones basados en activos no financieros, mientras los referidos bienes no se pongan a disposición del adquirente.</p>
+          <p class="parrafo">El régimen de depósito distinto de los aduaneros a que se refiere este párrafo b) no será aplicable a los bienes destinados a su entrega a personas que no actúen como empresarios o profesionales con excepción de los destinados a ser introducidos en las tiendas libres de impuestos.</p>
+        </blockquote>
+        <p class="parrafo_2">Sexto. Liquidación del impuesto en los casos comprendidos en el artículo 19, número 5.o, párrafo segundo, de esta Ley.</p>
+        <p class="parrafo">La liquidación del impuesto en los casos comprendidos en el artículo 19, número 5.o, párrafo segundo de esta Ley, se ajustará a las siguientes normas:</p>
+        <p class="parrafo_2">1.º Cuando los bienes salgan de las áreas o abandonen los regímenes comprendidos en los ar tículos 23 y 24 se producirá la obligación de liquidar el impuesto correspondiente a las operaciones que se hubiesen beneficiado previamente de la exención por su entrada en las áreas o vinculación a los regímenes indicados, de acuerdo con las siguientes reglas:</p>
+        <p class="parrafo_2">a) Si los bienes hubiesen sido objeto de una o varias entregas exentas previas, el impuesto a ingresar será el que hubiere correspondido a la última entrega exenta efectuada.</p>
+        <p class="parrafo">b) Si los bienes hubiesen sido objeto de una adquisición intracomunitaria exenta por haberse introducido en las áreas o vinculado a los regímenes indicados y no hubiesen sido objeto de una posterior entrega exenta, el impuesto a ingresar será el que hubiere correspondido a aquella operación de no haberse beneficiado de la exención.</p>
+        <p class="parrafo">c) Si los bienes hubiesen sido objeto de operaciones exentas realizadas con posterioridad a las indicadas en las letras a) o b) anteriores o no se hubiesen realizado estas últimas operaciones, el impuesto a ingresar será el que, en su caso, resulte de lo dispuesto en dichas letras, incrementado en el que hubiere correspondido a las citadas operaciones posteriores exentas.</p>
+        <p class="parrafo">d) Si los bienes hubiesen sido objeto de una importación exenta por haberse vinculado al régimen de depósito distinto de los aduaneros y hubiesen sido objeto de operaciones exentas realizadas con posterioridad a dicha importación, el impuesto a ingresar será el que hubiera correspondido a la citada importación de no haberse beneficiado de la exención, incrementado en el correspondiente a las citadas operaciones exentas.</p>
+        <p class="parrafo_2">2.º La persona obligada a la liquidación e ingreso de las cuotas correspondientes a la salida de las áreas o abandono de los regímenes mencionados será el propietario de los bienes en ese momento, que tendrá la condición de sujeto pasivo y deberá presentar la declaración-liquidación relativa a las operaciones a que se refiere el artículo 167, apartado uno, de esta Ley.</p>
+        <p class="parrafo">El obligado a ingresar las cuotas indicadas podrá deducirlas de acuerdo con lo previsto en la Ley para los supuestos contemplados en su artículo 84, apartado uno, número 2.o</p>
+        <p class="parrafo">Los empresarios o profesionales no establecidos en el territorio de aplicación del impuesto que resulten ser sujetos pasivos del mismo, de acuerdo con lo dispuesto en este número, podrán deducir las cuotas liquidadas por esta causa en las mismas condiciones y forma que los establecidos en dicho territorio.</p>
+        <p class="parrafo">3.º Los titulares de las áreas o depósitos a que se refiere este precepto serán responsables solidarios del pago de la deuda tributaria que corresponda, según lo dispuesto en los números anteriores de este apartado sexto, independientemente de que puedan actuar como representantes fiscales de los empresarios o profesionales no establecidos en el ámbito espacial del impuesto.</p>
+        <p class="parrafo_2">Séptimo. Desperdicios o desechos de fundición, de hierro o acero, chatarra o lingotes de chatarra de hierro o acero, desperdicios o desechos de metales no férricos o sus aleaciones, escorias, cenizas y residuos de la industria que contengan metales o sus aleaciones.</p>
+        <p class="parrafo">Se considerarán desperdicios o desechos de fundición, de hierro o acero, chatarra o lingotes de chatarra de hierro o acero, desperdicios o desechos de metales no férricos o sus aleaciones, escorias, cenizas y residuos de la industria que contengan metales o sus aleaciones los comprendidos en las partidas siguientes del Arancel de Aduanas:</p>
+        <table class="tabla" border="0" summary="Tabla de datos">
+          <tbody>
+            <tr>
+              <th>
+                <p class="cabeza_tabla">Códi. NCE</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Designación de la mercancía</p>
+              </th>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7204</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de fundición de hierro o acero (chatarra y lingotes).</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="parrafo">Los desperdicios y desechos de los metales férricos comprenden:</p>
+        <p class="parrafo_2">a) Desperdicios obtenidos durante la fabricación o el mecanizado de la fundición del hierro o del acero, tales como las torneaduras, limaduras, despuntes de lingotes, de palanquillas, de barras o de perfiles.</p>
+        <p class="parrafo">b) Las manufacturas de fundición de hierro o acero definitivamente inutilizables como tales por roturas, cortes, desgaste u otros motivos, así como sus desechos, incluso si alguna de sus partes o piezas son reutilizables.</p>
+        <p class="parrafo_2">No se comprenden los productos susceptibles de utilizarse para su uso primitivo tal cual o después de repararlos.</p>
+        <p class="parrafo">Los lingotes de chatarra son generalmente de hierro o acero muy aleado, toscamente colados, obtenidos a partir de desperdicios y desechos finos refundidos (polvos de amolado o torneaduras finas) y su superficie es rugosa e irregular.</p>
+        <table class="tabla" border="0" width="750" height="334" summary="Tabla de datos">
+          <tbody>
+            <tr>
+              <th>
+                <p class="cabeza_tabla">Cód. NCE</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Designación de la mercancía</p>
+              </th>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7402</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Cobre sin refinar ; ánodos de cobre para refinado.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7403</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Cobre refinado en forma de cátodos y secciones de cátodo.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7404</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de cobre.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7407</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Barras y perfiles de cobre.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7408.11.00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Alambre de cobre refinado, en el que la mayor dimensión de la sección transversal sea T6 mm.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7408.19.10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Alambre de cobre refinado, en el que la mayor dimensión de la sección transversal sea de T 05 mm, pero R= 6 mm.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7502</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Niquel</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7503</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de níquel.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7601</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Aluminio en bruto.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7602</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de aluminio.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7605.11</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Alambre de aluminio sin alear.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7605.21</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Alambre de aluminio aleado.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7801</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Plomo</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7802</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de plomo.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7901</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Zinc.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7902</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de cinc (calamina).</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">8001</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Estaño</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">8002</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de estaño.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">2618</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Escorias granuladas (arena de escorias) de la siderurgia.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">2619</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Escorias (excepto granulados), batiduras y demás desperdicios de la siderurgia.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">2620</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Cenizas y residuos (excepto siderurgia) que contenga metal o compuestos de metal.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">47.07</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios o desechos de papel o cartón. Los desperdicios de papel o cartón comprenden las raspaduras, recortes, hojas rotas, periódicos viejos y publicaciones, maculaturas y pruebas de imprenta y artículos similares. La definición comprende también las manufacturas viejas de papel o de cartón vendidas para su reciclaje.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">70.01</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios o desechos de vidrio. Los desperdicios o desechos de vidrio comprenden los residuos de la fabricación de objetos de vidrio, así como los producidos por su uso o consumo. Se caracterizan generalmente por sus aristas cortantes.</p>
+                <p class="cuerpo_tabla_izq">Baterias de plomo recuperadas.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="parrafo">Octavo. Relación de bienes a que se refiere el artículo 91.Uno.1.6.ºc) de esta Ley.</p>
+        <p class="parrafo_2">– Las gafas, lentes de contacto graduadas y los productos necesarios para su uso, cuidado y mantenimiento.</p>
+        <p class="parrafo">– Dispositivos de punción, dispositivos de lectura automática del nivel de glucosa, dispositivos de administración de insulina y demás aparatos para el autocontrol y tratamiento de la diabetes.</p>
+        <p class="parrafo">– Dispositivos para el autocontrol de los cuerpos cetónicos y de la coagulación sanguínea y otros dispositivos de autocontrol y tratamiento de enfermedades discapacitantes como los sistemas de infusión de morfina y medicamentos oncológicos.</p>
+        <p class="parrafo">– Bolsas de recogida de orina, absorbentes de incontinencia y otros sistemas para incontinencia urinaria y fecal, incluidos los sistemas de irrigación.</p>
+        <p class="parrafo">– Prótesis, ortesis, ortoprótesis e implantes quirúrgicos, en particular los previstos en el Real Decreto 1030/2006, de 15 de septiembre, por el que se establece la cartera de servicios comunes del Sistema Nacional de Salud y el procedimiento para su actualización, incluyendo sus componentes y accesorios.</p>
+        <p class="parrafo">– Las cánulas de traqueotomía y laringectomía.</p>
+        <p class="parrafo">– Sillas terapéuticas y de ruedas, así como los cojines antiescaras y arneses para el uso de las mismas, muletas, andadores y grúas para movilizar personas con discapacidad.</p>
+        <p class="parrafo">– Plataformas elevadoras, ascensores para sillas de ruedas, adaptadores de sillas en escaleras, rampas portátiles y barras autoportantes para incorporarse por sí mismo.</p>
+        <p class="parrafo">– Aparatos y demás instrumental destinados a la reducción de lesiones o malformaciones internas, como suspensorios y prendas de compresión para varices.</p>
+        <p class="parrafo">– Dispositivos de tratamiento de diálisis domiciliaria y tratamiento respiratorios.</p>
+        <p class="parrafo">– Los equipos médicos, aparatos y demás instrumental, destinados a compensar un defecto o una incapacidad, que estén diseñados para uso personal y exclusivo de personas con deficiencia visual y auditiva.</p>
+        <p class="parrafo">– Los siguientes productos de apoyo que estén diseñados para uso personal y exclusivo de personas con deficiencia física, mental, intelectual o sensorial:</p>
+        <p class="parrafo_2">• Productos de apoyo para vestirse y desvestirse: calzadores y sacabotas con mangos especiales para poder llegar al suelo, perchas, ganchos y varillas para sujetar la ropa en una posición fija.</p>
+        <p class="parrafo">• Productos de apoyo para funciones de aseo: alzas, reposabrazos y respaldos para el inodoro.</p>
+        <p class="parrafo">• Productos de apoyo para lavarse, bañarse y ducharse: cepillos y esponjas con mangos especiales, sillas para baño o ducha, tablas de bañera, taburetes, productos de apoyo para reducir la longitud o profundidad de la bañera, barras y asideros de apoyo.</p>
+        <p class="parrafo">• Productos de apoyo para posibilitar el uso de las nuevas tecnologías de la información y comunicación, como ratones por movimientos cefálicos u oculares, teclados de alto contraste, pulsadores de parpadeo, software para posibilitar la escritura y el manejo del dispositivo a personas con discapacidad motórica severa a través de la voz.</p>
+        <p class="parrafo">• Productos de apoyo y dispositivos que posibilitan a personas con discapacidad motórica agarrar, accionar, alcanzar objetos: pinzas largas de agarre y adaptadores de agarre.</p>
+        <p class="parrafo">• Estimuladores funcionales.</p>
+        <p class="parrafo_2">Noveno. Peso de los lingotes o láminas de oro a efectos de su consideración como oro de inversión.</p>
+        <p class="parrafo">Se considerarán oro de inversión a efectos de esta Ley los lingotes o láminas de oro de ley igual o superior a 995 milésimas y que se ajusten a alguno de los pesos siguientes en la forma aceptada por los mercados de lingotes:</p>
+        <table class="tabla" border="0" summary="Tabla de datos">
+          <tbody>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">12,5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">kilogramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">kilogramo.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">500</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">250</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">100</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">50</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">20</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">2,5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">2</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">100</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onza.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">0,5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">0,25</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">tael.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">tael.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">tael.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">tolas.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="parrafo">Décimo. Entregas de plata, platino, paladio, así como la entrega de teléfonos móviles, consolas de videojuegos, ordenadores portátiles y tabletas digitales.</p>
+        <table class="tabla" border="0" summary="Tabla de datos">
+          <tbody>
+            <tr>
+              <th>
+                <p class="cabeza_tabla">Cód. NCE</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Designación de la mercancía</p>
+              </th>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7106 10 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Plata en polvo</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7106 91 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Plata en bruto</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7106 92 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Plata semilabrada</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7110 11 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Platino en bruto, o en polvo</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7110 19</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Platino. Los demás</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7110 21 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Paladio en bruto o en polvo</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7110 29 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Paladio. Los demás</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">8517 12</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Teléfonos móviles (celulares) y los de otras redes inalámbricas. Exclusivamente por lo que se refiere a los teléfonos móviles</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">9504 50</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Videoconsolas y máquinas de videojuego excepto las de la subpartida 950430. Exclusivamente por lo que se refiere a las consolas de videojuego</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">8471 30</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Máquinas automáticas para tratamiento o procesamiento de datos, portátiles, de peso inferior a 10 kg, que estén constituidas, al menos, por una unidad central de proceso, un teclado y un visualizador.</p>
+                <p class="cuerpo_tabla_izq">Exclusivamente por lo que se refiere a ordenadores portátiles y tabletas digitales.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <blockquote>
+          <p class="nota_pie">Se añaden los apartados 8 y 10 y se modifica el 5 por el art. 1.41 de la Ley 28/2014, de 27 de noviembre. <a class="refPost">Ref. BOE-A-2014-12329</a>.</p>
+          <p class="nota_pie_2">La modificación del apartado 5 es aplicable a partir del 1 de enero de 2016 según establece la disposición final 5.</p>
+          <p class="nota_pie">Se modifica el apartado 5 a) por el art. 79.13 de la Ley 39/2010, de 22 de diciembre. <a class="refPost">Ref. BOE-A-2010-19703</a>.</p>
+          <p class="nota_pie">Se modifica el apartado 7º por el art. 7.3 de la Ley 62/2003, de 30 de diciembre. <a class="refPost">Ref. BOE-A-2003-23936</a>.</p>
+          <p class="nota_pie">Se modifica el apartado 5º b) por el art. 4.28 de la Ley 53/2002, de 30 de diciembre. <a class="refPost">Ref. BOE-A-2002-25412</a>.</p>
+          <p class="nota_pie">Se deroga el apartado 8º por la disposición derogatoria única.3 de la Ley 24/2001, de 27 de diciembre. <a class="refPost">Ref. BOE-A-2001-24965</a>.</p>
+          <p class="nota_pie">Se modifican los apartados 5.a), 6.3º y se añade el 9 por el art 6.19 a 21 de la Ley 55/1999, de 29 de diciembre. <a class="refPost">Ref. BOE-A-1999-24786</a>.</p>
+          <p class="nota_pie">Se modifica el apartado 5.b) por el art. único.2 del Real Decreto-Ley 10/1999, de 11 de junio. <a class="refPost">Ref. BOE-A-1999-13070</a>.</p>
+          <p class="nota_pie">Se modifica el apartado 5 y 6 y se añade el 8 por el art. único.7 y 8 de la Ley 9/1998, de 21 de abril. <a class="refPost">Ref. BOE-A-1998-9477</a>.</p>
+          <p class="nota_pie">Se añade el apartado 7 por el art. 6.26.3 de la Ley 66/1997, de 30 de diciembre. <a class="refPost">Ref. BOE-A-1997-28053</a></p>
+          <p class="nota_pie">Se modifica el apartado 5 por el art. único.7 del Real Decreto-Ley 14/1997, de 29 de agosto. <a class="refPost">Ref. BOE-A-1997-19125</a></p>
+          <p class="nota_pie">Se modifica el apartado 5 por la disposición adicional 18 de la Ley 42/1994, de 30 de diciembre. <a class="refPost">Ref. BOE-A-1994-28968</a>.</p>
+          <p class="nota_pie_2">Redactado conforme a la corrección de errores publicada en BOE núm. 40, de 16 de febrero de 1995. <a class="refPost">Ref. BOE-A-1995-4035</a>.<a href="http://www.boe.es/diario_boe/txt.php?id=BOE-A-1995-4035" target="_blank"><br/></a></p>
+          <p class="nota_pie">Redactado el punto 2 conforme a la correción de errores publicada en BOE núm. 33, de 8 de febrero de 1993. <a class="refPost">Ref. BOE-A-1993-3297</a></p>
+        </blockquote>
+      </version>
+      <version id_norma="BOE-A-1994-28968" fecha_publicacion="19941231" fecha_vigencia="19950101">
+        <p class="anexo">ANEXO</p>
+        <p class="parrafo">A los efectos de lo dispuesto en esta Ley se considerará:</p>
+        <p class="parrafo_2">Primero. Buques: Los comprendidos en las partidas 89.01; 89.02; 89.03; 89.04 y 89.06.10 del Arancel Aduanero.</p>
+        <p class="parrafo">Segundo. Aeronaves: Los aerodinos que funcionen con ayuda de una máquina propulsora comprendidos en la partida 88.02 del Arancel de Aduanas.</p>
+        <p class="parrafo">Tercero. Productos de avituallamiento: Las provisiones de a bordo, los combustibles, carburantes, lubricantes y demás aceites de uso técnico y los productos accesorios de a bordo.</p>
+        <p class="parrafo">Se entenderá por:</p>
+        <p class="parrafo_2">a) Provisiones de a bordo: Los productos destinados exclusivamente al consumo de la tripulación y de los pasajeros.</p>
+        <p class="parrafo">b) Combustibles, carburantes, lubricantes y demás aceites de uso técnico: Los productos destinados a la alimentación de los órganos de propulsión o al funcionamiento de las demás máquinas y aparatos de a bordo.</p>
+        <p class="parrafo">c) Productos accesorios de a bordo: Los de consumo para uso doméstico, los destinados a la alimentación de los animales transportados y los consumibles utilizados para la conservación, tratamiento y preparación a bordo de las mercancías transportadas.</p>
+        <p class="parrafo_2">Cuarto. Depósitos normales de combustibles y carburantes: Los comunicados directamente con los órganos de propulsión, máquinas y aparatos de a bordo.</p>
+        <p class="parrafo">Quinto. Régimen de depósito distinto de los aduaneros.</p>
+        <p class="parrafo_2">a) En relación con los bienes objeto de impuestos especiales, el régimen de depósito distinto de los aduaneros será el régimen suspensivo aplicable en los supuestos de fabricación, transformación o tenencia de productos objeto de los impuestos especiales de fabricación en fábricas o depósitos fiscales, de circulación de los referidos productos entre dichos establecimientos y de importación de los mismos con destino a fábrica o depósito fiscal.</p>
+        <p class="parrafo">b) En relación con los demás bienes, el régimen de depósito distinto de los aduaneros será el régimen suspensivo aplicable a los bienes excluidos del régimen de depósito aduanero por razón de su origen o procedencia, con sujeción, en lo demás, a las mismas normas que regulan el mencionado régimen aduanero.</p>
+        <p class="parrafo_2">También se incluirán en este régimen los bienes que se negocian en mercados oficiales de futuros y opciones basados en activos no financieros, mientras los referidos bienes no se pongan a disposición del adquirente.</p>
+        <p class="parrafo">El régimen de depósito distinto de los aduaneros a que se refiere esta letra b) no será aplicable a los bienes destinados a su entrega a personas que no actúan como empresarios o profesionales con excepción de las entregas efectuadas en las tiendas libres de impuestos a que se refiere el artículo 25, apartado cuatro, de esta Ley.</p>
+        <p class="parrafo">Sexto. Para la conversión de las cantidades fijadas en Ecus en los artículos 14 y 68 de esta Ley, se aplicará la equivalencia de 1 Ecu igual a 129,98 pesetas.</p>
+        <blockquote>
+          <p class="nota_pie">Se modifica el apartado 5 por la disposición adicional 18 de la Ley 42/1994, de 30 de diciembre. <a class="refPost">Ref. BOE-A-1994-28968</a>.</p>
+          <p class="nota_pie_2">Redactado conforme a la corrección de errores publicada en BOE núm. 40, de 16 de febrero de 1995. <a class="refPost">Ref. BOE-A-1995-4035</a>.<a href="http://www.boe.es/diario_boe/txt.php?id=BOE-A-1995-4035" target="_blank"><br/></a></p>
+          <p class="nota_pie">Redactado el punto 2 conforme a la correción de errores publicada en BOE núm. 33, de 8 de febrero de 1993. <a class="refPost">Ref. BOE-A-1993-3297</a></p>
+        </blockquote>
+      </version>
+      <version id_norma="BOE-A-2022-22128" fecha_publicacion="20221224" fecha_vigencia="20230101">
+        <p class="anexo">ANEXO</p>
+        <p class="parrafo">A los efectos de lo dispuesto en esta Ley se considerará:</p>
+        <p class="parrafo_2">Primero. Buques: Los comprendidos en las partidas 89.01; 89.02; 89.03; 89.04 y 89.06.10 del Arancel Aduanero.</p>
+        <p class="parrafo">Segundo. Aeronaves: Los aerodinos que funcionen con ayuda de una máquina propulsora comprendidos en la partida 88.02 del Arancel de Aduanas.</p>
+        <p class="parrafo">Tercero. Productos de avituallamiento: Las provisiones de a bordo, los combustibles, carburantes, lubricantes y demás aceites de uso técnico y los productos accesorios de a bordo.</p>
+        <p class="parrafo_2">Se entenderá por:</p>
+        <p class="parrafo_2">a) Provisiones de a bordo: Los productos destinados exclusivamente al consumo de la tripulación y de los pasajeros.</p>
+        <p class="parrafo">b) Combustibles, carburantes, lubricantes y demás aceites de uso técnico: Los productos destinados a la alimentación de los órganos de propulsión o al funcionamiento de las demás máquinas y aparatos de a bordo.</p>
+        <p class="parrafo">c) Productos accesorios de a bordo: Los de consumo para uso doméstico, los destinados a la alimentación de los animales transportados y los consumibles utilizados para la conservación, tratamiento y preparación a bordo de las mercancías transportadas.</p>
+        <p class="parrafo_2">Cuarto. Depósitos normales de combustibles y carburantes: Los comunicados directamente con los órganos de propulsión, máquinas y aparatos de a bordo.</p>
+        <p class="parrafo_2">Quinto. Régimen de depósito distinto de los aduaneros:</p>
+        <p class="parrafo_2">Definición del régimen:</p>
+        <p class="parrafo_2">a) En relación con los bienes objeto de Impuestos Especiales, el régimen de depósito distinto de los aduaneros será el régimen suspensivo aplicable en los supuestos de fabricación, transformación o tenencia de productos objeto de los Impuestos Especiales de fabricación en fábricas o depósitos fiscales, de circulación de los referidos productos entre dichos establecimientos y de importación de los mismos con destino a fábrica o depósito fiscal.</p>
+        <p class="parrafo">Lo dispuesto en el párrafo anterior resultará igualmente aplicable al gas natural entregado a través de una red situada en el territorio de la Comunidad o de cualquier red conectada a dicha red.</p>
+        <p class="parrafo">b) En relación con los demás bienes, el régimen de depósito distinto de los aduaneros será el régimen suspensivo aplicable a los bienes excluidos del régimen de depósito aduanero por razón de su origen o procedencia, con sujeción en lo demás, a las mismas normas que regulan el mencionado régimen aduanero.</p>
+        <p class="parrafo">También se incluirán en este régimen los bienes que se negocien en mercados oficiales de futuros y opciones basados en activos no financieros, mientras los referidos bienes no se pongan a disposición del adquirente.</p>
+        <p class="parrafo">El régimen de depósito distinto de los aduaneros a que se refiere esta letra b) no será aplicable a los bienes destinados a su entrega a personas que no actúen como empresarios o profesionales con excepción de los destinados a ser introducidos en las tiendas libres de impuestos.</p>
+        <p class="parrafo">Los titulares de los depósitos a que se refiere este precepto serán responsables subsidiarios del pago de la deuda tributaria que corresponda a la salida o abandono de los bienes de estos depósitos, independientemente de que puedan actuar como representantes fiscales de los empresarios o profesionales no establecidos en el ámbito espacial del impuesto.</p>
+        <p class="parrafo">No obstante, los titulares de depósitos fiscales de productos comprendidos en los ámbitos objetivos de los Impuestos sobre el Alcohol y Bebidas Derivadas y sobre Hidrocarburos serán responsables subsidiarios del pago de la deuda tributaria correspondiente a las entregas de dichos productos efectuadas por los sujetos pasivos de las operaciones asimiladas a las importaciones de bienes devengadas con ocasión de la salida o el abandono de los bienes del régimen de depósito distinto del aduanero. Dicha responsabilidad subsidiaria solo será exigible cuando el extractor, o la persona autorizada por el mismo, no esté incluido en el Registro de extractores que reglamentariamente se establezca, y su importe no podrá exceder del de las cuotas devengadas por aplicación del artículo 19.5.º de esta Ley con ocasión de la salida o el abandono de los bienes del régimen de depósito distinto de los aduaneros.</p>
+        <p class="parrafo">A los efectos de esta Ley se consideran extractores las personas o entidades que sean los sujetos pasivos de las operaciones asimiladas a las importaciones de bienes, devengadas con ocasión de la salida o el abandono de los productos comprendidos en los ámbitos objetivos de los Impuestos sobre el Alcohol y Bebidas Derivadas y sobre Hidrocarburos del régimen de depósito distinto de los aduaneros, las que realicen el envío de los bienes en régimen suspensivo con destino a otro depósito fiscal, así como las autorizadas para realizar dichas operaciones.</p>
+        <p class="parrafo">Las personas o entidades extractoras deberán hallarse inscritas en el Registro de extractores. Los titulares de los depósitos fiscales deberán verificar que las personas o entidades que realizan las operaciones que determinan su inclusión están incluidas en el Registro de extractores de depósitos fiscales de productos comprendidos en los ámbitos objetivos de los Impuestos sobre el Alcohol y Bebidas Derivadas o sobre Hidrocarburos.</p>
+        <p class="parrafo_2">Sexto. Liquidación del Impuesto en los casos comprendidos en el artículo 19, número 5.º, párrafo segundo, de esta ley:</p>
+        <p class="parrafo_2">La liquidación del Impuesto en los casos comprendidos en el artículo 19, número 5.º, párrafo segundo, de esta ley, se ajustará a las siguientes normas:</p>
+        <p class="parrafo_2">1.º Cuando cesen las situaciones o se ultimen los regímenes comprendidos en los artículos 23 y 24, se producirá la obligación de liquidar el Impuesto correspondiente a las operaciones que se hubiesen beneficiado previamente de la exención por su colocación en las situaciones o vinculación a los regímenes indicados, de acuerdo con las siguientes reglas:</p>
+        <p class="parrafo_2">a) Si los bienes hubiesen sido objeto de una o varias entregas exentas previas, el Impuesto a ingresar será el que hubiere correspondido a la última entrega exenta efectuada.</p>
+        <p class="parrafo">b) Si los bienes hubiesen sido objeto de una adquisición intracomunitaria exenta por haberse colocado en las situaciones o vinculado a los regímenes indicados y no hubiesen sido objeto de una posterior entrega exenta, el Impuesto a ingresar será el que hubiere correspondido a aquella operación de no haberse beneficiado de la exención.</p>
+        <p class="parrafo">c) Si los bienes hubiesen sido objeto de operaciones exentas realizadas con posterioridad a las indicadas en las letras a) o b) anteriores o no se hubiesen realizado estas últimas operaciones, el Impuesto a ingresar será el que, en su caso, resulte de lo dispuesto en dichas letras, incrementado en el que hubiere correspondido a las citadas operaciones posteriores exentas.</p>
+        <p class="parrafo">d) Si los bienes hubiesen sido objeto de una importación exenta por haberse vinculado al régimen de depósito distinto de los aduaneros y hubiesen sido objeto de operaciones exentas realizadas con posterioridad a dicha importación, el Impuesto a ingresar será el que hubiera correspondido a la citada importación de no haberse beneficiado de la exención, incrementado en el correspondiente a las citadas operaciones exentas.</p>
+        <p class="parrafo_2">2.º La persona obligada a la liquidación e ingreso de las cuotas correspondientes al cese de las situaciones o la ultimación de los regímenes mencionados será el propietario de los bienes en ese momento, que tendrá la condición de sujeto pasivo y deberá presentar la declaración-liquidación relativa a las operaciones a que se refiere el artículo 167, apartado uno, de esta ley.</p>
+        <p class="parrafo">El obligado a ingresar las cuotas indicadas podrá deducirlas de acuerdo con lo previsto en la Ley para los supuestos contemplados en su artículo 84, apartado uno, número 2.º</p>
+        <p class="parrafo">Los empresarios o profesionales no establecidos en el territorio de aplicación del Impuesto que resulten ser sujetos pasivos del mismo, de acuerdo con lo dispuesto en este número, podrán deducir las cuotas liquidadas por esta causa en las mismas condiciones y forma que los establecidos en dicho territorio.</p>
+        <p class="parrafo">3.º Los titulares de los depósitos a que se refiere este precepto serán responsables solidarios del pago de la deuda tributaria que corresponda, según lo dispuesto en los números anteriores de este apartado sexto, independientemente de que puedan actuar como representantes fiscales de los empresarios o profesionales no establecidos en el ámbito espacial del Impuesto.</p>
+        <p class="parrafo_2">Séptimo. Desperdicios o desechos de fundición, de hierro o acero, chatarra o lingotes de chatarra de hierro o acero, desperdicios o desechos de metales no férricos o sus aleaciones, escorias, cenizas y residuos de la industria que contengan metales o sus aleaciones.</p>
+        <p class="parrafo">Se considerarán desperdicios o desechos de fundición, de hierro o acero, chatarra o lingotes de chatarra de hierro o acero, desperdicios o desechos de metales no férricos o sus aleaciones, escorias, cenizas y residuos de la industria que contengan metales o sus aleaciones los comprendidos en las partidas siguientes del Arancel de Aduanas:</p>
+        <table class="ning_n_estilo_de_tabla">
+          <colgroup>
+            <col class="row_column_11"/>
+            <col class="row_column_45"/>
+          </colgroup>
+          <thead>
+            <tr class="row_column_7">
+              <td>
+                <p class="cabeza_tabla">Cód. NCE</p>
+              </td>
+              <td>
+                <p class="cabeza_tabla">Designación de la Mercancía</p>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7204</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de fundición de hierro o acero (chatarra y lingotes).</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="parrafo_2">Los desperdicios y desechos de los metales férricos comprenden:</p>
+        <p class="parrafo_2">a) Desperdicios obtenidos durante la fabricación o el mecanizado de la fundición del hierro o del acero, tales como las torneaduras, limaduras, despuntes de lingotes, de palanquillas, de barras o de perfiles.</p>
+        <p class="parrafo">b) Las manufacturas de fundición de hierro o acero definitivamente inutilizables como tales por roturas, cortes, desgaste u otros motivos, así como sus desechos, incluso si algunas de sus partes o piezas son reutilizables.</p>
+        <p class="parrafo_2">No se comprenden los productos susceptibles de utilizarse para su uso primitivo tal cual o después de repararlos.</p>
+        <p class="parrafo">Los lingotes de chatarra son generalmente de hierro o acero muy aleado, toscamente colados, obtenidos a partir de desperdicios y desechos finos refundidos (polvos de amolado o torneaduras finas) y su superficie es rugosa e irregular.</p>
+        <table class="ning_n_estilo_de_tabla">
+          <colgroup>
+            <col class="row_column_11"/>
+            <col class="row_column_45"/>
+          </colgroup>
+          <thead>
+            <tr class="row_column_7">
+              <td>
+                <p class="cabeza_tabla">Cod. NCE</p>
+              </td>
+              <td>
+                <p class="cabeza_tabla">Designación de la mercancía</p>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7402</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Cobre sin refinar; ánodos de cobre para refinado.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7403</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Cobre refinado en forma de cátodos y secciones de cátodo.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7404</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de cobre.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7407</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Barras y perfiles de cobre.</p>
+              </td>
+            </tr>
+            <tr class="row_column_9">
+              <td>
+                <p class="cuerpo_tabla_centro">7408.11.00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Alambre de cobre refinado, en el que la mayor dimensión de la sección transversal sea &gt; 6 mm.</p>
+              </td>
+            </tr>
+            <tr class="row_column_9">
+              <td>
+                <p class="cuerpo_tabla_centro">7408.19.10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Alambre de cobre refinado, en el que la mayor dimensión de la sección transversal sea de &gt; 0,5 mm, pero &lt;= 6 mm.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7502</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Níquel.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7503</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de níquel.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7601</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Aluminio en bruto.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7602</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de aluminio.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7605 11</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Alambre de aluminio sin alear.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7605.21</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Alambre de aluminio aleado.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7801</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Plomo.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7802</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de plomo.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7901</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Zinc.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">7902</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de cinc (calamina).</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">8001</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Estaño.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">8002</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios y desechos de estaño.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">2618</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Escorias granuladas (arena de escorias) de la siderurgia.</p>
+              </td>
+            </tr>
+            <tr class="row_column_9">
+              <td>
+                <p class="cuerpo_tabla_centro">2619</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Escorias (excepto granulados), batiduras y demás desperdicios de la siderurgia.</p>
+              </td>
+            </tr>
+            <tr class="row_column_9">
+              <td>
+                <p class="cuerpo_tabla_centro">2620</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Cenizas y residuos (excepto siderurgia) que contenga metal o compuestos de metal.</p>
+              </td>
+            </tr>
+            <tr class="row_column_4">
+              <td>
+                <p class="cuerpo_tabla_centro">3915</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desechos, desperdicios y recortes, de plástico.</p>
+              </td>
+            </tr>
+            <tr class="row_column_46">
+              <td>
+                <p class="cuerpo_tabla_centro">47.07</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios o desechos de papel o cartón. Los desperdicios de papel o cartón comprenden las raspaduras, recortes, hojas rotas, periódicos viejos y publicaciones, maculaturas y pruebas de imprenta y artículos similares. La definición comprende también las manufacturas viejas de papel o de cartón vendidas para su reciclaje.</p>
+              </td>
+            </tr>
+            <tr class="row_column_9">
+              <td>
+                <p class="cuerpo_tabla_centro">6310</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Trapos, cordeles, cuerdas y cordajes, de materia textil, en desperdicios o en artículos inservibles.</p>
+              </td>
+            </tr>
+            <tr class="row_column_47">
+              <td>
+                <p class="cuerpo_tabla_centro">70.01</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Desperdicios o desechos de vidrio. Los desperdicios o desechos de vidrio comprenden los residuos de la fabricación de objetos de vidrio, así como los producidos por su uso o consumo. Se caracterizan generalmente por sus aristas cortantes.</p>
+              </td>
+            </tr>
+            <tr class="row_column_3">
+              <td> </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Baterías de plomo recuperadas.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="parrafo">Octavo. Relación de bienes a que se refiere el artículo 91.Uno.1.6.ºc) de esta Ley.</p>
+        <p class="parrafo_2">– Las gafas, monturas para gafas graduadas, lentes de contacto graduadas y los productos necesarios para su uso, cuidado y mantenimiento.</p>
+        <p class="parrafo">– Dispositivos de punción, dispositivos de lectura automática del nivel de glucosa, dispositivos de administración de insulina y demás aparatos para el autocontrol y tratamiento de la diabetes.</p>
+        <p class="parrafo">– Dispositivos para el autocontrol de los cuerpos cetónicos y de la coagulación sanguínea y otros dispositivos de autocontrol y tratamiento de enfermedades discapacitantes como los sistemas de infusión de morfina y medicamentos oncológicos.</p>
+        <p class="parrafo">– Bolsas de recogida de orina, absorbentes de incontinencia y otros sistemas para incontinencia urinaria y fecal, incluidos los sistemas de irrigación.</p>
+        <p class="parrafo">– Prótesis, ortesis, ortoprótesis e implantes quirúrgicos, en particular los previstos en el Real Decreto 1030/2006, de 15 de septiembre, por el que se establece la cartera de servicios comunes del Sistema Nacional de Salud y el procedimiento para su actualización, incluyendo sus componentes y accesorios.</p>
+        <p class="parrafo">– Las cánulas de traqueotomía y laringectomía.</p>
+        <p class="parrafo">– Sillas terapéuticas y de ruedas, así como los cojines antiescaras y arneses para el uso de las mismas, muletas, andadores y grúas para movilizar personas con discapacidad.</p>
+        <p class="parrafo">– Plataformas elevadoras, ascensores para sillas de ruedas, adaptadores de sillas en escaleras, rampas portátiles y barras autoportantes para incorporarse por sí mismo.</p>
+        <p class="parrafo">– Aparatos y demás instrumental destinados a la reducción de lesiones o malformaciones internas, como suspensorios y prendas de compresión para varices.</p>
+        <p class="parrafo">– Dispositivos de tratamiento de diálisis domiciliaria y tratamiento respiratorios.</p>
+        <p class="parrafo">– Los equipos médicos, aparatos y demás instrumental, destinados a compensar un defecto o una incapacidad, que estén diseñados para uso personal y exclusivo de personas con deficiencia visual y auditiva.</p>
+        <p class="parrafo">– Los siguientes productos de apoyo que estén diseñados para uso personal y exclusivo de personas con deficiencia física, mental, intelectual o sensorial:</p>
+        <p class="parrafo_2">• Productos de apoyo para vestirse y desvestirse: calzadores y sacabotas con mangos especiales para poder llegar al suelo, perchas, ganchos y varillas para sujetar la ropa en una posición fija.</p>
+        <p class="parrafo">• Productos de apoyo para funciones de aseo: alzas, reposabrazos y respaldos para el inodoro.</p>
+        <p class="parrafo">• Productos de apoyo para lavarse, bañarse y ducharse: cepillos y esponjas con mangos especiales, sillas para baño o ducha, tablas de bañera, taburetes, productos de apoyo para reducir la longitud o profundidad de la bañera, barras y asideros de apoyo.</p>
+        <p class="parrafo">• Productos de apoyo para posibilitar el uso de las nuevas tecnologías de la información y comunicación, como ratones por movimientos cefálicos u oculares, teclados de alto contraste, pulsadores de parpadeo, software para posibilitar la escritura y el manejo del dispositivo a personas con discapacidad motórica severa a través de la voz.</p>
+        <p class="parrafo">• Productos de apoyo y dispositivos que posibilitan a personas con discapacidad motórica agarrar, accionar, alcanzar objetos: pinzas largas de agarre y adaptadores de agarre.</p>
+        <p class="parrafo">• Estimuladores funcionales.</p>
+        <p class="parrafo_2">Noveno. Peso de los lingotes o láminas de oro a efectos de su consideración como oro de inversión.</p>
+        <p class="parrafo">Se considerarán oro de inversión a efectos de esta Ley los lingotes o láminas de oro de ley igual o superior a 995 milésimas y que se ajusten a alguno de los pesos siguientes en la forma aceptada por los mercados de lingotes:</p>
+        <table border="0" class="tabla" summary="Tabla de datos">
+          <tbody>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">12,5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">kilogramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">kilogramo.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">500</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">250</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">100</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">50</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">20</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">2,5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">2</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">gramos.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">100</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onza.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">0,5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">0,25</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">onzas.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">tael.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">5</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">tael.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">1</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">tael.</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_der">10</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">tolas.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="parrafo">Décimo. Entregas de plata, platino, paladio, así como la entrega de teléfonos móviles, consolas de videojuegos, ordenadores portátiles y tabletas digitales.</p>
+        <table border="0" class="tabla" summary="Tabla de datos">
+          <tbody>
+            <tr>
+              <th>
+                <p class="cabeza_tabla">Cód. NCE</p>
+              </th>
+              <th>
+                <p class="cabeza_tabla">Designación de la mercancía</p>
+              </th>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7106 10 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Plata en polvo</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7106 91 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Plata en bruto</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7106 92 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Plata semilabrada</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7110 11 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Platino en bruto, o en polvo</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7110 19</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Platino. Los demás</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7110 21 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Paladio en bruto o en polvo</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">7110 29 00</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Paladio. Los demás</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">8517 12</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Teléfonos móviles (celulares) y los de otras redes inalámbricas. Exclusivamente por lo que se refiere a los teléfonos móviles</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">9504 50</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Videoconsolas y máquinas de videojuego excepto las de la subpartida 950430. Exclusivamente por lo que se refiere a las consolas de videojuego</p>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="cuerpo_tabla_izq">8471 30</p>
+              </td>
+              <td>
+                <p class="cuerpo_tabla_izq">Máquinas automáticas para tratamiento o procesamiento de datos, portátiles, de peso inferior a 10 kg, que estén constituidas, al menos, por una unidad central de proceso, un teclado y un visualizador.</p>
+                <p class="cuerpo_tabla_izq">Exclusivamente por lo que se refiere a ordenadores portátiles y tabletas digitales.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <blockquote>
+          <p class="nota_pie">Se modifican los apartados sexto y séptimo por el art. 74.9 y el art. 75.2 de la Ley 31/2022, de 23 de diciembre. <a class="refPost">Ref. BOE-A-2022-22128#a7-6</a></p>
+          <p class="nota_pie">Se modifica el último párrafo y se añaden tres párrafos al apartado quinto por el art. 8.3 de la Ley 11/2021, de 9 de julio. <a class="refPost">Ref. BOE-A-2021-11473#ao</a></p>
+          <p class="nota_pie">Se modifica el primer guión del apartado 8 por el art. 61 de la Ley 3/2017, de 27 de junio. <a class="refPost">Ref. BOE-A-2017-7387</a></p>
+          <p class="nota_pie">Se añaden los apartados 8 y 10 y se modifica el 5 por el art. 1.41 de la Ley 28/2014, de 27 de noviembre. <a class="refPost">Ref. BOE-A-2014-12329</a>.</p>
+          <p class="nota_pie_2">La modificación del apartado 5 es aplicable a partir del 1 de enero de 2016 según establece la disposición final 5.</p>
+          <p class="nota_pie">Se modifica el apartado 5 a) por el art. 79.13 de la Ley 39/2010, de 22 de diciembre. <a class="refPost">Ref. BOE-A-2010-19703</a>.</p>
+          <p class="nota_pie">Se modifica el apartado 7º por el art. 7.3 de la Ley 62/2003, de 30 de diciembre. <a class="refPost">Ref. BOE-A-2003-23936</a>.</p>
+          <p class="nota_pie">Se modifica el apartado 5º b) por el art. 4.28 de la Ley 53/2002, de 30 de diciembre. <a class="refPost">Ref. BOE-A-2002-25412</a>.</p>
+          <p class="nota_pie">Se deroga el apartado 8º por la disposición derogatoria única.3 de la Ley 24/2001, de 27 de diciembre. <a class="refPost">Ref. BOE-A-2001-24965</a>.</p>
+          <p class="nota_pie">Se modifican los apartados 5.a), 6.3º y se añade el 9 por el art 6.19 a 21 de la Ley 55/1999, de 29 de diciembre. <a class="refPost">Ref. BOE-A-1999-24786</a>.</p>
+          <p class="nota_pie">Se modifica el apartado 5.b) por el art. único.2 del Real Decreto-Ley 10/1999, de 11 de junio. <a class="refPost">Ref. BOE-A-1999-13070</a>.</p>
+          <p class="nota_pie">Se modifica el apartado 5 y 6 y se añade el 8 por el art. único.7 y 8 de la Ley 9/1998, de 21 de abril. <a class="refPost">Ref. BOE-A-1998-9477</a>.</p>
+          <p class="nota_pie">Se añade el apartado 7 por el art. 6.26.3 de la Ley 66/1997, de 30 de diciembre. <a class="refPost">Ref. BOE-A-1997-28053</a></p>
+          <p class="nota_pie">Se modifica el apartado 5 por el art. único.7 del Real Decreto-Ley 14/1997, de 29 de agosto. <a class="refPost">Ref. BOE-A-1997-19125</a></p>
+          <p class="nota_pie">Se modifica el apartado 5 por la disposición adicional 18 de la Ley 42/1994, de 30 de diciembre. <a class="refPost">Ref. BOE-A-1994-28968</a>.</p>
+          <p class="nota_pie_2">Redactado conforme a la corrección de errores publicada en BOE núm. 40, de 16 de febrero de 1995. <a class="refPost">Ref. BOE-A-1995-4035</a>.</p>
+          <p class="nota_pie">Redactado el punto 2 conforme a la corrección de errores publicada en BOE núm. 33, de 8 de febrero de 1993. <a class="refPost">Ref. BOE-A-1993-3297</a></p>
+        </blockquote>
+      </version>
+    </bloque>
+  </data>
+</response>
