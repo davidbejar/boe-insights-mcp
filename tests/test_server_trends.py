@@ -155,7 +155,9 @@ async def test_date_range_and_matching_descriptions_are_the_decided_ones(
         "Only laws published on or before this date, ISO format."
     )
     assert "19 years before to_date" in described("legislation_over_time", "from_date")
-    assert "'vivienda' does not match 'viviendas'" in described("explain_spike", "title")
+    assert "whole words; singular and plural forms both match" in described(
+        "explain_spike", "title"
+    )
     assert property_descriptions(tools["compare_topics"].output_schema, "first") == [
         "First period in the range with a law of the topic."
     ]

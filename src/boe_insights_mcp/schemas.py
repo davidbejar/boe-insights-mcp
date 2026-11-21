@@ -17,11 +17,16 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
 
+from boe_insights_mcp.chains import Direction, RelationKind
+from boe_insights_mcp.citation import CitationStatus, MatchLevel
 from boe_insights_mcp.structure import EntryKind
 from boe_insights_mcp.versions import ArticleState
 
 __all__ = [
+    "GAZETTE_NOTICE",
+    "MAX_QUOTE_CHARS",
     "AmendedLaw",
+    "AmendmentChainResult",
     "AmendmentGroup",
     "AmendmentHistoryResult",
     "AmendmentItem",
@@ -33,6 +38,10 @@ __all__ = [
     "ArticleLocation",
     "ArticleResult",
     "ArticleState",
+    "ChainEdgeInfo",
+    "ChainNodeInfo",
+    "CitationCheck",
+    "CitationRequest",
     "CodeMatch",
     "CompareArticleVersionsResult",
     "CompareTopicsResult",
@@ -53,9 +62,11 @@ __all__ = [
     "LawStructureResult",
     "LegislationOverTimeResult",
     "MostAmendedLawsResult",
+    "OtherVersionInfo",
     "PeriodCount",
     "PeriodSpike",
     "Provenance",
+    "QuoteMatchInfo",
     "ReadArticleResult",
     "ReferenceBrief",
     "RelationCount",
@@ -68,6 +79,7 @@ __all__ = [
     "TopDepartmentsResult",
     "TopicSpec",
     "TopicTrend",
+    "VerifyCitationResult",
     "VersionInfo",
     "YearCount",
 ]
@@ -89,6 +101,12 @@ class _Output(BaseModel):
     """Frozen base for tool outputs."""
 
     model_config = ConfigDict(frozen=True)
+
+
+# The notice of results that describe the daily gazette itself rather than consolidated texts.
+GAZETTE_NOTICE = (
+    "Summary of the official gazette. Only the texts published in the BOE itself are authentic."
+)
 
 
 class Provenance(_Output):
@@ -622,8 +640,8 @@ class TopicSpec(BaseModel):
     name: str = Field(min_length=1, description="Label for the topic, e.g. 'teletrabajo'.")
     title: str | None = Field(
         default=None,
-        description="Words that must all be in the title, as exact word forms ('vivienda' does "
-        "not match 'viviendas'); use text for laws that treat a topic without naming it.",
+        description="Words that must all be in the title (whole words; singular and plural forms "
+        "both match); use text for laws that treat a topic without naming it.",
     )
     text: str | None = Field(default=None, description="Words that must all be in the body text.")
     subject_code: str | None = Field(default=None, description="BOE subject (materia) code.")
@@ -734,20 +752,26 @@ class GazetteEntry(_Output):
     """One item the BOE published."""
 
     identifier: str = Field(description="BOE-A-... (dispositions) or BOE-B-... (announcements).")
-    title: str = Field(description="Title in Spanish, cut at 300 characters.")
+    title: str = Field(description="Title in Spanish, cut at about 200 characters.")
     section: str = Field(description="Section code, e.g. 1, 2A, 3, 5B.")
     department: str | None
     heading: str | None = Field(default=None, description="Heading the item sits under, if any.")
+    issue: str | None = Field(
+        default=None,
+        description="Issue number, given when the day has several issues (e.g. an extraordinary "
+        "one).",
+    )
     url: str | None = Field(description="Link to the text on boe.es.")
 
-    # Why a serializer: ``heading`` is left out of the output when there is none, which saves a
-    # null on most items of a page of up to 100 that the model reads in full.
+    # Why a serializer: ``heading`` and ``issue`` are left out of the output when there is none,
+    # which saves a null on most items of a page that the model reads in full.
     @model_serializer(mode="wrap")
-    def _omit_empty_heading(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
-        """Serialise as usual, then drop ``heading`` when it is ``None``."""
+    def _omit_empty_optionals(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Serialise as usual, then drop ``heading`` and ``issue`` when they are ``None``."""
         data: dict[str, object] = handler(self)
-        if data.get("heading") is None:
-            data.pop("heading", None)
+        for key in ("heading", "issue"):
+            if data.get(key) is None:
+                data.pop(key, None)
         return data
 
 
@@ -800,5 +824,196 @@ class ScanGazetteResult(_Output):
     has_more: bool
     next_offset: int | None = Field(description="Offset for the next page; null when none.")
     by_day: list[DayMatches] = Field(description="Days with matches, newest first.")
+    note: str | None = Field(default=None, description="What to do when not complete.")
+    provenance: Provenance
+
+
+# --- verify_citation ---------------------------------------------------------------------------
+
+# The longest quote accepted. Matching cost grows with the quote, and a quote is a few sentences.
+MAX_QUOTE_CHARS = 5000
+
+
+class CitationRequest(BaseModel):
+    """One citation to check: a law, an article of it, and optionally words attributed to it."""
+
+    law: str = Field(
+        min_length=1,
+        description="Name, number or BOE identifier of the law, e.g. 'Ley 40/2015'.",
+    )
+    article: str = Field(
+        min_length=1,
+        description="The article or provision, e.g. 'artículo 48' or 'disposición adicional "
+        "tercera'.",
+    )
+    quote: str | None = Field(
+        default=None,
+        max_length=MAX_QUOTE_CHARS,
+        description="Words attributed to it, to compare with the text. Use (...) for omissions.",
+    )
+    as_of: date | None = Field(
+        default=None, description="Date the citation refers to; default today."
+    )
+
+
+class QuoteMatchInfo(_Output):
+    """How closely the quote matches the text of one version."""
+
+    level: MatchLevel = Field(
+        description="'exact' (same words), 'close' (similarity 0.85 or more), 'partial' (0.5 "
+        "or more) or 'none'. Case, punctuation and quotation marks are ignored; accents are not."
+    )
+    similarity: float = Field(description="0.0 to 1.0, share of the words that match.")
+    matched_text: str = Field(
+        description="The passage of the text the quote was matched to, as written (at most 600 "
+        "characters); empty for 'none'."
+    )
+    differences: str = Field(
+        description="Quote against passage: [-words only in the quote-] {+words only in the "
+        "text+}; empty when exact or none."
+    )
+
+
+class OtherVersionInfo(_Output):
+    """Another version of the article that matches the quote better than the one in effect."""
+
+    relation: Literal["earlier", "later"] = Field(
+        description="Whether that version starts before or after the date."
+    )
+    starts_on: date | None
+    ends_on: date | None = Field(
+        description="Last day of that version; None when it is the latest."
+    )
+    level: MatchLevel
+    similarity: float
+
+
+def _without_none(data: dict[str, object], keep: tuple[str, ...] = ()) -> dict[str, object]:
+    """Drop the ``None`` values of a serialised model except for the keys in ``keep``."""
+    return {key: value for key, value in data.items() if value is not None or key in keep}
+
+
+class CitationCheck(_Output):
+    """The facts found for one citation."""
+
+    law: str = Field(description="The law as given.")
+    article: str = Field(description="The article as given.")
+    status: CitationStatus | None = Field(
+        description="'matches': found, in force, and the quote (if any) is exact. "
+        "'matches_older_version' / 'matches_later_version': the quote matches another version of "
+        "the article better than the one in effect on as_of (see other_version). 'text_differs': "
+        "the quote is close or partial. 'quote_not_found'. 'not_in_force': the article, or the "
+        "whole law, is not in force on as_of. 'article_not_found', 'article_ambiguous', "
+        "'law_not_found', 'law_ambiguous' (see candidates). Null when not checked (see note)."
+    )
+    law_id: str | None = Field(default=None, description="BOE identifier of the law found.")
+    law_title: str | None = None
+    block_id: str | None = Field(default=None, description="Block of the article found.")
+    article_label: str | None = Field(
+        default=None, description="The article's title in the law, e.g. 'Artículo 48'."
+    )
+    state: ArticleState | None = Field(
+        default=None,
+        description="On as_of: in_force, repealed, not_yet_in_force or did_not_exist.",
+    )
+    law_repealed: bool | None = Field(
+        default=None,
+        description="True when the whole law is repealed; None when that could not be checked.",
+    )
+    as_of: date | None = Field(default=None, description="The date the check refers to.")
+    quote_match: QuoteMatchInfo | None = Field(
+        default=None,
+        description="The quote against the version in effect on as_of; only when a quote was "
+        "given and the article found.",
+    )
+    other_version: OtherVersionInfo | None = Field(
+        default=None,
+        description="Only when status is matches_older_version or matches_later_version.",
+    )
+    candidates: list[LawBrief | ArticleCandidate] = Field(
+        default_factory=list,
+        description="Laws (law_ambiguous) or articles (article_ambiguous) that may be meant.",
+    )
+    note: str | None = Field(
+        default=None,
+        description="Ignored parts of the wording, a repeal of the whole law, or why the "
+        "citation was not checked.",
+    )
+
+    # Why a serializer: most of these fields are empty for most citations, and the model reads
+    # every one. ``status`` stays because a null there means "not checked".
+    @model_serializer(mode="wrap")
+    def _omit_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Serialise as usual, then drop the fields that are ``None`` or an empty list."""
+        data = _without_none(handler(self), keep=("status",))
+        if not data.get("candidates"):
+            data.pop("candidates", None)
+        return data
+
+
+class VerifyCitationResult(_Output):
+    """One check per citation, in the order given."""
+
+    results: list[CitationCheck]
+    checked: int = Field(description="Citations that got a status.")
+    not_checked: int = Field(
+        description="Citations left unchecked (time limit or BOE error); call again with them."
+    )
+    provenance: Provenance
+
+
+# --- explore_amendment_chain -------------------------------------------------------------------
+
+
+class ChainNodeInfo(_Output):
+    """One law in the chain."""
+
+    law_id: str
+    depth: int = Field(description="Distance from the starting law (0).")
+    title: str | None = Field(default=None, description="From the collection, when it has the law.")
+    rank: str | None = None
+    published_on: date | None = None
+    in_collection: bool = Field(
+        description="False for norms outside the consolidated collection (corrections, court "
+        "proceedings, regional decrees...); their own amendments cannot be followed."
+    )
+    expanded: bool = Field(description="True when its amendments were followed.")
+    reason: Literal["depth_limit", "not_fetched", "unavailable"] | None = Field(
+        default=None,
+        description="Why it was not expanded: depth_limit, not_fetched (call again) or "
+        "unavailable.",
+    )
+
+    @model_serializer(mode="wrap")
+    def _omit_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Serialise as usual, then drop the optional fields that are ``None``."""
+        return _without_none(handler(self))
+
+
+class ChainEdgeInfo(_Output):
+    """One amendment between two laws."""
+
+    amending: str = Field(description="Identifier of the norm that acts.")
+    amended: str = Field(description="Identifier of the norm acted on.")
+    relation: str = Field(description="As the BOE words it, e.g. 'MODIFICA' or 'SE MODIFICA'.")
+    kind: RelationKind
+    detail: str = Field(description="Reference text from the BOE (Spanish), cut at 200 characters.")
+
+
+class AmendmentChainResult(_Output):
+    """Laws linked to a starting law by amendments, over several levels."""
+
+    law_id: str
+    direction: Direction
+    depth: int
+    nodes: list[ChainNodeInfo] = Field(description="By level, starting law first; at most 150.")
+    edges: list[ChainEdgeInfo] = Field(description="At most 400, in order of discovery.")
+    edges_total: int = Field(description="All edges found; more than len(edges) when cut.")
+    levels: list[int] = Field(description="Number of laws at each level, starting law first.")
+    examined: int = Field(description="Laws whose amendments were read, cached or not.")
+    pending: int = Field(description="Laws still to read.")
+    failed: int = Field(description="Laws skipped after a temporary BOE error; they are pending.")
+    complete: bool = Field(description="True when nothing is pending.")
+    truncated: bool = Field(description="True when the 150-law limit cut the chain.")
     note: str | None = Field(default=None, description="What to do when not complete.")
     provenance: Provenance

@@ -86,12 +86,16 @@ async def test_the_tools_carry_the_agreed_descriptions_and_schemas(mcp: Client[A
     )
     assert " ".join((scan.description or "").split()) == (
         "Find items published in the BOE over a range of up to 31 days whose title has given "
-        "words, or that belong to a section or department. Matches titles only, exact word "
-        "forms. When complete is false, call again to continue."
+        "words, or that belong to a section or department. Matches titles only, whole words; "
+        "singular and plural forms both match. When complete is false, call again to continue."
     )
     for tool in (summary, scan):
+        assert tool.input_schema["properties"]["words"]["description"] == (
+            "Words that must all appear in the title (whole words; singular and plural forms "
+            "both match)."
+        )
         limit = tool.input_schema["properties"]["limit"]
-        assert (limit["minimum"], limit["maximum"], limit["default"]) == (1, 100, 50)
+        assert (limit["minimum"], limit["maximum"], limit["default"]) == (1, 100, 25)
         assert tool.input_schema.get("required", []) == []
     assert set(summary.input_schema["properties"]) == {
         "date",

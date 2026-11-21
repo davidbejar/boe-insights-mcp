@@ -196,16 +196,124 @@ async def test_entries_are_compact_with_html_link_else_pdf() -> None:
     assert second.url == "https://www.boe.es/pdfs/B1.pdf"
 
 
-async def test_long_titles_are_cut_at_300_characters_with_an_ellipsis() -> None:
+async def test_titles_up_to_200_characters_are_kept_whole() -> None:
     day = date(2026, 11, 20)
-    exact, long = "x" * 300, "y" * 301
-    fake = FakeSummaries({day: summary(day, item("A1", exact), item("A2", long))})
+    exact = "x" * 200
+    fake = FakeSummaries({day: summary(day, item("A1", exact))})
 
     result = await one_day(fake, day)
 
     assert result.items[0].title == exact
-    assert result.items[1].title == "y" * 299 + "…"
-    assert len(result.items[1].title) == 300
+
+
+async def test_longer_titles_are_cut_at_a_word_boundary_within_200_characters() -> None:
+    day = date(2026, 11, 20)
+    words = ["palabra"] * 40  # 7 letters + 1 space each: 319 characters
+    long = " ".join(words)
+    fake = FakeSummaries({day: summary(day, item("A1", long))})
+
+    result = await one_day(fake, day)
+
+    title = result.items[0].title
+    assert title.endswith("…")
+    body = title[:-1]  # the ellipsis is not counted in the 200
+    assert len(body) <= 200
+    assert body == " ".join(["palabra"] * 25)  # 199 characters; a 26th word would pass 200
+    assert long.startswith(body + " ")
+
+
+async def test_a_cut_that_falls_exactly_between_words_keeps_the_whole_word_before_it() -> None:
+    day = date(2026, 11, 20)
+    first = " ".join(["w" * 9] * 19 + ["z" * 10])  # exactly 200 characters, a space follows
+    assert len(first) == 200
+    fake = FakeSummaries({day: summary(day, item("A1", first + " and the rest of it"))})
+
+    result = await one_day(fake, day)
+
+    assert result.items[0].title == first + "…"
+
+
+async def test_a_title_that_is_one_long_word_is_cut_hard_at_200() -> None:
+    day = date(2026, 11, 20)
+    fake = FakeSummaries({day: summary(day, item("A1", "y" * 500))})
+
+    result = await one_day(fake, day)
+
+    assert result.items[0].title == "y" * 200 + "…"
+
+
+async def test_the_issue_is_given_only_when_the_day_has_several_issues() -> None:
+    day = date(2026, 11, 20)
+    several = FakeSummaries(
+        {
+            day: summary(
+                day,
+                item("A1", issue="67", section="1"),
+                item("A2", issue="66", section="2A"),
+                issues=("67", "66"),
+            )
+        }
+    )
+    single = FakeSummaries({day: summary(day, item("A1", issue="66"))})
+
+    many = await one_day(several, day)
+    one = await one_day(single, day)
+
+    assert [i.issue for i in many.items] == ["67", "66"]
+    assert [e["issue"] for e in many.model_dump()["items"]] == ["67", "66"]
+    assert one.items[0].issue is None
+    assert "issue" not in one.model_dump()["items"][0]
+
+
+async def test_a_scan_gives_the_issue_per_day() -> None:
+    multi, plain = ago(1), ago(0)
+    fake = FakeSummaries(
+        {
+            multi: summary(multi, item("M1", "Ley uno", issue="9"), issues=("9", "8")),
+            plain: summary(plain, item("P1", "Ley dos", issue="10")),
+        }
+    )
+
+    result = await scan(fake, from_date=multi, to_date=plain)
+
+    by_id = {i.identifier: i.model_dump() for i in result.items}
+    assert by_id["M1"]["issue"] == "9"
+    assert "issue" not in by_id["P1"]
+
+
+async def test_gazette_results_carry_the_gazette_notice_not_the_consolidated_one() -> None:
+    day = date(2026, 11, 20)
+    summary_result = await one_day(sample_day(), day)
+    absent = await one_day(FakeSummaries({}), day)
+    scanned = await scan(week_of_laws([ago(0)]), from_date=ago(0), to_date=ago(0))
+
+    for result in (summary_result, absent, scanned):
+        provenance = result.provenance
+        assert provenance.notice == (
+            "Summary of the official gazette. Only the texts published in the BOE itself are "
+            "authentic."
+        )
+        assert "onsolidated" not in provenance.notice
+        assert (
+            provenance.attribution
+            == "Basado en datos de la Agencia Estatal Boletín Oficial del Estado"
+        )
+        assert provenance.source_url == "https://www.boe.es"
+
+
+async def test_the_default_page_is_25_items_and_100_is_the_maximum() -> None:
+    day = date(2026, 11, 20)
+    fake = FakeSummaries({day: summary(day, *[item(f"A{n}", "Ley") for n in range(40)])})
+
+    default = await one_day(fake, day)
+    scanned = await scan(fake, from_date=day, to_date=day)
+
+    assert gazette.DEFAULT_LIMIT == 25
+    assert gazette.MAX_LIMIT == 100
+    assert (default.returned, default.has_more, default.next_offset) == (25, True, 25)
+    assert (scanned.returned, scanned.has_more, scanned.next_offset) == (25, True, 25)
+    with pytest.raises(ValueError, match="limit"):
+        await one_day(fake, day, limit=101)
 
 
 async def test_section_filter_ignores_case() -> None:
@@ -224,16 +332,17 @@ async def test_department_filter() -> None:
     assert [i.identifier for i in result.items] == ["A2", "B1", "A4"]
 
 
-async def test_words_filter_needs_all_words_as_exact_forms_ignoring_case_and_accents() -> None:
+async def test_words_filter_needs_all_whole_words_ignoring_case_accents_and_number() -> None:
     fake = sample_day()
 
     assert [
         i.identifier
         for i in (await one_day(fake, date(2026, 11, 20), words="PROTECCION datos")).items
     ] == ["A1"]
-    assert (
-        await one_day(fake, date(2026, 11, 20), words="vivienda")
-    ).matched == 1  # not "viviendas"
+    # Singular and plural forms match each other: "vivienda" finds "viviendas" too.
+    assert (await one_day(fake, date(2026, 11, 20), words="vivienda")).matched == 2
+    assert (await one_day(fake, date(2026, 11, 20), words="viviendas")).matched == 2
+    assert (await one_day(fake, date(2026, 11, 20), words="viv")).matched == 0
     assert (await one_day(fake, date(2026, 11, 20), words="vivienda datos")).matched == 0
 
 
@@ -448,7 +557,7 @@ async def test_filters_of_a_scan_work_like_the_single_day_ones() -> None:
 
     assert [i.identifier for i in by_section.items] == ["A3"]
     assert [i.identifier for i in by_department.items] == ["A2", "B1", "A4"]
-    assert [i.identifier for i in by_words.items] == ["A2"]
+    assert [i.identifier for i in by_words.items] == ["A2", "B1"]
 
 
 async def test_document_order_is_kept_within_a_day() -> None:

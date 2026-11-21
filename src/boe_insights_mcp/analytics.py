@@ -306,18 +306,47 @@ def _words(text: str) -> list[str]:
     return words
 
 
+_VOWELS = frozenset("aeiou")
+
+
+def _singular(word: str) -> str:
+    """Reduce a folded word to a form shared by its singular and its plural.
+
+    Removes one plural ending: a final "es" when the word is longer than 4 letters and the
+    letter before it is a consonant ("leyes" -> "ley", "ciudades" -> "ciudad"), otherwise a
+    final "s" when the word is longer than 3 letters ("viviendas" -> "vivienda"). Short words
+    are left alone so that "mes" and "mesa", or "ley" and "legal", never meet. Applied to both
+    the query and the title, so the reverse direction ("viviendas" finds "vivienda") works too.
+    """
+    # The letter before "es" must be a consonant so that "es" reads as a plural ending rather
+    # than the tail of a stem after a vowel ("pie" -> "pies" only loses its "s"). Accents are
+    # already folded away, so the five plain vowels are the whole set; a digit is not a
+    # consonant. The rule is a heuristic: the plural of a word in -e after a consonant ("base",
+    # "bases") loses its whole "es" and no longer meets its singular.
+    if len(word) > 4 and word.endswith("es") and word[-3].isalpha() and word[-3] not in _VOWELS:
+        return word[:-2]
+    if len(word) > 3 and word.endswith("s"):
+        return word[:-1]
+    return word
+
+
+def _stems(text: str) -> set[str]:
+    """The reduced forms of the folded words of a text (see ``_singular``)."""
+    return {_singular(word) for word in _words(text)}
+
+
 def title_matcher(words: str | None) -> Callable[[str], bool] | None:
     """A predicate telling whether a title has all of ``words`` as whole words.
 
     Matching is the one ``filter_laws`` applies to titles: ignoring case, accents (but not ``ñ``)
-    and punctuation, exact word forms. Returns ``None`` when ``words`` is ``None`` or holds no
-    word at all, which means "no constraint", so callers can tell an absent filter from one that
-    matches nothing.
+    and punctuation, whole words, with a word's singular and plural forms matching each other.
+    Returns ``None`` when ``words`` is ``None`` or holds no word at all, which means "no
+    constraint", so callers can tell an absent filter from one that matches nothing.
     """
-    wanted = set(_words(words)) if words is not None else set()
+    wanted = _stems(words) if words is not None else set()
     if not wanted:
         return None
-    return lambda title: wanted <= set(_words(title))
+    return lambda title: wanted <= _stems(title)
 
 
 def filter_laws(
@@ -336,9 +365,10 @@ def filter_laws(
 
     ``None`` means no constraint and an empty collection matches nothing. A law lacking a
     rank, department, scope or date fails a constraint on that field. ``title_words`` must all
-    occur as whole words, ignoring case, accents (but not ``ñ``) and punctuation.
+    occur as whole words, ignoring case, accents (but not ``ñ``) and punctuation; singular and
+    plural forms match each other.
     """
-    wanted_words = _words(title_words) if title_words is not None else []
+    wanted_words = _stems(title_words) if title_words is not None else set()
     # A department filter names the institution, whichever of its codes the caller knows.
     wanted_departments = (
         {_canonical_code("department", code) for code in department_codes}
@@ -355,7 +385,7 @@ def filter_laws(
             continue
         if identifiers is not None and law.identifier not in identifiers:
             continue
-        if wanted_words and not set(wanted_words) <= set(_words(law.title)):
+        if wanted_words and not wanted_words <= _stems(law.title):
             continue
         if start is not None or end is not None:
             day = _law_date(law, date_field)

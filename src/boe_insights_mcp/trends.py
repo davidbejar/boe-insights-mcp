@@ -62,6 +62,7 @@ __all__ = [
     "AnalysisClient",
     "DateBasis",
     "GroupBy",
+    "MonotonicProgress",
     "TrendFilters",
     "compare_topics",
     "explain_spike",
@@ -159,7 +160,7 @@ class AnalysisClient(Protocol):
         ...
 
 
-class _Monotonic:
+class MonotonicProgress:
     """Wraps a progress callback so that the values it receives strictly increase.
 
     One tool call can report several phases (the catalogue download, then a search, then a loop
@@ -278,7 +279,7 @@ async def _prepare(
     if period is not None:
         # Fails early (too many buckets) instead of after a possible 30-second download.
         analytics.bucket_range(start, end, period)
-    wrapped: ProgressCallback | None = _Monotonic(progress) if progress is not None else None
+    wrapped: ProgressCallback | None = MonotonicProgress(progress) if progress is not None else None
     catalogue = await store.get(progress=wrapped)
     # The API evaluates body text and subject; everything else is checked locally on the hits.
     selected = await store.select(

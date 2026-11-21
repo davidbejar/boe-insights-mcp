@@ -9,6 +9,8 @@ is repealed (``repeal``), and answer with ``versions`` (version selection, diff,
 Public use cases: ``read_article``, ``compare_article_versions``, ``get_article_history`` and
 ``get_law_structure``. The last one works on the whole law at once: it fetches the full text in one
 request, builds the table of contents with ``structure`` and pages it.
+``load_article``, ``law_state`` and ``law_repeal_note`` are the shared steps (locate and fetch,
+state on a date, repeal sentence) that ``citations`` reuses.
 A wording that matches no block or several blocks is a normal result with candidates, not an
 error; an unknown law raises ``BoeNotFoundError`` and bad arguments raise ``ValueError``. The CPU
 heavy parts (diff, history) run in a worker thread so they never block the event loop.
@@ -68,9 +70,13 @@ __all__ = [
     "MAX_STRUCTURE_LIMIT",
     "MIN_COMPARE_CHARS",
     "MIN_PAGE_CHARS",
+    "LoadedArticle",
     "compare_article_versions",
     "get_article_history",
     "get_law_structure",
+    "law_repeal_note",
+    "law_state",
+    "load_article",
     "read_article",
 ]
 
@@ -134,7 +140,7 @@ def _candidates(located: LocateResult) -> list[ArticleCandidate]:
 
 
 @dataclass(frozen=True)
-class _Loaded:
+class LoadedArticle:
     """What the three tools share after locating and fetching: location, block and repeal."""
 
     location: ArticleLocation
@@ -190,14 +196,14 @@ async def _fetch_block_and_repeal(
     return block_task.result(), assess_repeal(repeal_task.result(), today=today)
 
 
-async def _load(
+async def load_article(
     client: BoeClient,
     law_id: str,
     article: str | None,
     block_id: str | None,
     moment: datetime,
     today: date,
-) -> _Loaded:
+) -> LoadedArticle:
     """Locate the article (or block id) in the law's index and fetch its block.
 
     Returns the location (with candidates and a hint when nothing was found), the block, which
@@ -214,7 +220,7 @@ async def _load(
     )
     entry = located.entry
     if entry is None:
-        return _Loaded(
+        return LoadedArticle(
             ArticleLocation(
                 law_id=law_id,
                 outcome=located.outcome,
@@ -244,10 +250,10 @@ async def _load(
             f"Located {entry.title or entry.block_id}; the rest of the request "
             f"('{located.ignored}') was ignored: this tool returns whole articles.",
         )
-    return _Loaded(location, block, repeal, notes)
+    return LoadedArticle(location, block, repeal, notes)
 
 
-def _law_state(
+def law_state(
     block_state: ArticleState, repeal: LawRepeal | None, on: date, *, as_of_given: bool
 ) -> ArticleState:
     """The state on ``on``, overridden to ``repealed`` when the whole law was repealed by then.
@@ -264,7 +270,7 @@ def _law_state(
     return block_state
 
 
-def _repeal_note(repeal: LawRepeal | None, on: date, state: ArticleState) -> str | None:
+def law_repeal_note(repeal: LawRepeal | None, on: date, state: ArticleState) -> str | None:
     """A sentence about the whole law's repeal for a result about ``on``, or ``None``."""
     if repeal is None:
         return None
@@ -366,11 +372,11 @@ async def read_article(
     moment = utc_now(now)
     day = madrid_today(moment, today)
     on = as_of if as_of is not None else day
-    loaded = await _load(client, law_id, article, block_id, moment, day)
+    loaded = await load_article(client, law_id, article, block_id, moment, day)
     location, block, repeal = loaded.location, loaded.block, loaded.repeal
     if block is None:
         return ReadArticleResult(**location.model_dump(), as_of=on)
-    state = _law_state(state_on(block, on), repeal, on, as_of_given=as_of is not None)
+    state = law_state(state_on(block, on), repeal, on, as_of_given=as_of is not None)
     position = _index_on(block, on)
     notes: list[str] = list(loaded.notes)
     if position is None and state_on(block, on) == "not_yet_in_force":
@@ -392,7 +398,7 @@ async def read_article(
             f"Text cut after {next_offset} of {len(full)} characters: call again with "
             f"offset={next_offset} and the same other arguments for the next part."
         )
-    if (repeal_sentence := _repeal_note(repeal, on, state)) is not None:
+    if (repeal_sentence := law_repeal_note(repeal, on, state)) is not None:
         notes.append(repeal_sentence)
     last = len(block.versions) - 1
     footnotes, notes_truncated = _cap_notes(
@@ -510,7 +516,7 @@ async def compare_article_versions(
     end = to_date if to_date is not None else day
     if from_date > end:
         raise ValueError("from_date must not be after to_date (which is today when omitted)")
-    loaded = await _load(client, law_id, article, block_id, moment, day)
+    loaded = await load_article(client, law_id, article, block_id, moment, day)
     location, block, repeal = loaded.location, loaded.block, loaded.repeal
     if block is None:
         return CompareArticleVersionsResult(
@@ -596,7 +602,7 @@ def _compare_repeal_note(repeal: LawRepeal | None, end: date) -> str | None:
     if repeal is None:
         return None
     if repeal.repealed is None:
-        return _repeal_note(repeal, end, "in_force")
+        return law_repeal_note(repeal, end, "in_force")
     # A repeal after ``end`` is not part of the compared range.
     if repeal.on is not None and repeal.on > end and not repeal.announced:
         return None
@@ -626,15 +632,15 @@ async def get_article_history(
     """
     moment = utc_now(now)
     day = madrid_today(moment, today)
-    loaded = await _load(client, law_id, article, block_id, moment, day)
+    loaded = await load_article(client, law_id, article, block_id, moment, day)
     location, block, repeal = loaded.location, loaded.block, loaded.repeal
     if block is None:
         return ArticleHistoryResult(**location.model_dump())
     # Only the events that are returned are built, and off the event loop: each one is a diff.
     events = await asyncio.to_thread(history, block, limit=_MAX_HISTORY_EVENTS)
-    state = _law_state(state_on(block, day), repeal, day, as_of_given=False)
+    state = law_state(state_on(block, day), repeal, day, as_of_given=False)
     notes = list(loaded.notes)
-    if (sentence := _repeal_note(repeal, day, state)) is not None:
+    if (sentence := law_repeal_note(repeal, day, state)) is not None:
         notes.append(sentence)
     return ArticleHistoryResult(
         **location.model_dump(),
@@ -732,16 +738,13 @@ def _structure_notes(
     # A repealed law's articles carry no repeal marker (api-notes, "Initial note"), so every
     # entry reads "in force" and only this sentence tells the reader. Putting ``repealed`` on each
     # entry instead would defeat the compact output.
-    if (
-        repeal.repealed
-        and _law_state("in_force", repeal, on, as_of_given=as_of_given) == "repealed"
-    ):
+    if repeal.repealed and law_state("in_force", repeal, on, as_of_given=as_of_given) == "repealed":
         since = f" on {repeal.on.isoformat()}" if repeal.on is not None else " (no date given)"
         notes.append(
             f"The whole law was repealed{since}, so none of these entries is in force; the "
             "table shows its last consolidated text."
         )
-    elif (sentence := _repeal_note(repeal, on, "in_force")) is not None:
+    elif (sentence := law_repeal_note(repeal, on, "in_force")) is not None:
         notes.append(sentence)
     return notes
 

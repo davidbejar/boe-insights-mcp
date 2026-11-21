@@ -26,6 +26,7 @@ from boe_insights_mcp.clock import madrid_today, utc_now
 from boe_insights_mcp.errors import BoeError
 from boe_insights_mcp.models import DailySummary, GazetteItem
 from boe_insights_mcp.schemas import (
+    GAZETTE_NOTICE,
     DailySummaryResult,
     DayMatches,
     GazetteCount,
@@ -47,12 +48,12 @@ __all__ = [
     "scan_gazette",
 ]
 
-DEFAULT_LIMIT = 50
+DEFAULT_LIMIT = 25
 MAX_LIMIT = 100
 MAX_DEPARTMENTS = 15
-# Titles of announcements can run to a thousand characters; a page of 100 of them would swamp
-# the model, and the first 300 say what the item is.
-MAX_TITLE = 300
+# Titles of announcements can run to a thousand characters; a page of items would swamp the
+# model, and the first 200 say what the item is.
+MAX_TITLE = 200
 # Without a date the tool shows the latest issue found within this many days before today.
 LOOKBACK_DAYS = 7
 MAX_SCAN_DAYS = 31
@@ -118,27 +119,42 @@ class _Filter:
         return self._words is None or self._words(item.title)
 
 
-def _compact_fields(item: GazetteItem) -> dict[str, Any]:
-    """The fields shared by the compact entries of both tools."""
-    title = item.title
-    if len(title) > MAX_TITLE:
-        # One character is the ellipsis, so the cut text is exactly ``MAX_TITLE`` long.
-        title = title[: MAX_TITLE - 1] + "…"
+def _shorten(title: str) -> str:
+    """Cut a title longer than ``MAX_TITLE`` at a word boundary and add "…" (not counted)."""
+    if len(title) <= MAX_TITLE:
+        return title
+    # Titles have single spaces (``GazetteItem.title``), so a space is the word boundary. When
+    # the character just after the window is a space the window ends exactly between words and
+    # is kept whole; otherwise the last word is cut, so the window goes back to the last space.
+    # A title with no space in the window (one very long token) is cut hard instead.
+    cut = MAX_TITLE if title[MAX_TITLE] == " " else title.rfind(" ", 0, MAX_TITLE)
+    if cut <= 0:
+        cut = MAX_TITLE
+    return title[:cut].rstrip() + "…"
+
+
+def _compact_fields(item: GazetteItem, *, several_issues: bool) -> dict[str, Any]:
+    """The fields shared by the compact entries of both tools.
+
+    ``several_issues`` says whether the item's day has more than one issue; only then is the
+    issue number worth giving (it is the one thing that tells an extraordinary issue apart).
+    """
     return {
         "identifier": item.identifier,
-        "title": title,
+        "title": _shorten(item.title),
         "section": item.section_code,
         "department": item.department_name,
         "heading": item.heading,
+        "issue": item.issue_number if several_issues else None,
         # The page of the text on boe.es is the better link; the PDF is the fallback for the
         # announcements that have no HTML version (api-notes, fourth probe).
         "url": item.html_url or item.pdf_url,
     }
 
 
-def _entry(item: GazetteItem) -> GazetteEntry:
+def _entry(item: GazetteItem, *, several_issues: bool) -> GazetteEntry:
     """The compact entry of an item."""
-    return GazetteEntry(**_compact_fields(item))
+    return GazetteEntry(**_compact_fields(item, several_issues=several_issues))
 
 
 def _page(total: int, offset: int, limit: int) -> tuple[int, bool, int | None]:
@@ -153,9 +169,13 @@ def _day_count(count: int) -> str:
     return f"{count} day" if count == 1 else f"{count} days"
 
 
-def _provenance(moment: datetime) -> Provenance:
-    """The provenance block: stamped at assembly time, with no update date (summaries have none)."""
-    return Provenance(generated_at=moment, data_updated_at=None)
+def _provenance(moment: datetime, *, notice: str = GAZETTE_NOTICE) -> Provenance:
+    """The provenance block: stamped at assembly time, with no update date (summaries have none).
+
+    The notice is the gazette's by default: a summary lists what was published, not consolidated
+    texts, so the consolidated-text notice of ``Provenance`` would be wrong for it.
+    """
+    return Provenance(generated_at=moment, data_updated_at=None, notice=notice)
 
 
 # --- get_daily_summary -------------------------------------------------------------------------
@@ -255,7 +275,7 @@ async def daily_summary(
         sections=_counts(found.items, by_section=True, top=None),
         departments=_counts(matching, by_section=False, top=MAX_DEPARTMENTS),
         matched=len(matching),
-        items=[_entry(item) for item in page],
+        items=[_entry(item, several_issues=len(found.issues) > 1) for item in page],
         returned=len(page),
         has_more=has_more,
         next_offset=next_offset,
@@ -365,7 +385,9 @@ async def scan_gazette(
             if found is not None:
                 with_issue += 1
                 day_matches = [
-                    ScannedEntry(date=day, **_compact_fields(item))
+                    ScannedEntry(
+                        date=day, **_compact_fields(item, several_issues=len(found.issues) > 1)
+                    )
                     for item in found.items
                     if wanted.matches(item)
                 ]

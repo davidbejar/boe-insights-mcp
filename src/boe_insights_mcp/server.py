@@ -7,10 +7,12 @@ or :mod:`boe_insights_mcp.articles` and turns client errors into messages the mo
 (``search_legislation``, ``resolve_reference``, ``get_law_overview``, ``find_codes``,
 ``get_amendment_history``, ``read_article``, ``compare_article_versions``,
 ``get_article_history``, ``get_law_structure``, and the trend tools ``legislation_over_time``,
-``top_departments``, ``compare_topics``, ``explain_spike`` and ``most_amended_laws``, and the
-gazette tools ``get_daily_summary`` and ``scan_gazette``); ``main`` runs it over stdio.
-Layering: tool functions here -> use cases in ``legislation``, ``articles``, ``trends`` and
-``gazette`` -> ``client`` (and ``catalogue`` for the trend tools).
+``top_departments``, ``compare_topics``, ``explain_spike`` and ``most_amended_laws``, the
+gazette tools ``get_daily_summary`` and ``scan_gazette``, ``verify_citation`` and
+``explore_amendment_chain``); ``main`` runs it over stdio.
+Layering: tool functions here -> use cases in ``legislation``, ``articles``, ``trends``,
+``gazette``, ``citations`` and ``amendment_chains`` -> ``client`` (and ``catalogue`` for the
+trend tools and the chain explorer).
 This is also where the cache, rate limiter, client and catalogue store are created, in the
 lifespan. The tool
 docstrings, ``Field`` descriptions and ``_INSTRUCTIONS`` are sent to the language model, so they
@@ -31,10 +33,18 @@ from fastmcp.server.lifespan import lifespan
 from mcp.types import ToolAnnotations
 from pydantic import Field, ValidationError
 
-from boe_insights_mcp import articles, gazette, legislation, trends
+from boe_insights_mcp import (
+    amendment_chains,
+    articles,
+    gazette,
+    legislation,
+    trends,
+)
+from boe_insights_mcp import citations as citation_checks
 from boe_insights_mcp.analytics import Period
 from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
 from boe_insights_mcp.catalogue import CatalogueStore
+from boe_insights_mcp.chains import Direction
 from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.errors import BoeError
 from boe_insights_mcp.legislation import (
@@ -47,8 +57,10 @@ from boe_insights_mcp.legislation import (
 from boe_insights_mcp.query import SortField
 from boe_insights_mcp.ratelimit import RateLimiter
 from boe_insights_mcp.schemas import (
+    AmendmentChainResult,
     AmendmentHistoryResult,
     ArticleHistoryResult,
+    CitationRequest,
     CompareArticleVersionsResult,
     CompareTopicsResult,
     DailySummaryResult,
@@ -64,6 +76,7 @@ from boe_insights_mcp.schemas import (
     SearchLegislationResult,
     TopDepartmentsResult,
     TopicSpec,
+    VerifyCitationResult,
 )
 from boe_insights_mcp.settings import Settings
 from boe_insights_mcp.trends import DateBasis, GroupBy, TrendFilters
@@ -87,7 +100,9 @@ _INSTRUCTIONS = (
     "laws per call, so repeat it while complete is false. The status of a law is derived from "
     "BOE flags and amendment references, so treat it as an indication. get_daily_summary and "
     "scan_gazette read the daily BOE issues (everything published, since 1960), which the other "
-    "tools do not cover. When quoting results, "
+    "tools do not cover. verify_citation checks whether a law and article exist and whether "
+    "quoted words match the text. explore_amendment_chain follows amendments between laws for "
+    "several levels; repeat it while complete is false. When quoting results, "
     "pass on the attribution 'Basado en datos de la Agencia Estatal Boletín Oficial del "
     "Estado' (https://www.boe.es) and say that consolidated texts are informational and have "
     "no official legal value."
@@ -135,6 +150,10 @@ _INVALID_QUERY_ADVICE = {
     # The gazette tools send the BOE nothing but a date, which the arguments already constrain.
     "get_daily_summary": "Check the date, then try again.",
     "scan_gazette": "Check the dates, then try again.",
+    "verify_citation": "Check the law references, the article wordings and the ISO dates, then "
+    "try again.",
+    "explore_amendment_chain": "Check the identifier (for example BOE-A-2020-3824) or get it "
+    "again from resolve_reference.",
 }
 
 
@@ -536,8 +555,8 @@ async def get_article_history(
 _TITLE_FILTER = Annotated[
     str | None,
     Field(
-        description="Words that must all appear in the title, as exact word forms "
-        "('vivienda' does not match 'viviendas'), e.g. 'teletrabajo'."
+        description="Words that must all appear in the title (whole words; singular and plural "
+        "forms both match), e.g. 'teletrabajo'."
     ),
 ]
 _TEXT_FILTER = Annotated[
@@ -841,7 +860,11 @@ async def get_daily_summary(
         Field(description="Only this department code. Look codes up with find_codes."),
     ] = None,
     words: Annotated[
-        str | None, Field(description="Words that must all appear in the title (exact forms).")
+        str | None,
+        Field(
+            description="Words that must all appear in the title (whole words; singular and "
+            "plural forms both match)."
+        ),
     ] = None,
     offset: Annotated[
         int, Field(ge=0, description="Start position; pass next_offset from the previous page.")
@@ -873,7 +896,11 @@ async def get_daily_summary(
 async def scan_gazette(
     ctx: Context,
     words: Annotated[
-        str | None, Field(description="Words that must all appear in the title (exact forms).")
+        str | None,
+        Field(
+            description="Words that must all appear in the title (whole words; singular and "
+            "plural forms both match)."
+        ),
     ] = None,
     section: Annotated[
         str | None, Field(description="Only this section code, e.g. '1', '2A', '3', '5B'.")
@@ -896,9 +923,9 @@ async def scan_gazette(
         int, Field(ge=1, le=gazette.MAX_LIMIT, description="Items per page.")
     ] = gazette.DEFAULT_LIMIT,
 ) -> ScanGazetteResult:
-    """Find items published in the BOE over a range of up to 31 days whose title has given words,
-    or that belong to a section or department. Matches titles only, exact word forms. When
-    complete is false, call again to continue.
+    """Find items published in the BOE over a range of up to 31 days whose title has given
+    words, or that belong to a section or department. Matches titles only, whole words; singular
+    and plural forms both match. When complete is false, call again to continue.
     """
     return await _guard(
         gazette.scan_gazette(
@@ -913,6 +940,72 @@ async def scan_gazette(
             progress=ctx.report_progress,
         ),
         "scan_gazette",
+    )
+
+
+async def verify_citation(
+    ctx: Context,
+    citations: Annotated[
+        list[CitationRequest],
+        Field(
+            min_length=1,
+            max_length=citation_checks.MAX_CITATIONS,
+            description="1 to 10 citations to check.",
+        ),
+    ],
+) -> VerifyCitationResult:
+    """Check citations of Spanish laws against the consolidated text: whether the law and
+    article exist, their state on a date, and whether quoted words match the text, the current
+    version or an older one. Reports facts, not legal correctness. Compares words, not meaning: a
+    paraphrase does not match.
+    """
+    return await _guard(
+        citation_checks.verify_citations(_client(ctx), citations), "verify_citation"
+    )
+
+
+async def explore_amendment_chain(
+    ctx: Context,
+    law_id: _LAW_ID,
+    direction: Annotated[
+        Direction,
+        Field(description="'amended_by': the laws that amended it; 'amends': the laws it amended."),
+    ] = "amended_by",
+    depth: Annotated[
+        int, Field(ge=1, le=3, description="Levels to follow: 1 is only the direct amendments.")
+    ] = amendment_chains.DEFAULT_DEPTH,
+    include: Annotated[
+        amendment_chains.Include,
+        Field(
+            description="'amendments' (modifications, repeals, additions, suspensions) or 'all', "
+            "which adds corrections, citations and judicial references."
+        ),
+    ] = "amendments",
+    max_laws: Annotated[
+        int,
+        Field(
+            ge=1,
+            le=amendment_chains.MAX_LAWS,
+            description="Most laws to read in this call (one request each).",
+        ),
+    ] = amendment_chains.DEFAULT_MAX_LAWS,
+) -> AmendmentChainResult:
+    """Follow amendments between laws for up to three levels: the laws that amended a law and
+    the laws that amended those (amended_by), or what a law amended (amends). Examines a limited
+    number of laws per call; when complete is false, call again to continue.
+    """
+    return await _guard(
+        amendment_chains.explore_amendment_chain(
+            _catalogue(ctx),
+            _client(ctx),
+            law_id,
+            direction=direction,
+            depth=depth,
+            include=include,
+            max_laws=max_laws,
+            progress=ctx.report_progress,
+        ),
+        "explore_amendment_chain",
     )
 
 
@@ -935,6 +1028,8 @@ _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (most_amended_laws, "Find the most amended laws"),
     (get_daily_summary, "Get a day's BOE summary"),
     (scan_gazette, "Scan the BOE over several days"),
+    (verify_citation, "Verify citations of laws"),
+    (explore_amendment_chain, "Explore an amendment chain"),
 )
 
 
