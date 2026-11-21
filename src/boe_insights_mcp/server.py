@@ -3,12 +3,15 @@
 This layer is deliberately thin. Every tool calls a use case in :mod:`boe_insights_mcp.legislation`
 or :mod:`boe_insights_mcp.articles` and turns client errors into messages the model can act on.
 
-``create_server`` builds the ``FastMCP`` instance and registers the eight tool functions
+``create_server`` builds the ``FastMCP`` instance and registers the tool functions
 (``search_legislation``, ``resolve_reference``, ``get_law_overview``, ``find_codes``,
 ``get_amendment_history``, ``read_article``, ``compare_article_versions``,
-``get_article_history``); ``main`` runs it over stdio. Layering: tool functions here -> use cases
-in ``legislation`` and ``articles`` -> ``client``.
-This is also where the cache, rate limiter and client are created, in the lifespan. The tool
+``get_article_history``, and the trend tools ``legislation_over_time``, ``top_departments``,
+``compare_topics``, ``explain_spike`` and ``most_amended_laws``); ``main`` runs it over stdio.
+Layering: tool functions here -> use cases in ``legislation``, ``articles`` and ``trends`` ->
+``client`` (and ``catalogue`` for the trend tools).
+This is also where the cache, rate limiter, client and catalogue store are created, in the
+lifespan. The tool
 docstrings, ``Field`` descriptions and ``_INSTRUCTIONS`` are sent to the language model, so they
 are model-facing text; explanations for human readers live in ``#`` comments.
 """
@@ -27,8 +30,10 @@ from fastmcp.server.lifespan import lifespan
 from mcp.types import ToolAnnotations
 from pydantic import Field, ValidationError
 
-from boe_insights_mcp import articles, legislation
+from boe_insights_mcp import articles, legislation, trends
+from boe_insights_mcp.analytics import Period
 from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
+from boe_insights_mcp.catalogue import CatalogueStore
 from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.errors import BoeError
 from boe_insights_mcp.legislation import (
@@ -44,13 +49,20 @@ from boe_insights_mcp.schemas import (
     AmendmentHistoryResult,
     ArticleHistoryResult,
     CompareArticleVersionsResult,
+    CompareTopicsResult,
+    ExplainSpikeResult,
     FindCodesResult,
     LawOverview,
+    LegislationOverTimeResult,
+    MostAmendedLawsResult,
     ReadArticleResult,
     ResolveReferenceResult,
     SearchLegislationResult,
+    TopDepartmentsResult,
+    TopicSpec,
 )
 from boe_insights_mcp.settings import Settings
+from boe_insights_mcp.trends import DateBasis, GroupBy, TrendFilters
 
 __all__ = ["create_server", "main"]
 
@@ -64,7 +76,10 @@ _INSTRUCTIONS = (
     "department, subject and rank codes its filters take. read_article gives an article's text "
     "on a date, compare_article_versions shows what changed between two dates and "
     "get_article_history lists the amendments of one article; get_amendment_history lists the "
-    "norms that amended a whole law. The status of a law is derived from "
+    "norms that amended a whole law. legislation_over_time, top_departments, compare_topics, "
+    "explain_spike and most_amended_laws count laws from a downloaded copy of the collection "
+    "(the first call can take about 30 seconds); most_amended_laws examines a limited number of "
+    "laws per call, so repeat it while complete is false. The status of a law is derived from "
     "BOE flags and amendment references, so treat it as an indication. When quoting results, "
     "pass on the attribution 'Basado en datos de la Agencia Estatal Boletín Oficial del "
     "Estado' (https://www.boe.es) and say that consolidated texts are informational and have "
@@ -102,6 +117,12 @@ _INVALID_QUERY_ADVICE = {
     "or get the identifier again from resolve_reference.",
     "get_article_history": "Check the identifier and the article wording, or get the identifier "
     "again from resolve_reference.",
+    # The trend tools send the BOE only the text and subject_code filters.
+    "legislation_over_time": "Simplify the text filter or check subject_code, then try again.",
+    "top_departments": "Simplify the text filter or check subject_code, then try again.",
+    "compare_topics": "Simplify the text words or check the subject codes, then try again.",
+    "explain_spike": "Simplify the text filter or check subject_code, then try again.",
+    "most_amended_laws": "Simplify the text filter or check subject_code, then try again.",
 }
 
 
@@ -161,11 +182,11 @@ def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
     # when it stops; tools reach it through ``ctx.lifespan_context``.
 
     @lifespan
-    async def client_lifespan(server: FastMCP) -> AsyncIterator[dict[str, BoeClient]]:
-        """Provide ``{"client": ...}`` to the tools while the server runs."""
+    async def client_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
+        """Provide ``{"client": ..., "catalogue": ...}`` to the tools while the server runs."""
         if client is not None:
             # Injected (tests): the caller owns it, so it is not closed here.
-            yield {"client": client}
+            yield {"client": client, "catalogue": CatalogueStore(client)}
             return
         config = settings if settings is not None else Settings.from_env()
         cache = _build_cache(config)
@@ -174,7 +195,9 @@ def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
         # ``finally`` closes it even if the server stops with an error.
         try:
             async with BoeClient(cache=cache, limiter=limiter) as own_client:
-                yield {"client": own_client}
+                # The catalogue store is created beside the client for the same reason: its
+                # in-memory snapshot (about 12 500 laws) must be shared by every tool call.
+                yield {"client": own_client, "catalogue": CatalogueStore(own_client)}
         finally:
             await cache.close()
 
@@ -184,6 +207,11 @@ def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
 def _client(ctx: Context) -> BoeClient:
     """Return the shared client that the lifespan stored in the request context."""
     return ctx.lifespan_context["client"]
+
+
+def _catalogue(ctx: Context) -> CatalogueStore:
+    """Return the shared catalogue store that the lifespan stored in the request context."""
+    return ctx.lifespan_context["catalogue"]
 
 
 # The tool functions below are plain module-level coroutines. Their docstrings, parameter
@@ -493,6 +521,255 @@ async def get_article_history(
     )
 
 
+_TITLE_FILTER = Annotated[
+    str | None,
+    Field(description="Words that must all appear in the title, e.g. 'teletrabajo'."),
+]
+_TEXT_FILTER = Annotated[
+    str | None,
+    Field(description="Words that must all appear in the law's body text (exact words)."),
+]
+_SUBJECT_FILTER = Annotated[
+    str | None,
+    Field(description="BOE subject (materia) code. Look codes up with find_codes."),
+]
+_RANK_FILTER = Annotated[
+    RankFilter | None, Field(description="Only laws of this rank, e.g. 'real_decreto_ley'.")
+]
+_SCOPE_FILTER = Annotated[
+    ScopeFilter,
+    Field(description="'state' (national), 'regional' (autonomous communities) or 'any'."),
+]
+_DEPARTMENT_FILTER = Annotated[
+    str | None,
+    Field(description="BOE department code. Look codes up with find_codes."),
+]
+_FROM_DATE = Annotated[
+    date | None,
+    Field(description="Start of the range, ISO format. Default: 1 January 19 years ago."),
+]
+_TO_DATE = Annotated[
+    date | None, Field(description="End of the range, ISO format. Default: today.")
+]
+_PERIOD = Annotated[Period, Field(description="Period size: 'year', 'quarter' or 'month'.")]
+_DATE_BASIS = Annotated[
+    DateBasis,
+    Field(description="Date to count by: 'published' (BOE publication) or 'enacted'."),
+]
+
+
+async def legislation_over_time(
+    ctx: Context,
+    title: _TITLE_FILTER = None,
+    text: _TEXT_FILTER = None,
+    subject_code: _SUBJECT_FILTER = None,
+    rank: _RANK_FILTER = None,
+    scope: _SCOPE_FILTER = "any",
+    department_code: _DEPARTMENT_FILTER = None,
+    from_date: _FROM_DATE = None,
+    to_date: _TO_DATE = None,
+    period: _PERIOD = "year",
+    date_basis: _DATE_BASIS = "published",
+    group_by: Annotated[
+        GroupBy,
+        Field(description="Split by 'rank', 'department' or 'scope'; 'none' gives one series."),
+    ] = "none",
+    top_groups: Annotated[
+        int,
+        Field(ge=1, le=trends.MAX_TOP_GROUPS, description="Groups to list; the rest is 'other'."),
+    ] = 5,
+) -> LegislationOverTimeResult:
+    """Count laws per year, quarter or month, optionally split by rank, department or scope.
+
+    Answers 'how much legislation on X over time?'. Counts consolidated legislation only.
+    """
+    return await _guard(
+        trends.legislation_over_time(
+            _catalogue(ctx),
+            TrendFilters(title, text, subject_code, rank, scope, department_code),
+            from_date=from_date,
+            to_date=to_date,
+            period=period,
+            date_basis=date_basis,
+            group_by=group_by,
+            top_groups=top_groups,
+            progress=ctx.report_progress,
+        ),
+        "legislation_over_time",
+    )
+
+
+async def top_departments(
+    ctx: Context,
+    title: _TITLE_FILTER = None,
+    text: _TEXT_FILTER = None,
+    subject_code: _SUBJECT_FILTER = None,
+    rank: _RANK_FILTER = None,
+    scope: _SCOPE_FILTER = "any",
+    from_date: _FROM_DATE = None,
+    to_date: _TO_DATE = None,
+    date_basis: _DATE_BASIS = "published",
+    limit: Annotated[
+        int, Field(ge=1, le=trends.MAX_DEPARTMENTS, description="Departments to list.")
+    ] = 10,
+) -> TopDepartmentsResult:
+    """Rank the departments (ministries, Jefatura del Estado, autonomous communities) by laws.
+
+    Counts laws in a period. Answers 'who legislates most on X?'.
+    """
+    return await _guard(
+        trends.top_departments(
+            _catalogue(ctx),
+            TrendFilters(title, text, subject_code, rank, scope),
+            from_date=from_date,
+            to_date=to_date,
+            date_basis=date_basis,
+            limit=limit,
+            progress=ctx.report_progress,
+        ),
+        "top_departments",
+    )
+
+
+async def compare_topics(
+    ctx: Context,
+    topics: Annotated[
+        list[TopicSpec],
+        Field(
+            min_length=trends.MIN_TOPICS,
+            max_length=trends.MAX_TOPICS,
+            description="2 to 5 topics, each with a name and at least one of title, text or "
+            "subject_code.",
+        ),
+    ],
+    rank: _RANK_FILTER = None,
+    scope: _SCOPE_FILTER = "any",
+    department_code: _DEPARTMENT_FILTER = None,
+    from_date: _FROM_DATE = None,
+    to_date: _TO_DATE = None,
+    period: _PERIOD = "year",
+    date_basis: _DATE_BASIS = "published",
+) -> CompareTopicsResult:
+    """Compare how often several topics appear in legislation over time.
+
+    Each topic is title words, body words or a subject code.
+    """
+    return await _guard(
+        trends.compare_topics(
+            _catalogue(ctx),
+            topics,
+            rank=rank,
+            scope=scope,
+            department_code=department_code,
+            from_date=from_date,
+            to_date=to_date,
+            period=period,
+            date_basis=date_basis,
+            progress=ctx.report_progress,
+        ),
+        "compare_topics",
+    )
+
+
+async def explain_spike(
+    ctx: Context,
+    title: _TITLE_FILTER = None,
+    text: _TEXT_FILTER = None,
+    subject_code: _SUBJECT_FILTER = None,
+    rank: _RANK_FILTER = None,
+    scope: _SCOPE_FILTER = "any",
+    department_code: _DEPARTMENT_FILTER = None,
+    period_key: Annotated[
+        str | None,
+        Field(
+            description="Period to explain: '2020', '2020-Q2' or '2020-03'. "
+            "Default: the strongest spike in the range."
+        ),
+    ] = None,
+    period: Annotated[
+        Period | None,
+        Field(
+            description="'year', 'quarter' or 'month'. Default: what period_key shows, else 'year'."
+        ),
+    ] = None,
+    from_date: _FROM_DATE = None,
+    to_date: _TO_DATE = None,
+    date_basis: _DATE_BASIS = "published",
+    baseline_periods: Annotated[
+        int,
+        Field(
+            ge=trends.MIN_BASELINE_PERIODS,
+            le=trends.MAX_BASELINE_PERIODS,
+            description="Preceding periods to compare with.",
+        ),
+    ] = 5,
+    max_laws: Annotated[
+        int, Field(ge=1, le=trends.MAX_EXPLAINED_LAWS, description="Laws to list.")
+    ] = 15,
+) -> ExplainSpikeResult:
+    """Explain why a period has unusually many laws.
+
+    Shows which ranks, departments and scopes grew against the preceding periods, with the laws
+    themselves. Without period_key it picks the strongest spike in the range.
+    """
+    return await _guard(
+        trends.explain_spike(
+            _catalogue(ctx),
+            TrendFilters(title, text, subject_code, rank, scope, department_code),
+            period_key=period_key,
+            period=period,
+            from_date=from_date,
+            to_date=to_date,
+            date_basis=date_basis,
+            baseline_periods=baseline_periods,
+            max_laws=max_laws,
+            progress=ctx.report_progress,
+        ),
+        "explain_spike",
+    )
+
+
+async def most_amended_laws(
+    ctx: Context,
+    title: _TITLE_FILTER = None,
+    text: _TEXT_FILTER = None,
+    subject_code: _SUBJECT_FILTER = None,
+    rank: _RANK_FILTER = None,
+    scope: _SCOPE_FILTER = "any",
+    department_code: _DEPARTMENT_FILTER = None,
+    from_date: _FROM_DATE = None,
+    to_date: _TO_DATE = None,
+    date_basis: _DATE_BASIS = "published",
+    limit: Annotated[int, Field(ge=1, le=trends.MAX_AMENDED, description="Laws to return.")] = 10,
+    max_laws: Annotated[
+        int,
+        Field(
+            ge=1,
+            le=trends.MAX_EXAMINED,
+            description="Most laws to examine in this call (one request each).",
+        ),
+    ] = 30,
+) -> MostAmendedLawsResult:
+    """Rank laws by how many later laws amended them, within a filtered set.
+
+    Examines a limited number of laws per call; when complete is false, call again to continue.
+    """
+    return await _guard(
+        trends.most_amended_laws(
+            _catalogue(ctx),
+            _client(ctx),
+            TrendFilters(title, text, subject_code, rank, scope, department_code),
+            from_date=from_date,
+            to_date=to_date,
+            date_basis=date_basis,
+            limit=limit,
+            max_laws=max_laws,
+            progress=ctx.report_progress,
+        ),
+        "most_amended_laws",
+    )
+
+
 # (function, display title). Registered by ``create_server``; every tool is read-only and
 # idempotent, and "open world" because it reads an external service.
 _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
@@ -504,6 +781,11 @@ _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (read_article, "Read an article"),
     (compare_article_versions, "Compare article versions"),
     (get_article_history, "Get an article's history"),
+    (legislation_over_time, "Count laws over time"),
+    (top_departments, "Rank departments by laws"),
+    (compare_topics, "Compare topics over time"),
+    (explain_spike, "Explain a spike in legislation"),
+    (most_amended_laws, "Find the most amended laws"),
 )
 
 

@@ -1,0 +1,269 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "fecha_actualizacion": "20261117T081302Z",
+            "identificador": "DOGC-f-2019-90528",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Autonómico"
+            },
+            "departamento": {
+                "codigo": "8070",
+                "texto": "Comunidad Autónoma de Cataluña"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20190731",
+            "numero_oficial": "5/2019",
+            "titulo": "Ley 5/2019, de 31 de julio, de la Agencia de Salud Pública de Cataluña y de modificación de la Ley 18/2009, de 22 de octubre, de salud pública.",
+            "diario": "Diari Oficial de la Generalitat de Catalunya",
+            "fecha_publicacion": "20190802",
+            "diario_numero": "7931",
+            "fecha_vigencia": "20190803",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_html_consolidada": "https://www.boe.es/buscar/act.php?id=DOGC-f-2019-90528"
+        },
+        {
+            "fecha_actualizacion": "20250904T124024Z",
+            "identificador": "BOJA-b-2025-90210",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Autonómico"
+            },
+            "departamento": {
+                "codigo": "8010",
+                "texto": "Comunidad Autónoma de Andalucía"
+            },
+            "rango": {
+                "codigo": "1500",
+                "texto": "Decreto-ley"
+            },
+            "fecha_disposicion": "20250804",
+            "numero_oficial": "3/2025",
+            "titulo": "Decreto-ley 3/2025, de 4 de agosto, por el que se articula un periodo transitorio para garantizar la prestación del servicio de Televisión Digital Terrestre de ámbito local en Andalucía gestionado por particulares.",
+            "diario": "Boletín Oficial de la Junta de Andalucía",
+            "fecha_publicacion": "20250808",
+            "diario_numero": "152",
+            "fecha_vigencia": "20250809",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_html_consolidada": "https://www.boe.es/buscar/act.php?id=BOJA-b-2025-90210"
+        },
+        {
+            "fecha_actualizacion": "20251216T102453Z",
+            "identificador": "BOE-A-1934-7924",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "5255",
+                "texto": "Ministerio de Industria y Comercio"
+            },
+            "rango": {
+                "codigo": "1510",
+                "texto": "Decreto"
+            },
+            "fecha_disposicion": "19340823",
+            "titulo": "Decreto de 23 de agosto de 1934 (rectificado), aprobando el Reglamento de Policía Minera y Metalúrgica.",
+            "diario": "Gaceta de Madrid",
+            "fecha_publicacion": "19340916",
+            "diario_numero": "259",
+            "fecha_vigencia": "19341006",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https://www.boe.es/eli/es/d/1934/08/23/(1)",
+            "url_html_consolidada": "https://www.boe.es/buscar/act.php?id=BOE-A-1934-7924"
+        },
+        {
+            "fecha_actualizacion": "20261116T130818Z",
+            "identificador": "BOE-A-2026-23892",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "9534",
+                "texto": "Comisión Nacional de los Mercados y la Competencia"
+            },
+            "rango": {
+                "codigo": "1370",
+                "texto": "Resolución"
+            },
+            "fecha_disposicion": "20261103",
+            "titulo": "Resolución de 3 de noviembre de 2026, de la Comisión Nacional de los Mercados y la Competencia, por la que se establecen las condiciones de contenido mínimo de las plataformas web para facilitar la gestión íntegra de los expedientes de acceso a la red de distribución eléctrica para infraestructuras de recarga de vehículo eléctrico e instalaciones de autoconsumo, previstas en el artículo 5.3 del Real Decreto 1183/2020, de 29 de diciembre, de acceso y conexión a las redes de transporte y distribución de energía eléctrica.",
+            "diario": "Boletín Oficial del Estado",
+            "fecha_publicacion": "20261114",
+            "diario_numero": "284",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https://www.boe.es/eli/es/res/2026/11/03/(11)",
+            "url_html_consolidada": "https://www.boe.es/buscar/act.php?id=BOE-A-2026-23892"
+        },
+        {
+            "fecha_actualizacion": "20261116T130818Z",
+            "identificador": "BOE-A-2026-23892",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "9534",
+                "texto": "Comisión Nacional de los Mercados y la Competencia"
+            },
+            "rango": {
+                "codigo": "1370",
+                "texto": "Resolución"
+            },
+            "fecha_disposicion": "20261103",
+            "titulo": "Resolución de 3 de noviembre de 2026, de la Comisión Nacional de los Mercados y la Competencia, por la que se establecen las condiciones de contenido mínimo de las plataformas web para facilitar la gestión íntegra de los expedientes de acceso a la red de distribución eléctrica para infraestructuras de recarga de vehículo eléctrico e instalaciones de autoconsumo, previstas en el artículo 5.3 del Real Decreto 1183/2020, de 29 de diciembre, de acceso y conexión a las redes de transporte y distribución de energía eléctrica.",
+            "diario": "Boletín Oficial del Estado",
+            "fecha_publicacion": "20261114",
+            "diario_numero": "284",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https://www.boe.es/eli/es/res/2026/11/03/(11)",
+            "url_html_consolidada": "https://www.boe.es/buscar/act.php?id=BOE-A-2026-23892"
+        },
+        {
+            "fecha_actualizacion": "20261106T104119Z",
+            "identificador": "BOE-A-2026-23272",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Autonómico"
+            },
+            "departamento": {
+                "codigo": "8150",
+                "texto": "Comunidad Autónoma del Principado de Asturias"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20261015",
+            "numero_oficial": "8/2026",
+            "titulo": "Ley del Principado de Asturias 8/2026, de 15 de octubre, de Infancia y Adolescencia.",
+            "diario": "Boletín Oficial del Estado",
+            "fecha_publicacion": "20261106",
+            "diario_numero": "277",
+            "fecha_vigencia": "20261123",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https://www.boe.es/eli/es-as/l/2026/10/15/8",
+            "url_html_consolidada": "https://www.boe.es/buscar/act.php?id=BOE-A-2026-23272"
+        },
+        {
+            "fecha_actualizacion": "20251219T130804Z",
+            "identificador": "BOE-A-2011-20659",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Autonómico"
+            },
+            "departamento": {
+                "codigo": "8140",
+                "texto": "Comunidad Autónoma del País Vasco"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "19980625",
+            "numero_oficial": "16/1998",
+            "titulo": "Ley 16/1998, de 25 de junio, de Cofradías de Pescadores.",
+            "diario": "Boletín Oficial del Estado",
+            "fecha_publicacion": "20111231",
+            "diario_numero": "315",
+            "fecha_vigencia": "19980730",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https://www.boe.es/eli/es-pv/l/1998/06/25/16",
+            "url_html_consolidada": "https://www.boe.es/buscar/act.php?id=BOE-A-2011-20659"
+        },
+        {
+            "fecha_actualizacion": "20261113T083442Z",
+            "identificador": "BOE-A-2026-20822",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "7723",
+                "texto": "Jefatura del Estado"
+            },
+            "rango": {
+                "codigo": "1320",
+                "texto": "Real Decreto-ley"
+            },
+            "fecha_disposicion": "20261006",
+            "numero_oficial": "28/2026",
+            "titulo": "Real Decreto-ley 28/2026, de 6 de octubre, por el que se adoptan medidas urgentes para reforzar la estabilidad de los contratos de arrendamiento de vivienda habitual.",
+            "diario": "Boletín Oficial del Estado",
+            "fecha_publicacion": "20261007",
+            "diario_numero": "249",
+            "fecha_vigencia": "20261115",
+            "vigencia_agotada": "S",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https://www.boe.es/eli/es/rdl/2026/10/06/28",
+            "url_html_consolidada": "https://www.boe.es/buscar/act.php?id=BOE-A-2026-20822"
+        },
+        {
+            "fecha_actualizacion": "20261022T122444Z",
+            "identificador": "BOE-A-2026-22008",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "9585",
+                "texto": "Ministerio de la Presidencia, Justicia y Relaciones con las Cortes"
+            },
+            "rango": {
+                "codigo": "1410",
+                "texto": "Instrucción"
+            },
+            "fecha_disposicion": "20260915",
+            "titulo": "Instrucción de 15 de septiembre de 2026, de la Dirección General de Seguridad Jurídica y Fe Pública, relativa al procedimiento para la destrucción de tomos de protocolos especiales de protestos de letras de cambio y de otros documentos mercantiles.",
+            "diario": "Boletín Oficial del Estado",
+            "fecha_publicacion": "20261022",
+            "diario_numero": "262",
+            "fecha_vigencia": "20261023",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_html_consolidada": "https://www.boe.es/buscar/act.php?id=BOE-A-2026-22008"
+        }
+    ]
+}

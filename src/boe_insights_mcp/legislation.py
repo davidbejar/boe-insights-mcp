@@ -59,12 +59,15 @@ __all__ = [
     "CodeKind",
     "RankFilter",
     "ScopeFilter",
+    "brief",
     "derive_status",
     "find_codes",
     "get_amendment_history",
     "get_law_overview",
+    "rank_code",
     "relation_group",
     "resolve_reference",
+    "scope_code",
     "search_legislation",
 ]
 
@@ -147,6 +150,20 @@ def _brief(law: LawSummary) -> LawBrief:
         validity_exhausted=law.validity_exhausted,
         url=law.html_url,
     )
+
+
+# The compact record is public because the trend tools return the same one (``trends``).
+brief = _brief
+
+
+def rank_code(rank: RankFilter) -> str:
+    """The BOE rank code of a ``RankFilter`` value, for filtering hits locally."""
+    return _RANK_CODES[rank]
+
+
+def scope_code(scope: ScopeFilter) -> str | None:
+    """The BOE scope code of a ``ScopeFilter`` value; ``None`` for ``any``."""
+    return _SCOPE_CODES[scope]
 
 
 def _newest_update(laws: Iterable[LawSummary]) -> datetime | None:

@@ -122,7 +122,10 @@ _NO_NOTE = b"boe-insights-mcp: no initial note"
 # still cut it short.
 _MAX_RETRY_AFTER = 60.0
 _JITTER_FRACTION = 0.25
-_MAX_LIMIT = 1000
+# The largest page ``search_laws`` accepts. The API honours up to 10 000 (api-notes, third probe,
+# "Bulk download"), but a 5000-record page is 6.7 MB, a quarter of the response cap, which keeps
+# the catalogue crawl well inside it.
+_MAX_LIMIT = 5000
 _RETRY_AFTER_SECONDS = re.compile(r"[0-9]+")
 # Only the shape ``<status>...<text>MESSAGE</text>`` is read from error bodies (api-notes 2, 9).
 _ERROR_TEXT = re.compile(r"<status>.*?<text>([^<]*)</text>", re.DOTALL)
@@ -348,9 +351,18 @@ class BoeClient:
         self._cache_hits = 0
 
     async def search_laws(
-        self, query: str | None = None, *, offset: int = 0, limit: int = 50
+        self,
+        query: str | None = None,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        ttl: float | None = None,
     ) -> list[LawSummary]:
-        """Search consolidated legislation; ``query`` comes from ``build_search_query``."""
+        """Search consolidated legislation; ``query`` comes from ``build_search_query``.
+
+        ``ttl`` overrides how long the response stays cached (default ``SEARCH_TTL``); the
+        catalogue download uses it to keep its large pages for a day.
+        """
         if not 1 <= limit <= _MAX_LIMIT:
             raise ValueError(f"limit must be between 1 and {_MAX_LIMIT}")
         if offset < 0:
@@ -359,7 +371,10 @@ class BoeClient:
         if query is not None:
             params["query"] = query
         return await self._get(
-            "legislacion-consolidada", params, SEARCH_TTL, _from_envelope(_build_summaries)
+            "legislacion-consolidada",
+            params,
+            SEARCH_TTL if ttl is None else ttl,
+            _from_envelope(_build_summaries),
         )
 
     async def get_law_metadata(self, law_id: str) -> LawMetadata:
@@ -371,6 +386,16 @@ class BoeClient:
         """Return the subjects and amendment references of one law."""
         path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/analisis"
         return await self._get(path, None, ANALYSIS_TTL, _from_envelope(_build_analysis))
+
+    async def has_cached_analysis(self, law_id: str) -> bool:
+        """Whether the analysis of ``law_id`` is in the cache right now; sends no request.
+
+        ``most_amended_laws`` uses it to let already-cached analyses through for free.
+        """
+        # Only presence is checked, not that the body still parses: if a stale body is found
+        # later, ``get_law_analysis`` drops it and refetches, which is a rare, harmless miss.
+        path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/analisis"
+        return await self._cache.get(self._cache_key(path, None, _JSON, None)) is not None
 
     async def get_text_index(self, law_id: str) -> list[IndexEntry]:
         """Return the block index of one law's text, in document order."""

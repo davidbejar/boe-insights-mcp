@@ -15,11 +15,12 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
 
 from boe_insights_mcp.versions import ArticleState
 
 __all__ = [
+    "AmendedLaw",
     "AmendmentGroup",
     "AmendmentHistoryResult",
     "AmendmentItem",
@@ -33,16 +34,29 @@ __all__ = [
     "ArticleState",
     "CodeMatch",
     "CompareArticleVersionsResult",
+    "CompareTopicsResult",
+    "Coverage",
+    "DepartmentCount",
+    "ExplainSpikeResult",
     "FindCodesResult",
+    "GroupSeries",
     "LawBrief",
     "LawOverview",
     "LawStatus",
+    "LegislationOverTimeResult",
+    "MostAmendedLawsResult",
+    "PeriodCount",
+    "PeriodSpike",
     "Provenance",
     "ReadArticleResult",
     "ReferenceBrief",
     "RelationCount",
     "ResolveReferenceResult",
     "SearchLegislationResult",
+    "SpikeContribution",
+    "TopDepartmentsResult",
+    "TopicSpec",
+    "TopicTrend",
     "VersionInfo",
     "YearCount",
 ]
@@ -424,3 +438,182 @@ class ArticleHistoryResult(ArticleResult):
     current_state: ArticleState | None = Field(
         default=None, description="State of the article today."
     )
+
+
+# --- Trend tools --------------------------------------------------------------------------------
+
+
+class Coverage(_Output):
+    """What the counts were computed from."""
+
+    catalogue_size: int = Field(description="Laws in the downloaded consolidated collection.")
+    catalogue_fetched_at: datetime = Field(description="When that collection was downloaded (UTC).")
+    matched: int = Field(description="Laws that passed the filters, before the date range.")
+
+
+class PeriodCount(_Output):
+    """The number of laws in one period."""
+
+    period: str = Field(description="'2020', '2020-Q3' or '2020-03'.")
+    count: int
+    partial: bool = Field(
+        default=False,
+        description="True when the period is unfinished or cut by the range; omitted when false.",
+    )
+
+    @model_serializer(mode="wrap")
+    def _omit_false_partial(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Leave ``partial`` out of the output when it is false (most points), to save space."""
+        data: dict[str, object] = handler(self)
+        if not data.get("partial"):
+            data.pop("partial", None)
+        return data
+
+
+class PeriodSpike(_Output):
+    """A period with unusually many laws."""
+
+    period: str
+    count: int
+    baseline: float = Field(description="Median count of the other complete periods.")
+    ratio: float | None = Field(description="count / baseline; null when the baseline is 0.")
+
+
+class GroupSeries(_Output):
+    """The series of one group (rank, department or scope)."""
+
+    code: str | None = Field(description="BOE code; null for the row 'other'.")
+    label: str
+    total: int
+    series: list[PeriodCount]
+
+
+class LegislationOverTimeResult(_Output):
+    """Laws counted per period."""
+
+    from_date: date = Field(description="Start of the range used.")
+    to_date: date = Field(description="End of the range used.")
+    period: Literal["year", "quarter", "month"]
+    series: list[PeriodCount]
+    total: int = Field(description="Laws counted in the range.")
+    undated: int = Field(description="Matching laws without a date for the chosen date_basis.")
+    groups: list[GroupSeries] = Field(
+        description="One series per top group, then 'other'; empty when group_by is 'none'."
+    )
+    spikes: list[PeriodSpike] = Field(description="Periods that stand out, strongest first.")
+    coverage: Coverage
+    caveats: list[str]
+    provenance: Provenance
+
+
+class DepartmentCount(_Output):
+    """One department and the laws it issued."""
+
+    code: str
+    label: str
+    count: int
+    share: float = Field(description="count / laws with a department, 0 to 1.")
+
+
+class TopDepartmentsResult(_Output):
+    """Departments ranked by number of laws."""
+
+    from_date: date
+    to_date: date
+    departments: list[DepartmentCount]
+    other_count: int = Field(description="Laws of the departments not listed.")
+    total: int = Field(description="Laws in the range.")
+    distinct_departments: int
+    coverage: Coverage
+    caveats: list[str]
+    provenance: Provenance
+
+
+class TopicSpec(BaseModel):
+    """One topic to compare: a name and at least one criterion."""
+
+    name: str = Field(min_length=1, description="Label for the topic, e.g. 'teletrabajo'.")
+    title: str | None = Field(default=None, description="Words that must all be in the title.")
+    text: str | None = Field(default=None, description="Words that must all be in the body text.")
+    subject_code: str | None = Field(default=None, description="BOE subject (materia) code.")
+
+
+class TopicTrend(_Output):
+    """One topic's counts over time."""
+
+    name: str
+    total: int = Field(description="Laws of the topic in the range.")
+    share_of_all: float | None = Field(
+        description="total / all laws in the range under the same rank, scope and department."
+    )
+    peak: str | None = Field(description="Complete period with the most laws; null if none.")
+    first: str | None = Field(description="First period with a law of the topic.")
+    series: list[PeriodCount]
+
+
+class CompareTopicsResult(_Output):
+    """Several topics counted over the same periods."""
+
+    from_date: date
+    to_date: date
+    period: Literal["year", "quarter", "month"]
+    topics: list[TopicTrend] = Field(description="In the order given.")
+    coverage: Coverage = Field(
+        description="matched is the reference population: all laws under the rank, scope and "
+        "department filters."
+    )
+    caveats: list[str]
+    provenance: Provenance
+
+
+class SpikeContribution(_Output):
+    """A group that grew in the explained period."""
+
+    dimension: Literal["rank", "department", "scope"]
+    code: str
+    label: str
+    count: int = Field(description="Laws of the group in the period.")
+    expected: float = Field(description="The group's mean per baseline period.")
+    excess: float = Field(description="count - expected.")
+
+
+class ExplainSpikeResult(_Output):
+    """Why a period has many laws."""
+
+    found: bool = Field(description="False when no period stands out (see note).")
+    period: str | None
+    count: int | None = Field(description="Laws in the period.")
+    baseline: float | None = Field(description="Mean laws per preceding period.")
+    baseline_periods: int | None = Field(description="Number of preceding periods averaged.")
+    contributions: list[SpikeContribution] = Field(description="Largest excess first.")
+    laws: list[LawBrief] = Field(description="Laws of the period, oldest first, up to max_laws.")
+    laws_total: int = Field(description="All laws of the period.")
+    other_spikes: list[PeriodSpike] = Field(description="Other unusual periods in the range.")
+    note: str | None = None
+    coverage: Coverage
+    caveats: list[str]
+    provenance: Provenance
+
+
+class AmendedLaw(_Output):
+    """A law and how many later laws amended it."""
+
+    law: LawBrief
+    amendments: int = Field(description="References that modify, add to or repeal it.")
+    by_kind: dict[str, int] = Field(description="Amendments per kind: modifies, adds, repeals.")
+
+
+class MostAmendedLawsResult(_Output):
+    """Laws ranked by amendments, among those examined so far."""
+
+    from_date: date
+    to_date: date
+    laws: list[AmendedLaw] = Field(description="Most amended first.")
+    candidates: int = Field(description="Matching laws in the range.")
+    examined: int = Field(description="Laws whose amendments were counted.")
+    failed: int = Field(description="Laws skipped after a temporary BOE error.")
+    complete: bool = Field(description="True when every candidate was examined.")
+    note: str | None = Field(default=None, description="What to do when not complete.")
+    coverage: Coverage
+    caveats: list[str]
+    provenance: Provenance
