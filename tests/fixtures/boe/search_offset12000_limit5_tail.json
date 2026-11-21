@@ -1,0 +1,158 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "fecha_actualizacion": "20251216T110629Z",
+            "identificador": "BOE-A-1977-6061",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "7723",
+                "texto": "Jefatura del Estado"
+            },
+            "rango": {
+                "codigo": "1320",
+                "texto": "Real Decreto-ley"
+            },
+            "fecha_disposicion": "19770304",
+            "numero_oficial": "17\/1977",
+            "titulo": "Real Decreto-ley 17\/1977, de 4 de marzo, sobre relaciones de trabajo.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "19770309",
+            "diario_numero": "58",
+            "fecha_vigencia": "19770310",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es\/rdl\/1977\/03\/04\/17",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-1977-6061"
+        },
+        {
+            "fecha_actualizacion": "20251216T110629Z",
+            "identificador": "BOE-A-1977-7066",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "7786",
+                "texto": "Presidencia del Gobierno"
+            },
+            "rango": {
+                "codigo": "1340",
+                "texto": "Real Decreto"
+            },
+            "fecha_disposicion": "19770314",
+            "numero_oficial": "388\/1977",
+            "titulo": "Real Decreto 388\/1977, de 14 de marzo, sobre indulto general.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "19770318",
+            "diario_numero": "66",
+            "fecha_vigencia": "19770318",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es\/rd\/1977\/03\/14\/388",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-1977-7066"
+        },
+        {
+            "fecha_actualizacion": "20251216T110629Z",
+            "identificador": "BOE-A-1977-7546",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "7330",
+                "texto": "Ministerio de la Gobernaci\u00f3n"
+            },
+            "rango": {
+                "codigo": "1340",
+                "texto": "Real Decreto"
+            },
+            "fecha_disposicion": "19770311",
+            "numero_oficial": "444\/1977",
+            "titulo": "Real Decreto 444\/1977, de 11 de marzo, por el que se dictan normas complementarias del Real Decreto-ley 16\/1977, de 25 de febrero, por el que se regulan los aspectos penales, administrativos y fiscales de los juegos de suerte, envite o azar y de las apuestas.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "19770324",
+            "diario_numero": "71",
+            "fecha_vigencia": "19770413",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es\/rd\/1977\/03\/11\/444",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-1977-7546"
+        },
+        {
+            "fecha_actualizacion": "20251216T110629Z",
+            "identificador": "BOE-A-1977-8602",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "7723",
+                "texto": "Jefatura del Estado"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "19770401",
+            "numero_oficial": "19\/1977",
+            "titulo": "Ley 19\/1977, de 1 de abril, sobre regulaci\u00f3n del derecho de asociaci\u00f3n sindical.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "19770404",
+            "diario_numero": "80",
+            "fecha_vigencia": "19770405",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es\/l\/1977\/04\/01\/19",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-1977-8602"
+        },
+        {
+            "fecha_actualizacion": "20251216T110628Z",
+            "identificador": "BOE-A-1977-1909",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "7723",
+                "texto": "Jefatura del Estado"
+            },
+            "rango": {
+                "codigo": "1340",
+                "texto": "Real Decreto"
+            },
+            "fecha_disposicion": "19770121",
+            "numero_oficial": "54\/1977",
+            "titulo": "Real Decreto 54\/1977, de 21 de enero, sobre T\u00edtulos y Denominaciones que corresponden al Heredero de la Corona.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "19770122",
+            "diario_numero": "19",
+            "fecha_vigencia": "19770122",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es\/rd\/1977\/01\/21\/54",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-1977-1909"
+        }
+    ]
+}

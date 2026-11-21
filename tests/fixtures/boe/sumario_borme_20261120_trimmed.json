@@ -1,0 +1,345 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": {
+        "sumario": {
+            "metadatos": {
+                "publicacion": "BORME",
+                "fecha_publicacion": "20261120"
+            },
+            "diario": [
+                {
+                    "numero": "223",
+                    "sumario_diario": {
+                        "identificador": "BORME-S-2026-223",
+                        "url_pdf": {
+                            "szBytes": "239097",
+                            "szKBytes": "233",
+                            "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-S-2026-223.pdf"
+                        }
+                    },
+                    "seccion": [
+                        {
+                            "codigo": "A",
+                            "nombre": "SECCIÓN PRIMERA. Empresarios. Actos inscritos",
+                            "item": [
+                                {
+                                    "identificador": "BORME-A-2026-223-01",
+                                    "titulo": "ARABA/ÁLAVA",
+                                    "url_pdf": {
+                                        "szBytes": "201685",
+                                        "szKBytes": "197",
+                                        "pagina_inicial": "54896",
+                                        "pagina_final": "54898",
+                                        "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-A-2026-223-01.pdf"
+                                    },
+                                    "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-A-2026-223-01",
+                                    "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-A-2026-223-01"
+                                },
+                                {
+                                    "identificador": "BORME-A-2026-223-03",
+                                    "titulo": "ALICANTE/ALACANT",
+                                    "url_pdf": {
+                                        "szBytes": "291627",
+                                        "szKBytes": "285",
+                                        "pagina_inicial": "54899",
+                                        "pagina_final": "54906",
+                                        "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-A-2026-223-03.pdf"
+                                    },
+                                    "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-A-2026-223-03",
+                                    "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-A-2026-223-03"
+                                },
+                                {
+                                    "identificador": "BORME-A-2026-223-04",
+                                    "titulo": "ALMERÍA",
+                                    "url_pdf": {
+                                        "szBytes": "215777",
+                                        "szKBytes": "211",
+                                        "pagina_inicial": "54907",
+                                        "pagina_final": "54910",
+                                        "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-A-2026-223-04.pdf"
+                                    },
+                                    "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-A-2026-223-04",
+                                    "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-A-2026-223-04"
+                                }
+                            ]
+                        },
+                        {
+                            "codigo": "B",
+                            "nombre": "SECCIÓN PRIMERA. Empresarios. Otros actos publicados en el Registro Mercantil",
+                            "item": {
+                                "identificador": "BORME-B-2026-223-21",
+                                "titulo": "HUELVA",
+                                "url_pdf": {
+                                    "szBytes": "191654",
+                                    "szKBytes": "187",
+                                    "pagina_inicial": "55151",
+                                    "pagina_final": "55151",
+                                    "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-B-2026-223-21.pdf"
+                                },
+                                "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-B-2026-223-21",
+                                "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-B-2026-223-21"
+                            }
+                        },
+                        {
+                            "codigo": "C",
+                            "nombre": "SECCIÓN SEGUNDA. Anuncios y avisos legales",
+                            "apartado": [
+                                {
+                                    "codigo": "002",
+                                    "nombre": "CONVOCATORIAS DE JUNTAS",
+                                    "item": [
+                                        {
+                                            "identificador": "BORME-C-2026-6199",
+                                            "titulo": "ALCOHOLES DEL SUR, S.A.",
+                                            "url_pdf": {
+                                                "szBytes": "187274",
+                                                "szKBytes": "183",
+                                                "pagina_inicial": "7706",
+                                                "pagina_final": "7706",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6199.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6199",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6199"
+                                        },
+                                        {
+                                            "identificador": "BORME-C-2026-6200",
+                                            "titulo": "CAL GUARDIET, S.L.",
+                                            "url_pdf": {
+                                                "szBytes": "187432",
+                                                "szKBytes": "183",
+                                                "pagina_inicial": "7707",
+                                                "pagina_final": "7707",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6200.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6200",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6200"
+                                        },
+                                        {
+                                            "identificador": "BORME-C-2026-6201",
+                                            "titulo": "COMERCIAL SIRVIELLA, S.L.",
+                                            "url_pdf": {
+                                                "szBytes": "186251",
+                                                "szKBytes": "182",
+                                                "pagina_inicial": "7708",
+                                                "pagina_final": "7708",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6201.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6201",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6201"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "003",
+                                    "nombre": "FUSIONES Y ABSORCIONES DE EMPRESAS",
+                                    "item": [
+                                        {
+                                            "identificador": "BORME-C-2026-6218",
+                                            "titulo": "AEROBROKER SERVICIOS AEREOS, S.L. (SOCIEDAD ABSORBENTE) \r\nSAFRON SOLUTIONS, S.L.U. (SOCIEDAD ABSORBIDA)",
+                                            "url_pdf": {
+                                                "szBytes": "188852",
+                                                "szKBytes": "184",
+                                                "pagina_inicial": "7727",
+                                                "pagina_final": "7727",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6218.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6218",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6218"
+                                        },
+                                        {
+                                            "identificador": "BORME-C-2026-6219",
+                                            "titulo": "ALGUISA AGRÍCOLA, SOCIEDAD LIMITADA \r\n(SOCIEDAD ABSORBENTE) \r\nALEMAR 05, SOCIEDAD LIMITADA \r\nINVERSIONES ALMANSA GUISADO, SOCIEDAD LIMITADA \r\n(SOCIEDADES ABSORBIDAS)",
+                                            "url_pdf": {
+                                                "szBytes": "185935",
+                                                "szKBytes": "182",
+                                                "pagina_inicial": "7728",
+                                                "pagina_final": "7728",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6219.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6219",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6219"
+                                        },
+                                        {
+                                            "identificador": "BORME-C-2026-6220",
+                                            "titulo": "CLÍNICA ESTÉTICA XATIVA, S.L. UNIPERSONAL \r\n(SOCIEDAD ABSORBENTE) \r\nBMV-ASSEM & ASSOCIATS, S.L. \r\n(SOCIEDAD ABSORBIDA)",
+                                            "url_pdf": {
+                                                "szBytes": "188767",
+                                                "szKBytes": "184",
+                                                "pagina_inicial": "7729",
+                                                "pagina_final": "7729",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6220.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6220",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6220"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "004",
+                                    "nombre": "ESCISIÓN DE EMPRESAS",
+                                    "item": [
+                                        {
+                                            "identificador": "BORME-C-2026-6234",
+                                            "titulo": "GOLOSINAS BURGOS, S.L. \r\n(SOCIEDAD ESCINDIDA) \r\nGOLOSINAS BURGOS, S.L. \r\nBURGOS & MÁRQUEZ, S.L. \r\n(SOCIEDADES BENEFICIARIAS DE NUEVA CREACIÓN)",
+                                            "url_pdf": {
+                                                "szBytes": "188084",
+                                                "szKBytes": "184",
+                                                "pagina_inicial": "7750",
+                                                "pagina_final": "7750",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6234.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6234",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6234"
+                                        },
+                                        {
+                                            "identificador": "BORME-C-2026-6235",
+                                            "titulo": "HERDIT, S.L.U. \r\n(SOCIEDAD ESCINDIDA) \r\nHERDIT PROCESOS ESPECIALES, S.L.U. \r\n(SOCIEDAD BENEFICIARIA)",
+                                            "url_pdf": {
+                                                "szBytes": "187162",
+                                                "szKBytes": "183",
+                                                "pagina_inicial": "7751",
+                                                "pagina_final": "7751",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6235.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6235",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6235"
+                                        },
+                                        {
+                                            "identificador": "BORME-C-2026-6236",
+                                            "titulo": "SIDENOR ACEROS ESPECIALES, S.L.U. \r\n(SOCIEDAD SEGREGADA) \r\nSIDENOR METALS RECYCLING, S.L.U. \r\n(SOCIEDAD BENEFICIARIA)",
+                                            "url_pdf": {
+                                                "szBytes": "186799",
+                                                "szKBytes": "182",
+                                                "pagina_inicial": "7752",
+                                                "pagina_final": "7752",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6236.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6236",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6236"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "007",
+                                    "nombre": "CESIÓN DE EMPRESAS",
+                                    "item": {
+                                        "identificador": "BORME-C-2026-6237",
+                                        "titulo": "NEKI CREACTIVOS, S.L. \r\n(SOCIEDAD CEDENTE) \r\nGRUPO SAVEFAMILY, S.L.U. \r\n(SOCIEDAD CESIONARIA)",
+                                        "url_pdf": {
+                                            "szBytes": "188485",
+                                            "szKBytes": "184",
+                                            "pagina_inicial": "7753",
+                                            "pagina_final": "7753",
+                                            "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6237.pdf"
+                                        },
+                                        "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6237",
+                                        "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6237"
+                                    }
+                                },
+                                {
+                                    "codigo": "009",
+                                    "nombre": "TRANSFORMACIÓN DE EMPRESAS",
+                                    "item": [
+                                        {
+                                            "identificador": "BORME-C-2026-6238",
+                                            "titulo": "TOB-HAUS, S.A.",
+                                            "url_pdf": {
+                                                "szBytes": "184957",
+                                                "szKBytes": "181",
+                                                "pagina_inicial": "7754",
+                                                "pagina_final": "7754",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6238.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6238",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6238"
+                                        },
+                                        {
+                                            "identificador": "BORME-C-2026-6239",
+                                            "titulo": "518, SCP",
+                                            "url_pdf": {
+                                                "szBytes": "184893",
+                                                "szKBytes": "181",
+                                                "pagina_inicial": "7755",
+                                                "pagina_final": "7755",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6239.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6239",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6239"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "011",
+                                    "nombre": "REDUCCIÓN DE CAPITAL",
+                                    "item": [
+                                        {
+                                            "identificador": "BORME-C-2026-6240",
+                                            "titulo": "AUTOMÁTICOS FAME, S.A.",
+                                            "url_pdf": {
+                                                "szBytes": "187719",
+                                                "szKBytes": "183",
+                                                "pagina_inicial": "7756",
+                                                "pagina_final": "7756",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6240.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6240",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6240"
+                                        },
+                                        {
+                                            "identificador": "BORME-C-2026-6241",
+                                            "titulo": "PROMONTORIA MACC 1X1 SOCIMI S.A.U.",
+                                            "url_pdf": {
+                                                "szBytes": "188121",
+                                                "szKBytes": "184",
+                                                "pagina_inicial": "7757",
+                                                "pagina_final": "7757",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6241.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6241",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6241"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "099",
+                                    "nombre": "OTROS ANUNCIOS Y AVISOS LEGALES",
+                                    "item": [
+                                        {
+                                            "identificador": "BORME-C-2026-6242",
+                                            "titulo": "ARAGONESA DE APLICACIONES Y TÉCNICAS ELÉCTRICAS, S.A.",
+                                            "url_pdf": {
+                                                "szBytes": "187889",
+                                                "szKBytes": "183",
+                                                "pagina_inicial": "7758",
+                                                "pagina_final": "7758",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6242.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6242",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6242"
+                                        },
+                                        {
+                                            "identificador": "BORME-C-2026-6243",
+                                            "titulo": "SOLVENTIS EOS, SICAV, S.A.",
+                                            "url_pdf": {
+                                                "szBytes": "187752",
+                                                "szKBytes": "183",
+                                                "pagina_inicial": "7759",
+                                                "pagina_final": "7759",
+                                                "texto": "https://www.boe.es/borme/dias/2026/11/20/pdfs/BORME-C-2026-6243.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_borme/txt.php?id=BORME-C-2026-6243",
+                                            "url_xml": "https://www.boe.es/diario_borme/xml.php?id=BORME-C-2026-6243"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

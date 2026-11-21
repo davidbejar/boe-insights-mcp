@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="a4-2" tipo="precepto" titulo="Artículo 46 bis">
+      <version id_norma="BOE-A-2019-15790" fecha_publicacion="20191105" fecha_vigencia="20191106">
+        <p class="articulo">Artículo 46 bis. Ubicación de los sistemas de información y comunicaciones para el registro de datos.</p>
+        <p class="parrafo">Los sistemas de información y comunicaciones para la recogida, almacenamiento, procesamiento y gestión del censo electoral, los padrones municipales de habitantes y otros registros de población, datos fiscales relacionados con tributos propios o cedidos y datos de los usuarios del sistema nacional de salud, así como los correspondientes tratamientos de datos personales, deberán ubicarse y prestarse dentro del territorio de la Unión Europea.</p>
+        <p class="parrafo">Los datos a que se refiere el apartado anterior no podrán ser objeto de transferencia a un tercer país u organización internacional, con excepción de los que hayan sido objeto de una decisión de adecuación de la Comisión Europea o cuando así lo exija el cumplimiento de las obligaciones internacionales asumidas por el Reino de España.</p>
+        <blockquote>
+          <p class="nota_pie">Se añade por el art. 4.1 del Real Decreto-ley 14/2019, de 31 de octubre. <a class="refPost">Ref. BOE-A-2019-15790#a4</a></p>
+          <p class="nota_pie_2">Téngase en cuenta para su aplicación la disposición transitoria segunda del citado Real Decreto-ley.</p>
+        </blockquote>
+      </version>
+    </bloque>
+  </data>
+</response>

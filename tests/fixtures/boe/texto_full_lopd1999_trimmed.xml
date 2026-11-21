@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <texto>
+      <bloque id="no" tipo="nota_inicial">
+        <version id_norma="BOE-A-2018-16673" fecha_publicacion="20181206" fecha_vigencia="20181207">
+          <p class="siempreSeVe">Norma derogada, con efectos de 7 de diciembre de 2018, sin perjuicio de lo previsto en la disposición adicional 14 de la Ley Orgánica 3/2018, de 5 de diciembre, según establece su disposición derogatoria única.1. <a class="refPost">Ref. BOE-A-2018-16673#dd</a></p>
+        </version>
+      </bloque>
+      <bloque id="preambulo" tipo="preambulo">
+        <version id_norma="BOE-A-1999-23750" fecha_publicacion="19991214" fecha_vigencia="20000114">
+          <p class="subseccion">JUAN CARLOS I</p>
+          <p class="subseccion">REY DE ESPAÑA</p>
+          <p class="parrafo">A todos los que la presente vieren y entendieren.</p>
+          <p class="parrafo">Sabed: Que las Cortes Generales han aprobado y Yo vengo en sancionar la siguiente Ley Orgánica.</p>
+        </version>
+      </bloque>
+      <bloque id="ti" tipo="encabezado" titulo="TÍTULO I">
+        <version id_norma="BOE-A-1999-23750" fecha_publicacion="19991214" fecha_vigencia="20000114">
+          <p class="titulo_num">TÍTULO I</p>
+          <p class="titulo_tit">Disposiciones generales</p>
+        </version>
+      </bloque>
+      <bloque id="a1" tipo="precepto" titulo="Artículo 1">
+        <version id_norma="BOE-A-1999-23750" fecha_publicacion="19991214" fecha_vigencia="20000114">
+          <p class="articulo">Artículo 1. Objeto.</p>
+          <p class="parrafo">La presente Ley Orgánica tiene por objeto garantizar y proteger, en lo que concierne al tratamiento de los datos personales, las libertades públicas y los derechos fundamentales de las personas físicas, y especialmente de su honor e intimidad personal y familiar.</p>
+        </version>
+      </bloque>
+      <bloque id="a2" tipo="precepto" titulo="Artículo 2">
+        <version id_norma="BOE-A-1999-23750" fecha_publicacion="19991214" fecha_vigencia="20000114">
+          <p class="articulo">Artículo 2. Ámbito de aplicación.</p>
+          <p class="parrafo">1. La presente Ley Orgánica será de aplicación a los datos de carácter personal registrados en soporte físico, que los haga susceptibles de tratamiento, y a toda modalidad de uso posterior de estos datos por los sectores público y privado.</p>
+          <p class="parrafo">Se regirá por la presente Ley Orgánica todo tratamiento de datos de carácter personal:</p>
+          <p class="parrafo_2">a) Cuando el tratamiento sea efectuado en territorio español en el marco de las actividades de un establecimiento del responsable del tratamiento.</p>
+          <p class="parrafo">b) Cuando al responsable del tratamiento no establecido en territorio español, le sea de aplicación la legislación española en aplicación de normas de Derecho Internacional público.</p>
+          <p class="parrafo">c) Cuando el responsable del tratamiento no esté establecido en territorio de la Unión Europea y utilice en el tratamiento de datos medios situados en territorio español, salvo que tales medios se utilicen únicamente con fines de tránsito.</p>
+          <p class="parrafo_2">2. El régimen de protección de los datos de carácter personal que se establece en la presente Ley Orgánica no será de aplicación:</p>
+          <p class="parrafo_2">a) A los ficheros mantenidos por personas físicas en el ejercicio de actividades exclusivamente personales o domésticas.</p>
+          <p class="parrafo">b) A los ficheros sometidos a la normativa sobre protección de materias clasificadas.</p>
+          <p class="parrafo">c) A los ficheros establecidos para la investigación del terrorismo y de formas graves de delincuencia organizada. No obstante, en estos supuestos el responsable del fichero comunicará previamente la existencia del mismo, sus características generales y su finalidad a la Agencia de Protección de Datos.</p>
+          <p class="parrafo_2">3. Se regirán por sus disposiciones específicas, y por lo especialmente previsto, en su caso, por esta Ley Orgánica los siguientes tratamientos de datos personales:</p>
+          <p class="parrafo_2">a) Los ficheros regulados por la legislación de régimen electoral.</p>
+          <p class="parrafo">b) Los que sirvan a fines exclusivamente estadísticos, y estén amparados por la legislación estatal o autonómica sobre la función estadística pública.</p>
+          <p class="parrafo">c) Los que tengan por objeto el almacenamiento de los datos contenidos en los informes personales de calificación a que se refiere la legislación del régimen del personal de las Fuerzas Armadas.</p>
+          <p class="parrafo">d) Los derivados del Registro Civil y del Registro Central de penados y rebeldes.</p>
+          <p class="parrafo">e) Los procedentes de imágenes y sonidos obtenidos mediante la utilización de videocámaras por las Fuerzas y Cuerpos de Seguridad, de conformidad con la legislación sobre la materia.</p>
+        </version>
+      </bloque>
+      <bloque id="a40" tipo="precepto" titulo="Artículo 40">
+        <version id_norma="BOE-A-1999-23750" fecha_publicacion="19991214" fecha_vigencia="20000114">
+          <p class="articulo">Artículo 40. Potestad de inspección.</p>
+          <p class="parrafo">1. Las autoridades de control podrán inspeccionar los ficheros a que hace referencia la presente Ley, recabando cuantas informaciones precisen para el cumplimiento de sus cometidos.</p>
+          <p class="parrafo">A tal efecto, podrán solicitar la exhibición o el envío de documentos y datos y examinarlos en el lugar en que se encuentren depositados, así como inspeccionar los equipos físicos y lógicos utilizados para el tratamiento de los datos, accediendo a los locales donde se hallen instalados.</p>
+          <p class="parrafo">2. Los funcionarios que ejerzan la inspección a que se refiere el apartado anterior tendrán la consideración de autoridad pública en el desempeño de sus cometidos.</p>
+          <p class="parrafo">Estarán obligados a guardar secreto sobre las informaciones que conozcan en el ejercicio de las mencionadas funciones, incluso después de haber cesado en las mismas.</p>
+        </version>
+        <version id_norma="BOE-A-2018-10751" fecha_publicacion="20180730" fecha_vigencia="20180731">
+          <p class="articulo">Artículo 40. Potestad de inspección.</p>
+          <p class="parrafo">
+            <strong>(Derogado).</strong>
+          </p>
+          <blockquote>
+            <p class="nota_pie">Se deroga por la disposición derogatoria única del Real Decreto-ley 5/2018, de 27 de julio. <a class="refPost">Ref. BOE-A-2018-10751#dd</a></p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="firma" tipo="firma">
+        <version id_norma="BOE-A-1999-23750" fecha_publicacion="19991214" fecha_vigencia="20000114">
+          <p class="parrafo">Por tanto,</p>
+          <p class="parrafo">Mando a todos los españoles, particulares y autoridades, que guarden y hagan guardar esta Ley Orgánica.</p>
+          <p class="parrafo">Madrid, 13 de diciembre de 1999.</p>
+          <p class="firma_rey">JUAN CARLOS R.</p>
+          <p class="firma_ministro">El Presidente del Gobierno,</p>
+          <p class="firma_ministro">JOSÉ MARÍA AZNAR LÓPEZ</p>
+        </version>
+      </bloque>
+    </texto>
+  </data>
+</response>

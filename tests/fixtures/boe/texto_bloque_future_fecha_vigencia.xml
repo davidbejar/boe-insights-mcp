@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="a1" tipo="precepto" titulo="Artículo 1">
+      <version id_norma="BOE-A-2026-24302" fecha_publicacion="20261120" fecha_vigencia="20270701">
+        <p class="articulo">Artículo 1. Objeto.</p>
+        <p class="parrafo">El presente real decreto tiene por objeto establecer las medidas aplicables a los buques que utilicen sistemas de limpieza de gases de escape, con el fin de prevenir la contaminación del medio marino derivada de la descarga al mar de las aguas resultantes de su funcionamiento.</p>
+      </version>
+    </bloque>
+  </data>
+</response>

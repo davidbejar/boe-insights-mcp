@@ -1,0 +1,379 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "materias": [
+                {
+                    "materia": {
+                        "codigo": "6936",
+                        "texto": "Transportes mar\u00edtimos"
+                    }
+                }
+            ],
+            "notas": {
+                "nota": "Entrada en vigor:  el 2 de octubre de 2016, con las salvedades y efectos indicados."
+            },
+            "referencias": {
+                "anteriores": [
+                    {
+                        "anterior": [
+                            {
+                                "id_norma": "BOE-A-2014-9467",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Arts. 12 a 15 y disposici\u00f3n adicional 6 de la Ley 15\/2014, de 16 de septiembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2009-18358",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Art. 6.1.f), disposiciones adicional 3 y transitorias 2 y 4 del Real Decreto 1671\/2009, de 6 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2006-13011",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": ", en la forma indicada, la Ley 28\/2006, de 18 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2002-25180",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Arts. 44 a 46 y MODIFICA el art. 34.2 de la Ley 50\/2002, de 26 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-1997-7878",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley 6\/1997, de 14 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-1986-9865",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Art. 110 de la Ley de R\u00e9gimen local, texto refundido aprobado por Real Decreto Legislativo 781\/1986, de 18 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-1985-5392",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Art. 87 de la Ley 7\/1985, de 2 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-1955-10057",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Arts. 37 a 40 del Decreto de 17 de junio de 1955 (Gazeta)"
+                            },
+                            {
+                                "id_norma": "BOE-A-2015-7897",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Disposici\u00f3n final 21.2 de la Ley 20\/2015, de 14 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2012-15651",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Disposici\u00f3n adicional 13 de la Ley 17\/2012, de 27 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2011-17887",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "y A\u00d1ADE determinados preceptos a Ley de Contratos del Sector P\u00fablico, texto refundido aprobado por Real Decreto Legislativo 3\/2011, de 14 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2003-21614",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Arts. 2 y 3 Ley 47\/2003, de 26 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2003-20977",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Art. 10 y disposici\u00f3n adicional 16.1 y A\u00d1ADE las disposiciones transitoria 3 y adicional 25 a la Ley 38\/2003, de 17 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2003-20254",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Arts. 166.1 y 167.2 de la Ley 33\/2003, de 3 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2003-13813",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Arts. 3.1, 34 ter, 34 qu\u00e1ter y 90.1.6 de la Ley 22\/2003, de 9 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-1997-25336",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Arts. 4 a 13, 20 y el t\u00edtulo V y A\u00d1ADE el t\u00edtulo VI a la Ley 50\/1997, de 27 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-1995-27964",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Disposici\u00f3n adicional 6 y A\u00d1ADE la disposici\u00f3n transitoria 5 al Real Decreto-ley 12\/1995, de 28 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-1982-15230",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "Art. 8.Uno Ley 23\/1982, de 16 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2007-22294",
+                                "relacion": {
+                                    "codigo": "330",
+                                    "texto": "CITA"
+                                },
+                                "texto": "Ley 50\/2007, de 26 de diciembre"
+                            }
+                        ]
+                    }
+                ],
+                "posteriores": [
+                    {
+                        "posterior": [
+                            {
+                                "id_norma": "BOE-A-2020-4859",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": "la disposici\u00f3n final 5, por Real Decreto Legislativo 1\/2020, de 5 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2024-15936",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": ", con efectos desde el 22 de agosto de 2024, el art. 54.1 y SE A\u00d1ADE los arts. 55 bis y 84 bis, por Ley Org\u00e1nica 2\/2024, de 1 de agosto"
+                            },
+                            {
+                                "id_norma": "BOE-A-2023-25758",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "los arts. 63.3 y 66.2, por Real Decreto-ley 6\/2023, de 19 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2022-22128",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "los arts. 121 y 122.3, por Ley 31\/2022, de 23 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2022-4972",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 142 y SE A\u00d1ADE la disposici\u00f3n adicional 30, por Real Decreto-ley 6\/2022, de 29 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-21653",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "los arts. 50.2, 122.3, 128.1, 129 y la disposici\u00f3n adicional 4, por Ley 22\/2021, de 28 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-17340",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "los arts. 48.8, 50.2, la disposici\u00f3n adicional 7.2 y SE A\u00d1ADE las adicionales 28 y 29, por Real Decreto-ley 36\/2020, de 30 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-17339",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "y SE A\u00d1ADEN determinados preceptos, por Ley 11\/2020, de 30 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2019-15790",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 155 y SE A\u00d1ADE el art. 46 bis, por Real Decreto-ley 14\/2019, de 31 de octubre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2018-9268",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "la disposici\u00f3n final 10.8.a), por Ley 6\/2018, de 3 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2017-12902",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "los arts. 82.1 y 84.2, por Ley 9\/2017, de 8 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2015-14020",
+                                "relacion": {
+                                    "codigo": "201",
+                                    "texto": "CORRECCI\u00d3N de errores"
+                                },
+                                "texto": "en BOE n\u00fam. 306 de 23 de diciembre de 2015"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-6240",
+                                "relacion": {
+                                    "codigo": "203",
+                                    "texto": "SE CORRIGEN errores"
+                                },
+                                "texto": "en la Ley 11\/2020, de 30 de diciembre, en BOE n\u00fam. 94, de 20 de abril de 2021"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-1064",
+                                "relacion": {
+                                    "codigo": "203",
+                                    "texto": "SE CORRIGEN errores"
+                                },
+                                "texto": ", con variaci\u00f3n de preceptos modificadores, en el Real Decreto-ley 36\/2020, de 30 de diciembre, en BOE n\u00fam. 22 de 26 de enero de 2021"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-5032",
+                                "relacion": {
+                                    "codigo": "490",
+                                    "texto": "SE DESARROLLA"
+                                },
+                                "texto": ", y se aprueba el Reglamento de actuaci\u00f3n y funcionamiento del sector p\u00fablico por medios electr\u00f3nicos: Real Decreto 203\/2021, de 30 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2024-20160",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "y crea el \u00f3rgano colegiado que ejercer\u00e1 de Consejo de Inversi\u00f3n de los instrumentos financieros del Fondo de Resiliencia Auton\u00f3mica: Orden ECM\/1066\/2024, de 3 de octubre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2024-15203",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "y se crean \u00f3rganos de coordinaci\u00f3n, seguimiento y participaci\u00f3n del II Plan Nacional de Derechos Humanos (2023-2027): Real Decreto 709\/2024, de 23 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2024-8712",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "sobre criterios de funcionamiento de las Conferencias Sectoriales: Real Decreto 440\/2024, de 30 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2024-8708",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "con la disposici\u00f3n adicional 30 y se crea la Plataforma Digital de Colaboraci\u00f3n entre las Administraciones P\u00fablicas, por Orden PJC\/385\/2024, de 30 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2017-15350",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "y aprueba las instrucciones para la tramitaci\u00f3n de convenios: Orden PRA\/1267\/2017, de 21 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-10923",
+                                "relacion": {
+                                    "codigo": "331",
+                                    "texto": "SE DICTA EN RELACI\u00d3N"
+                                },
+                                "texto": "la suspensi\u00f3n de la aplicaci\u00f3n de lo indicado del art.96.1.e) y 3, para las cuentas anuales aprobadas durante los ejercicios 2020, 2021 y 2022: Ley 3\/2020, de 18 de septiembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4705",
+                                "relacion": {
+                                    "codigo": "331",
+                                    "texto": "SE DICTA EN RELACI\u00d3N"
+                                },
+                                "texto": "la suspensi\u00f3n de la aplicaci\u00f3n de lo indicado del art.96.1.e) y 3, para las cuentas anuales aprobadas durante los ejercicios 2020, 2021 y 2022: Real Decreto-ley 16\/2020, de 28 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2019-5726",
+                                "relacion": {
+                                    "codigo": "470",
+                                    "texto": "SE DECLARA"
+                                },
+                                "texto": "en el Recurso 3903\/2016, la desestimaci\u00f3n en relaci\u00f3n con los arts. 48.8, 50.2 d) y disposiciones adicionales 7 y 8, por Sentencia 33\/2019, de 14 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2019-457",
+                                "relacion": {
+                                    "codigo": "470",
+                                    "texto": "SE DECLARA"
+                                },
+                                "texto": "en el Recurso 3774\/2016, la inconstitucionalidad de lo indicado del art. 52.2 en los t\u00e9rminos del fj 8 b) y su desestimaci\u00f3n en todo lo dem\u00e1s, por Sentencia 132\/2018, de 13 de diciembre"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
