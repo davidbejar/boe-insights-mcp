@@ -61,6 +61,17 @@ def test_default_cache_dir_follows_the_environment_at_call_time(
     assert Settings().cache_dir == tmp_path
 
 
+def test_from_env_with_a_mapping_ignores_the_process_environment_for_the_cache_dir(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("BOE_INSIGHTS_CACHE_DIR", str(tmp_path / "from-process-env"))
+
+    settings = Settings.from_env({})
+
+    assert settings.cache_dir == default_cache_dir({})
+    assert "from-process-env" not in str(settings.cache_dir)
+
+
 @pytest.mark.parametrize(
     ("variable", "value"),
     [

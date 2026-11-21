@@ -18,6 +18,12 @@ RANK_NAMES = {
     "1370": "Resolución",
     "1390": "Circular",
     "1410": "Instrucción",
+    "1325": "Decreto-ley Foral",
+    "1450": "Ley Foral",
+    "1470": "Decreto Legislativo",
+    "1480": "Decreto Foral Legislativo",
+    "1500": "Decreto-ley",
+    "1510": "Decreto",
 }
 
 
@@ -277,3 +283,80 @@ def test_parsed_reference_is_frozen() -> None:
 
 def test_parsed_reference_equality_is_by_value() -> None:
     assert parse_reference("Ley 39/2015") == parse_reference("ley  39/2015")
+
+
+# --- Regional ranks (BOE `rangos` table) -----------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "code"),
+    [
+        ("Ley Foral 3/2010", "1450"),
+        ("Decreto Legislativo 1/2010", "1470"),
+        ("Decreto Foral Legislativo 1/2010", "1480"),
+        ("Decreto-ley 1/2010", "1500"),
+        ("Decreto ley 1/2010", "1500"),
+        ("Decreto-ley Foral 1/2010", "1325"),
+        ("Decreto 1/2010", "1510"),
+        ("el Decreto Legislativo 1/2010, de 5 de marzo", "1470"),
+        # Longest match: the state ranks keep winning when "Real" is present.
+        ("Real Decreto Legislativo 1/2010", "1310"),
+        ("Real Decreto-ley 1/2010", "1320"),
+        ("Real Decreto 1/2010", "1340"),
+        ("Ley 1/2010", "1300"),
+        ("Ley Orgánica 1/2010", "1290"),
+    ],
+)
+def test_regional_ranks_and_longest_match_precedence(text: str, code: str) -> None:
+    parsed = _numbered(text)
+
+    assert parsed.rank_code == code
+    assert parsed.rank_name == RANK_NAMES[code]
+
+
+# (text, may be regional, rank is regional, unrecognised rank word, region mentioned)
+SIGNALS = [
+    ("Ley 40/2015", False, False, False, False),
+    ("40/2015", False, False, False, False),
+    ("Real Decreto Legislativo 1/2010", False, False, False, False),
+    ("artículo 5 de la Ley 39/2015, de 1 de octubre", False, False, False, False),
+    ("ver 39/2015", False, False, False, False),
+    ("Decreto Legislativo 1/2010", True, True, False, False),
+    ("Ley Foral 3/2010", True, True, False, True),
+    ("Decreto 1/2010", True, True, False, False),
+    ("Ley 2/2020 de Andalucía", True, False, False, True),
+    ("Ley 2/2020 de Andalucia", True, False, False, True),
+    ("Ley 5/2010 de Cataluña", True, False, False, True),
+    ("Ley 5/2010 de Catalunya", True, False, False, True),
+    ("Ley 3/2010 del País Vasco", True, False, False, True),
+    ("Ley 3/2010 de Euskadi", True, False, False, True),
+    ("Ley 3/2010 de la Comunidad de Madrid", True, False, False, True),
+    ("Ley 3/2010 de Castilla y León", True, False, False, True),
+    ("Ley 3/2010 de Castilla-La Mancha", True, False, False, True),
+    ("Ley 3/2010 de las Illes Balears", True, False, False, True),
+    ("Ley 3/2010 de la Región de Murcia", True, False, False, True),
+    ("Ley 3/2010 de La Rioja", True, False, False, True),
+    ("Ley 4/2010 foral", True, False, False, True),
+    ("Ley 4/2010 autonómica", True, False, False, True),
+    ("Ley 4/2010 de la Comunitat Valenciana", True, False, False, True),
+    ("Decreto Foral 3/2010", True, False, True, True),
+    ("Reglamento 3/2010", True, False, True, False),
+    ("Acuerdo 3/2010", True, False, True, False),
+    ("Ley de Cataluña 3/2010", True, False, True, True),
+]
+
+
+@pytest.mark.parametrize(
+    ("text", "maybe", "regional_rank", "unrecognised", "region"),
+    SIGNALS,
+    ids=[s[0] for s in SIGNALS],
+)
+def test_reference_signals_that_the_law_may_be_regional(
+    text: str, maybe: bool, regional_rank: bool, unrecognised: bool, region: bool
+) -> None:
+    parsed = _numbered(text)
+
+    assert parsed.may_be_regional is maybe
+    assert parsed.regional_rank is regional_rank
+    assert (parsed.unrecognised_rank_word is not None) is unrecognised
+    assert (parsed.region is not None) is region

@@ -28,7 +28,7 @@ Base: `https://www.boe.es/datosabiertos/api/` (`B` below). Fixtures for every sh
 
 * There is no total-count field: the body has only `status` and `data`, and no `Content-Range`/`X-Total-Count` header (the CORS header lists `Content-Range` as exposed but it is never sent). To count the matches of a query you must page through them, or request a large `limit` and count (about 1.3 KB per hit, no field projection exists).
 * Ordering: without `sort` the order is `fecha_actualizacion` descending (observed: the whole 10 000-record list is monotonic non-increasing; a query gives the same order as an explicit `sort fecha_actualizacion desc`). Identical requests returned byte-identical bodies (with sort and without), and paged slices equalled the corresponding slice of a larger page (both unsorted and with `sort fecha_publicacion desc`, 30 records vs offset 10 limit 10). Caveat (inferred): the default order changes whenever a law is updated, so a long crawl by offset can skip or repeat records. Sorting by `fecha_publicacion` is more stable but has many ties (secondary order unknown).
-* Valid `sort` fields seen: `fecha_publicacion`, `fecha_actualizacion` (asc/desc). `sort` on `titulo` is a 400 ("can not sort on multivalued field: TITULOS"); an unknown sort field is a 400 "sort param field can't be found".
+* Valid `sort` fields seen: `fecha_publicacion`, `fecha_actualizacion` and `fecha_disposicion` (asc/desc). `sort` on `titulo` is a 400 ("can not sort on multivalued field: TITULOS"); an unknown sort field is a 400 "sort param field can't be found".
 * Typical latency 0.9 to 1.9 s for pages of up to 100 records. Time grows about linearly: roughly 5 ms per record.
 
 ### Search hit shape (see `search_page_limit10.json`)
@@ -53,6 +53,8 @@ Fields accepted inside `query_string` (HTTP 200 and effective; observed unless n
   * valid JSON with unsupported structure (`match_all`): HTTP 400 `El parámetro query tiene un formato no soportado.`;
   * bad sort field: HTTP 400 `Search error: [sort param field can't be found: nonexistent][{"query":"(TITULOS:energía) ",...` (leaks the internal index name `TITULOS`).
 * Zero matches: HTTP 200, `"data": ""`.
+* Escaping (verified live on 2026-11-21): backslash-escaping `query_string` reserved characters inside a field value works. `titulo:40\/2015`, `titulo:(Decreto\-ley AND medidas AND urgentes)` and escaped parentheses and colons all returned HTTP 200, with sensible hits or an empty result and no syntax error. `build_search_query` relies on this.
+* Sorting (verified live on 2026-11-21): `sort` also accepts `fecha_disposicion` (the enactment date). An ascending sort of rank 1290 (Ley Orgánica) returned Ley Orgánica 1/1979 first. The valid sort fields are therefore `fecha_publicacion`, `fecha_actualizacion` and `fecha_disposicion`.
 
 ## 3. Resolving "Ley 40/2015" and similar
 

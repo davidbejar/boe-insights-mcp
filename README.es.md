@@ -7,7 +7,7 @@
 
 Servidor [MCP](https://modelcontextprotocol.io) (Model Context Protocol) que ofrece a asistentes de IA como Claude herramientas analíticas sobre los datos abiertos del BOE (Boletín Oficial del Estado). En lugar de una herramienta por cada endpoint de la API, las herramientas se diseñan en torno a las preguntas que la gente se hace de verdad: "¿sigue vigente esta ley?", "¿qué ha cambiado en este artículo?", "¿cómo ha evolucionado la legislación sobre X?".
 
-**Estado:** desarrollo temprano. Hoy hay tres herramientas disponibles (localizar una norma, buscar y consultar su situación de vigencia); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). Todavía no está publicado en PyPI: se ejecuta desde el código fuente.
+**Estado:** desarrollo temprano. Hoy hay cuatro herramientas disponibles (localizar una norma, buscar, consultar su situación de vigencia y buscar códigos); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). Todavía no está publicado en PyPI: se ejecuta desde el código fuente.
 
 ## Qué puedes preguntar
 
@@ -19,6 +19,7 @@ Servidor [MCP](https://modelcontextprotocol.io) (Model Context Protocol) que ofr
 | "¿Qué leyes orgánicas sobre protección de datos hay en la legislación consolidada?" | `search_legislation` |
 | "Dame las leyes estatales sobre energía publicadas en 2020." | `search_legislation` |
 | "¿Cuáles son las últimas leyes publicadas?" | `search_legislation` |
+| "¿Qué código de departamento tiene la Agencia Española de Protección de Datos?" | `find_codes` y después `search_legislation` |
 
 ## Herramientas
 
@@ -27,24 +28,25 @@ Servidor [MCP](https://modelcontextprotocol.io) (Model Context Protocol) que ofr
 | `resolve_reference` | ¿Cuál es el identificador del BOE de la "Ley 40/2015"? | `reference` (una denominación como `Ley Orgánica 3/2018` o `RDL 6/2019`, un identificador o parte del título) |
 | `search_legislation` | ¿Qué normas tratan de X o se han publicado recientemente? | `title`, `text`, `rank`, `department_code`, `scope`, `subject_code`, `published_from`, `published_to`, `sort_by`, `descending`, `limit` (1-50), `offset` |
 | `get_law_overview` | ¿Está vigente esta norma y cuánto ha cambiado? | `law_id` (p. ej. `BOE-A-2015-10566`) |
+| `find_codes` | ¿Cuál es el código de este departamento, materia o rango (para los filtros de `search_legislation`)? | `kind` (`department`, `subject` o `rank`), `text`, `limit` (1-50) |
 
-Las tres herramientas son de solo lectura. `resolve_reference` devuelve `resolved`, `ambiguous` (con candidatas y una pista) o `not_found`. `search_legislation` pagina con `next_offset`, porque la API no ofrece el número total de resultados. `get_law_overview` devuelve un `status` derivado (`in_force`, `repealed`, `annulled`, `validity_exhausted` o `not_yet_in_force`) con una nota explicativa, además de recuentos y muestras de las normas que modifican la norma consultada o que esta modifica.
+Las cuatro herramientas son de solo lectura. `resolve_reference` devuelve `resolved`, `ambiguous` (con candidatas y una pista) o `not_found`. `search_legislation` pagina con `next_offset`, porque la API no ofrece el número total de resultados. `get_law_overview` devuelve un `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` o `not_yet_in_force`) derivado de los indicadores del BOE y de las referencias de modificación (por tanto, es una indicación, no una determinación jurídica), con una nota explicativa, además de recuentos y muestras de las normas que modifican la norma consultada o que esta modifica.
 
-Cada resultado incluye un bloque `provenance`. Salida abreviada de `get_law_overview` para `BOE-A-2015-10566` (fixtures de pruebas grabados, sin peticiones reales). Los textos de las claves y de las notas se mantienen tal como los devuelve la herramienta, en inglés:
+`find_codes` devuelve los pares `{code, text}` que coinciden. Cada resultado incluye un bloque `provenance`. Salida abreviada de `get_law_overview` para `BOE-A-2015-10566` (fixtures de pruebas grabados, sin peticiones reales). Los textos de las claves y de las notas se mantienen tal como los devuelve la herramienta, en inglés:
 
 ```json
 {
   "identifier": "BOE-A-2015-10566",
   "title": "Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público.",
   "rank": "Ley",
-  "status": "in_force",
-  "status_note": "The BOE does not flag this law as repealed. The flag covers only whole-law repeals, so individual provisions may have been amended or repealed: check the amendment summary.",
+  "status": "partially_repealed",
+  "status_note": "The BOE analysis has 1 reference in which later norms repeal this law or parts of it. The BOE flag only marks whole repeals and is not set here, so the law may be repealed in full or in part: check the amendment summary.",
   "amendments": { "affected_by_count": 24, "affects_count": 19 },
   "provenance": {
     "source": "Agencia Estatal Boletín Oficial del Estado",
     "attribution": "Basado en datos de la Agencia Estatal Boletín Oficial del Estado",
     "source_url": "https://www.boe.es",
-    "retrieved_at": "2026-11-21T06:51:30.747423Z",
+    "generated_at": "2026-11-21T06:51:30.747423Z",
     "data_updated_at": "2026-11-20T08:50:00Z",
     "notice": "Consolidated texts are provided for information only and have no official legal value. Only the texts published in the official gazette are authentic."
   }
@@ -135,7 +137,7 @@ abiertos del BOE
 - **Respetuoso por defecto.** El BOE no publica ningún límite de peticiones, así que el servidor se impone el suyo: al menos un segundo entre peticiones y un máximo de dos a la vez.
 - **Resultados tipados y estructurados.** Cada herramienta devuelve un modelo pydantic con esquema de salida declarado, no texto libre.
 - **Errores accionables.** Los fallos explican qué ha ocurrido, si tiene sentido reintentar y qué hacer a continuación (por ejemplo, "usa `resolve_reference` para encontrar el identificador correcto").
-- **Procedencia en todo resultado.** Cada resultado indica su fuente, la atribución exigida, cuándo se obtuvo, la fecha de última actualización de la API y el aviso de carácter meramente informativo.
+- **Procedencia en todo resultado.** Cada resultado indica su fuente, la atribución exigida, cuándo se elaboró el resultado (`generated_at`; los datos pueden proceder de la caché), la fecha de última actualización de la API y el aviso de carácter meramente informativo.
 
 ## Fuente de los datos, atribución y aviso legal
 

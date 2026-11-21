@@ -13,6 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 __all__ = [
     "AmendmentSummary",
+    "CodeMatch",
+    "FindCodesResult",
     "LawBrief",
     "LawOverview",
     "LawStatus",
@@ -23,7 +25,14 @@ __all__ = [
     "SearchLegislationResult",
 ]
 
-LawStatus = Literal["in_force", "repealed", "annulled", "validity_exhausted", "not_yet_in_force"]
+LawStatus = Literal[
+    "in_force",
+    "partially_repealed",
+    "repealed",
+    "annulled",
+    "validity_exhausted",
+    "not_yet_in_force",
+]
 
 
 class _Output(BaseModel):
@@ -38,9 +47,13 @@ class Provenance(_Output):
     source: str = "Agencia Estatal Boletín Oficial del Estado"
     attribution: str = "Basado en datos de la Agencia Estatal Boletín Oficial del Estado"
     source_url: str = "https://www.boe.es"
-    retrieved_at: datetime = Field(description="When this result was assembled (UTC).")
+    generated_at: datetime = Field(
+        description="When this result was assembled (UTC). The underlying data may come from a "
+        "cache and be up to 7 days old; see data_updated_at for the BOE's own stamp."
+    )
     data_updated_at: datetime | None = Field(
-        default=None, description="The BOE API's last-update stamp for this data, when known (UTC)."
+        default=None,
+        description="The BOE's own last-update stamp for this data, when known (UTC).",
     )
     notice: str = (
         "Consolidated texts are provided for information only and have no official legal "
@@ -95,6 +108,24 @@ class ResolveReferenceResult(_Output):
     provenance: Provenance
 
 
+class CodeMatch(_Output):
+    """One entry of a BOE code table."""
+
+    code: str = Field(description="The BOE code, to pass as a filter value.")
+    text: str = Field(description="Its name, as the BOE publishes it (Spanish).")
+
+
+class FindCodesResult(_Output):
+    """Codes of a BOE table whose names match a text."""
+
+    kind: Literal["department", "subject", "rank"]
+    query: str = Field(description="The text searched for, as given.")
+    matches: list[CodeMatch] = Field(description="Shortest names first; at most `limit` entries.")
+    returned: int = Field(description="Number of entries in matches.")
+    total_matches: int = Field(description="Number of entries of the table that match.")
+    provenance: Provenance
+
+
 class RelationCount(_Output):
     """How many amendment references have a given relation."""
 
@@ -137,7 +168,10 @@ class LawOverview(_Output):
     enacted_on: date | None = Field(default=None, description="Date of the disposition.")
     published_on: date | None = None
     effective_from: date | None = None
-    status: LawStatus
+    status: LawStatus = Field(
+        description="Derived from the BOE's repeal, annulment and validity flags and from the "
+        "later norms that repeal it; an indication, not a legal determination."
+    )
     status_note: str = Field(description="Plain-English explanation of the status, with caveats.")
     repealed_on: date | None = None
     consolidation_state: str | None = None

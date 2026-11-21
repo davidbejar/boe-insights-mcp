@@ -186,12 +186,13 @@ def make_key(
     return hashlib.sha256(canonical.encode("ascii")).hexdigest()
 
 
-def default_cache_dir() -> Path:
+def default_cache_dir(env: Mapping[str, str] | None = None) -> Path:
     """Return the cache directory: ``$BOE_INSIGHTS_CACHE_DIR`` if set, else the platform cache dir.
 
+    ``env`` is the mapping to read the variable from (the process environment by default).
     The directory is not created.
     """
-    override = os.environ.get(_CACHE_DIR_ENV)
+    override = (os.environ if env is None else env).get(_CACHE_DIR_ENV)
     if override:
         return Path(override)
     return Path(user_cache_dir(_APP_NAME))

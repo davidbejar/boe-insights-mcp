@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Callable
 from datetime import UTC, date, datetime
@@ -18,6 +19,7 @@ from boe_insights_mcp.cache import MemoryCache
 from boe_insights_mcp.client import BASE_URL, BoeClient
 from boe_insights_mcp.errors import BoeNotFoundError
 from boe_insights_mcp.legislation import (
+    find_codes,
     get_law_overview,
     resolve_reference,
     search_legislation,
@@ -46,6 +48,7 @@ def raw_hit(
     rank: str | None = "1300",
     number: str | None = "1/2020",
     updated: str | None = None,
+    scope: str | None = None,
 ) -> dict[str, Any]:
     """A search hit as the API serialises it, with only the fields a test cares about."""
     hit: dict[str, Any] = {"identificador": identifier, "titulo": f"Title of {identifier}"}
@@ -55,6 +58,8 @@ def raw_hit(
         hit["numero_oficial"] = number
     if updated is not None:
         hit["fecha_actualizacion"] = updated
+    if scope is not None:
+        hit["ambito"] = {"codigo": scope, "texto": "Estatal" if scope == "1" else "Autonómico"}
     return hit
 
 
@@ -111,7 +116,7 @@ async def test_search_provenance_has_attribution_and_newest_update(
 
     provenance = (await search_legislation(client, now=NOW)).provenance
 
-    assert provenance.retrieved_at == NOW
+    assert provenance.generated_at == NOW
     assert provenance.data_updated_at == datetime(2026, 11, 20, 13, 8, 24, tzinfo=UTC)
     assert (
         provenance.attribution == "Basado en datos de la Agencia Estatal Boletín Oficial del Estado"
@@ -423,7 +428,7 @@ async def test_identifier_that_exists_is_resolved(
     assert result.matches[0].rank == "Ley"
     assert result.hint is None
     assert result.interpreted_as == f"BOE identifier {LEY_40}"
-    assert result.provenance.retrieved_at == NOW
+    assert result.provenance.generated_at == NOW
     assert result.provenance.data_updated_at == datetime(2026, 11, 20, 8, 50, tzinfo=UTC)
 
 
@@ -605,6 +610,156 @@ async def test_reference_is_echoed_as_given(
     assert result.reference == "  ley 40/2015 "
 
 
+# (reference, hits of the first search, status, searches made, rank filter, state scope searched)
+SCOPE_STRATEGY = [
+    pytest.param(
+        "Ley 40/2015",
+        [raw_hit("BOE-A-2015-10566", number="40/2015", scope="1")],
+        "resolved",
+        1,
+        "1300",
+        True,
+        id="plain-state-reference-searches-state-first",
+    ),
+    pytest.param(
+        "Real Decreto Legislativo 1/2010",
+        [raw_hit("BOE-A-2010-1", rank="1310", number="1/2010", scope="1")],
+        "resolved",
+        1,
+        "1310",
+        True,
+        id="state-decreto-legislativo-keeps-its-state-rank",
+    ),
+    pytest.param(
+        "Decreto Legislativo 1/2010",
+        [raw_hit("DOGC-f-2010-1", rank="1470", number="1/2010", scope="2")],
+        "resolved",
+        1,
+        "1470",
+        False,
+        id="regional-rank-is-searched-in-any-scope",
+    ),
+    pytest.param(
+        "Decreto Legislativo 1/2010",
+        [
+            raw_hit("BOE-A-2010-1", rank="1310", number="1/2010", scope="1"),
+            raw_hit("DOGC-f-2010-1", rank="1470", number="1/2010", scope="2"),
+            raw_hit("BOJA-b-2010-1", rank="1470", number="1/2010", scope="2"),
+        ],
+        "ambiguous",
+        1,
+        "1470",
+        False,
+        id="regional-rank-with-two-regional-hits-is-ambiguous",
+    ),
+    pytest.param(
+        "Decreto-ley 1/2010",
+        [raw_hit("DOGV-r-2010-1", rank="1500", number="1/2010", scope="2")],
+        "resolved",
+        1,
+        "1500",
+        False,
+        id="decreto-ley-is-regional",
+    ),
+    pytest.param(
+        "Ley 2/2020 de Andalucía",
+        [
+            raw_hit("BOE-A-2020-1", number="2/2020", scope="1"),
+            raw_hit("BOJA-b-2020-1", number="2/2020", scope="2"),
+        ],
+        "ambiguous",
+        1,
+        "1300",
+        False,
+        id="region-mention-with-state-and-regional-hits-is-ambiguous",
+    ),
+    pytest.param(
+        "Ley 2/2020 de Andalucía",
+        [raw_hit("BOE-A-2020-1", number="2/2020", scope="1")],
+        "ambiguous",
+        1,
+        "1300",
+        False,
+        id="region-mention-never-resolves-to-a-lone-state-law",
+    ),
+    pytest.param(
+        "Ley 2/2020 de Andalucía",
+        [raw_hit("BOJA-b-2020-1", number="2/2020", scope="2")],
+        "resolved",
+        1,
+        "1300",
+        False,
+        id="region-mention-with-one-regional-hit-resolves",
+    ),
+    pytest.param(
+        "Decreto Foral 3/2010",
+        [raw_hit("BON-b-2010-1", number="3/2010", scope="2")],
+        "ambiguous",
+        1,
+        None,
+        False,
+        id="unrecognised-rank-word-never-resolves",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("reference", "hits", "status", "searches", "rank_filter", "state_first"), SCOPE_STRATEGY
+)
+async def test_scope_strategy_never_resolves_a_state_law_for_a_regional_signal(
+    client: BoeClient,
+    router: respx.MockRouter,
+    json_response: JsonResponse,
+    reference: str,
+    hits: list[dict[str, Any]],
+    status: str,
+    searches: int,
+    rank_filter: str | None,
+    state_first: bool,
+) -> None:
+    route = mock_searches(router, json_response, search_body(*hits))
+
+    result = await resolve_reference(client, reference)
+
+    assert result.status == status
+    assert route.call_count == searches
+    query = sent_query(route)
+    assert ("ambito@codigo:1" in query) is state_first
+    assert (f"rango@codigo:{rank_filter}" in query) if rank_filter else ("rango" not in query)
+    if status == "ambiguous":
+        assert result.hint is not None
+        assert "regional" in result.hint
+        assert "share" in result.hint
+    if status == "ambiguous" and len(hits) > 1:
+        assert len(result.matches) >= 2
+
+
+async def test_ambiguous_hint_with_a_rank_does_not_ask_for_the_rank(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_searches(router, json_response, load_fixture("search_numero_oficial_ambiguous.json"))
+
+    result = await resolve_reference(client, "Ley 3/2018")
+
+    assert result.status == "ambiguous"
+    assert result.hint is not None
+    assert "Repeat the reference with its rank" not in result.hint
+    assert "regional" in result.hint
+    assert "title" in result.hint
+    assert "identifier" in result.hint
+
+
+async def test_title_fallback_lists_the_oldest_laws_first(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    route = mock_searches(router, json_response, load_fixture("search_page_limit10.json"))
+
+    await resolve_reference(client, "régimen jurídico")
+
+    document = json.loads(sent_params(route)["query"])
+    assert document["sort"] == [{"fecha_publicacion": "asc"}]
+
+
 # --- resolve_reference: free text and invalid input -----------------------------------------
 
 
@@ -689,11 +844,140 @@ async def test_overview_describes_the_law(client: BoeClient) -> None:
 
 
 @pytest.mark.usefixtures("ley_40")
-async def test_overview_status_comes_from_the_metadata(client: BoeClient) -> None:
+async def test_overview_status_combines_the_metadata_flags_and_the_repeal_references(
+    client: BoeClient,
+) -> None:
+    # Not flagged repealed, but one later norm repeals part of it (relation "SE DEROGA").
+    overview = await get_law_overview(client, LEY_40, today=date(2026, 11, 21), now=NOW)
+
+    assert overview.status == "partially_repealed"
+    assert "1 reference" in overview.status_note
+
+
+def analysis_body(*relations: str) -> bytes:
+    """An analysis whose later norms have the given relation texts."""
+    later = [
+        {
+            "id_norma": f"BOE-A-2020-{number}",
+            "relacion": {"codigo": "270", "texto": relation},
+            "texto": "un precepto",
+        }
+        for number, relation in enumerate(relations, start=1)
+    ]
+    references: dict[str, Any] = {"posteriores": [{"posterior": later}]} if later else {}
+    document = {"status": {"code": "200", "text": "ok"}, "data": [{"referencias": references}]}
+    return json.dumps(document).encode()
+
+
+def mock_ley_40_with(
+    router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader, *relations: str
+) -> None:
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/metadatos").mock(
+        return_value=json_response(load_fixture("metadatos_in_force_ley40_2015.json"))
+    )
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/analisis").mock(
+        return_value=json_response(analysis_body(*relations))
+    )
+
+
+async def test_overview_without_repeal_references_is_in_force(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_ley_40_with(router, json_response, load_fixture, "SE MODIFICA", "SE DICTA EN RELACIÓN")
+
     overview = await get_law_overview(client, LEY_40, today=date(2026, 11, 21), now=NOW)
 
     assert overview.status == "in_force"
     assert "amended" in overview.status_note
+
+
+async def test_overview_of_a_superseded_law_the_boe_does_not_flag_is_partially_repealed(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    law_id = "BOE-A-1999-23750"
+    mock_law(
+        router, json_response, load_fixture, law_id, "metadatos_superseded_partial_lopd1999.json"
+    )
+    router.get(f"{SEARCH_URL}/id/{law_id}/analisis").mock(
+        return_value=json_response(
+            analysis_body(
+                "SE DEROGA",
+                "SE DEROGA parcialmente",
+                "SE DEROGA tácitamente ",
+                "Se DEROGA de forma reiterada",
+                "SE MODIFICA",
+            )
+        )
+    )
+
+    overview = await get_law_overview(client, law_id, now=NOW)
+
+    assert overview.status == "partially_repealed"
+    assert "4 references" in overview.status_note
+    assert "only marks whole" in overview.status_note
+
+
+async def test_overview_flagged_repealed_stays_repealed_whatever_the_references(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_law(router, json_response, load_fixture, LEY_30_1992, "metadatos_repealed_ley30_1992.json")
+    router.get(f"{SEARCH_URL}/id/{LEY_30_1992}/analisis").mock(
+        return_value=json_response(analysis_body("SE DEROGA"))
+    )
+
+    overview = await get_law_overview(client, LEY_30_1992, now=NOW)
+
+    assert overview.status == "repealed"
+
+
+@pytest.mark.parametrize(
+    ("moment", "status"),
+    [
+        # Ley 40/2015 takes effect on 2016-10-02. In Madrid (CEST, UTC+2) it is already that day
+        # at 22:30 UTC on the 1st, though still the 1st in UTC.
+        (datetime(2016, 10, 1, 22, 30, tzinfo=UTC), "in_force"),
+        (datetime(2016, 10, 1, 21, 30, tzinfo=UTC), "not_yet_in_force"),
+        # Winter time (CET, UTC+1): the day changes at 23:00 UTC.
+        (datetime(2017, 1, 1, 23, 30, tzinfo=UTC), "in_force"),
+    ],
+)
+async def test_overview_judges_today_in_madrid_time(
+    client: BoeClient,
+    router: respx.MockRouter,
+    json_response: JsonResponse,
+    load_fixture: Loader,
+    moment: datetime,
+    status: str,
+) -> None:
+    mock_ley_40_with(router, json_response, load_fixture, "SE MODIFICA")
+
+    overview = await get_law_overview(client, LEY_40, now=moment)
+
+    assert overview.status == status
+
+
+async def test_overview_cancels_the_analysis_request_when_the_metadata_fails(
+    client: BoeClient, router: respx.MockRouter, xml_response: XmlResponse, load_fixture: Loader
+) -> None:
+    analysis_cancelled = asyncio.Event()
+
+    async def hang(request: httpx.Request) -> httpx.Response:
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            analysis_cancelled.set()
+            raise
+        return httpx.Response(500)
+
+    router.get(f"{SEARCH_URL}/id/BOE-A-1999-1/metadatos").mock(
+        return_value=xml_response(load_fixture("error_404_unknown_id.xml"), 404)
+    )
+    router.get(f"{SEARCH_URL}/id/BOE-A-1999-1/analisis").mock(side_effect=hang)
+
+    with pytest.raises(BoeNotFoundError):  # the original error, not an ExceptionGroup
+        await get_law_overview(client, "BOE-A-1999-1")
+
+    assert analysis_cancelled.is_set()
 
 
 @pytest.mark.usefixtures("ley_40")
@@ -755,7 +1039,7 @@ async def test_overview_samples_keep_the_api_order(client: BoeClient) -> None:
 async def test_overview_provenance_uses_the_metadata_update_stamp(client: BoeClient) -> None:
     provenance = (await get_law_overview(client, LEY_40, now=NOW)).provenance
 
-    assert provenance.retrieved_at == NOW
+    assert provenance.generated_at == NOW
     assert provenance.data_updated_at == datetime(2026, 11, 20, 8, 50, tzinfo=UTC)
 
 
@@ -787,5 +1071,122 @@ async def test_overview_rejects_a_malformed_identifier(
 ) -> None:
     with pytest.raises(ValueError, match="identifier"):
         await get_law_overview(client, "not-an-id")
+
+    assert router.calls.call_count == 0
+
+
+@pytest.mark.usefixtures("ley_40")
+async def test_overview_accepts_a_lowercase_identifier_like_resolve_reference(
+    client: BoeClient,
+) -> None:
+    overview = await get_law_overview(client, f"  {LEY_40.lower()} ", now=NOW)
+
+    assert overview.identifier == LEY_40
+
+
+# --- find_codes -------------------------------------------------------------------------------
+
+AUX_URL = f"{BASE_URL}datos-auxiliares"
+
+
+def mock_table(
+    router: respx.MockRouter,
+    json_response: JsonResponse,
+    load_fixture: Loader,
+    table: str,
+    fixture: str,
+) -> respx.Route:
+    return router.get(f"{AUX_URL}/{table}").mock(return_value=json_response(load_fixture(fixture)))
+
+
+async def test_find_codes_matches_departments_ignoring_case_and_accents(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_table(
+        router, json_response, load_fixture, "departamentos", "aux_departamentos_trimmed.json"
+    )
+
+    result = await find_codes(client, "department", "PROTECCION de datos", now=NOW)
+
+    assert [(m.code, m.text) for m in result.matches] == [
+        ("1012", "Agencia de Protección de Datos"),
+        ("1011", "Agencia Española de Protección de Datos"),
+    ]
+    assert (result.kind, result.query) == ("department", "PROTECCION de datos")
+    assert (result.returned, result.total_matches) == (2, 2)
+    assert result.provenance.generated_at == NOW
+    assert result.provenance.attribution.startswith("Basado en datos")
+
+
+async def test_find_codes_requires_every_word_to_match(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_table(router, json_response, load_fixture, "materias", "aux_materias_trimmed.json")
+
+    both = await find_codes(client, "subject", "academia policia")
+    neither = await find_codes(client, "subject", "academia fiscalia")
+
+    assert [m.code for m in both.matches] == ["20", "23"]
+    assert neither.matches == []
+    assert neither.total_matches == 0
+
+
+async def test_find_codes_limits_the_page_but_reports_every_match(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_table(router, json_response, load_fixture, "materias", "aux_materias_trimmed.json")
+
+    result = await find_codes(client, "subject", "academia", limit=3)
+
+    assert result.returned == 3
+    assert len(result.matches) == 3
+    assert result.total_matches == 9
+
+
+async def test_find_codes_lists_ranks_with_their_codes(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_table(router, json_response, load_fixture, "rangos", "aux_rangos.json")
+
+    result = await find_codes(client, "rank", "decreto")
+
+    assert {(m.code, m.text) for m in result.matches} == {
+        ("1510", "Decreto"),
+        ("1470", "Decreto Legislativo"),
+        ("1500", "Decreto-ley"),
+        ("1480", "Decreto Foral Legislativo"),
+        ("1325", "Decreto-ley Foral"),
+        ("1340", "Real Decreto"),
+        ("1310", "Real Decreto Legislativo"),
+        ("1320", "Real Decreto-ley"),
+    }
+    assert result.matches[0].text == "Decreto"  # the shortest text first
+
+
+async def test_find_codes_uses_the_table_of_the_requested_kind(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    route = mock_table(router, json_response, load_fixture, "rangos", "aux_rangos.json")
+
+    await find_codes(client, "rank", "ley")
+
+    assert route.call_count == 1
+    assert router.calls.call_count == 1
+
+
+@pytest.mark.parametrize(
+    ("kind", "text", "limit", "message"),
+    [
+        ("rank", "   ", 20, "text"),
+        ("rank", "ley", 0, "limit"),
+        ("rank", "ley", 51, "limit"),
+        ("thesaurus", "ley", 20, "kind"),
+    ],
+)
+async def test_find_codes_rejects_invalid_arguments_without_a_request(
+    client: BoeClient, router: respx.MockRouter, kind: Any, text: str, limit: int, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        await find_codes(client, kind, text, limit=limit)
 
     assert router.calls.call_count == 0

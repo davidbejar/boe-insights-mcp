@@ -15,14 +15,20 @@ from mcp.types import Tool
 
 from boe_insights_mcp.cache import MemoryCache
 from boe_insights_mcp.client import BASE_URL, BoeClient
+from boe_insights_mcp.models import LawSummary
 from boe_insights_mcp.ratelimit import RateLimiter
-from boe_insights_mcp.schemas import LawOverview, ResolveReferenceResult, SearchLegislationResult
+from boe_insights_mcp.schemas import (
+    FindCodesResult,
+    LawOverview,
+    ResolveReferenceResult,
+    SearchLegislationResult,
+)
 from boe_insights_mcp.server import create_server
 from boe_insights_mcp.settings import Settings
 
 SEARCH_URL = f"{BASE_URL}legislacion-consolidada"
 LEY_40 = "BOE-A-2015-10566"
-TOOL_NAMES = {"search_legislation", "resolve_reference", "get_law_overview"}
+TOOL_NAMES = {"search_legislation", "resolve_reference", "get_law_overview", "find_codes"}
 MAX_DESCRIPTION_WORDS = 120
 
 Loader = Callable[[str], bytes]
@@ -71,7 +77,7 @@ def ley_40_routes(
 # --- Discovery: what the model sees ---------------------------------------------------------
 
 
-async def test_server_exposes_exactly_the_three_tools(tools: dict[str, Tool]) -> None:
+async def test_server_exposes_exactly_the_four_tools(tools: dict[str, Tool]) -> None:
     assert set(tools) == TOOL_NAMES
 
 
@@ -100,6 +106,27 @@ async def test_descriptions_point_to_the_right_neighbouring_tool(tools: dict[str
     assert "resolve_reference" in (tools["search_legislation"].description or "")
     assert "search_legislation" in (tools["resolve_reference"].description or "")
     assert "resolve_reference" in (tools["get_law_overview"].description or "")
+    assert "search_legislation" in (tools["find_codes"].description or "")
+
+
+async def test_search_code_parameters_point_to_find_codes(tools: dict[str, Tool]) -> None:
+    properties = tools["search_legislation"].input_schema["properties"]
+
+    assert "find_codes" in properties["department_code"]["description"]
+    assert "find_codes" in properties["subject_code"]["description"]
+
+
+async def test_instructions_mention_find_codes(boe_client: BoeClient) -> None:
+    async with Client(create_server(client=boe_client)) as client:
+        assert "find_codes" in (client.instructions or "")
+
+
+async def test_overview_description_does_not_promise_certainty(tools: dict[str, Tool]) -> None:
+    description = (tools["get_law_overview"].description or "").lower()
+
+    assert "boe flags" in description
+    assert "amendment references" in description
+    assert "partially_repealed" in description
 
 
 @pytest.mark.parametrize("name", sorted(TOOL_NAMES))
@@ -115,6 +142,14 @@ async def test_required_parameters(tools: dict[str, Tool]) -> None:
     assert tools["search_legislation"].input_schema.get("required", []) == []
     assert tools["resolve_reference"].input_schema["required"] == ["reference"]
     assert tools["get_law_overview"].input_schema["required"] == ["law_id"]
+    assert tools["find_codes"].input_schema["required"] == ["kind", "text"]
+
+
+async def test_find_codes_kind_is_an_enum_and_limit_is_bounded(tools: dict[str, Tool]) -> None:
+    properties = tools["find_codes"].input_schema["properties"]
+
+    assert properties["kind"]["enum"] == ["department", "subject", "rank"]
+    assert (properties["limit"]["minimum"], properties["limit"]["maximum"]) == (1, 50)
 
 
 async def test_search_limit_is_bounded_in_the_schema(tools: dict[str, Tool]) -> None:
@@ -188,6 +223,56 @@ async def test_get_law_overview_returns_structured_content(mcp: Client[Any]) -> 
     assert overview.amendments.affected_by_count == 24
 
 
+async def test_find_codes_returns_structured_content(
+    mcp: Client[Any], router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    router.get(f"{BASE_URL}datos-auxiliares/departamentos").mock(
+        return_value=json_response(load_fixture("aux_departamentos_trimmed.json"))
+    )
+
+    result = await mcp.call_tool(
+        "find_codes", {"kind": "department", "text": "proteccion datos", "limit": 5}
+    )
+
+    found = FindCodesResult.model_validate(result.structured_content)
+    assert [match.code for match in found.matches] == ["1012", "1011"]
+    assert (found.returned, found.total_matches) == (2, 2)
+    assert found.provenance.generated_at is not None
+
+
+async def test_find_codes_rejects_an_unknown_kind_and_a_blank_text(mcp: Client[Any]) -> None:
+    with pytest.raises(ToolError, match="kind"):
+        await mcp.call_tool("find_codes", {"kind": "gazette", "text": "x"})
+    with pytest.raises(ToolError, match=r"invalid_argument.*text"):
+        await mcp.call_tool("find_codes", {"kind": "rank", "text": "  "})
+
+
+@pytest.mark.usefixtures("ley_40_routes")
+async def test_get_law_overview_accepts_a_lowercase_identifier(mcp: Client[Any]) -> None:
+    result = await mcp.call_tool("get_law_overview", {"law_id": LEY_40.lower()})
+
+    assert LawOverview.model_validate(result.structured_content).identifier == LEY_40
+
+
+@pytest.mark.usefixtures("ley_40_routes")
+async def test_provenance_calls_the_assembly_time_generated_at(mcp: Client[Any]) -> None:
+    result = await mcp.call_tool("get_law_overview", {"law_id": LEY_40})
+
+    assert result.structured_content is not None
+    provenance = result.structured_content["provenance"]
+    assert "generated_at" in provenance
+    assert "retrieved_at" not in provenance
+
+
+async def test_provenance_fields_are_described_in_the_output_schema(tools: dict[str, Tool]) -> None:
+    schema = tools["get_law_overview"].output_schema
+    assert schema is not None
+    fields = schema["properties"]["provenance"]["properties"]
+
+    assert "cache" in fields["generated_at"]["description"]
+    assert "own last-update" in fields["data_updated_at"]["description"]
+
+
 @pytest.mark.usefixtures("ley_40_routes")
 async def test_structured_content_serialises_dates_as_iso_strings(mcp: Client[Any]) -> None:
     result = await mcp.call_tool("get_law_overview", {"law_id": LEY_40})
@@ -252,6 +337,54 @@ async def test_rejected_query_error_suggests_simplifying(
 
     assert "invalid_query" in str(caught.value)
     assert "Simplify" in str(caught.value)
+
+
+async def test_rejected_identifier_error_does_not_advise_simplifying_the_search(
+    mcp: Client[Any], router: respx.MockRouter, xml_response: XmlResponse, load_fixture: Loader
+) -> None:
+    router.get(url__regex=rf"{SEARCH_URL}/id/{LEY_40}/.*").mock(
+        return_value=xml_response(load_fixture("error_400_unsupported_query_format.xml"), 400)
+    )
+
+    with pytest.raises(ToolError) as caught:
+        await mcp.call_tool("get_law_overview", {"law_id": LEY_40})
+
+    message = str(caught.value)
+    assert "invalid_query" in message
+    assert "Simplify" not in message
+    assert "identifier" in message
+
+
+async def test_rejected_reference_search_does_not_advise_removing_filters(
+    mcp: Client[Any], router: respx.MockRouter, xml_response: XmlResponse, load_fixture: Loader
+) -> None:
+    router.get(SEARCH_URL).mock(
+        return_value=xml_response(load_fixture("error_500_syntax_code101.xml"), 500)
+    )
+
+    with pytest.raises(ToolError) as caught:
+        await mcp.call_tool("resolve_reference", {"reference": "Ley 40/2015"})
+
+    message = str(caught.value)
+    assert "invalid_query" in message
+    assert "filters" not in message
+    assert "Ley 40/2015" in message or "reference" in message
+
+
+async def test_an_internal_validation_error_is_masked_not_reported_as_an_argument_error(
+    mcp: Client[Any], boe_client: BoeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def broken(*args: object, **kwargs: object) -> None:
+        LawSummary.model_validate({"identificador": "secret-input-value", "titulo": 5})
+
+    monkeypatch.setattr(boe_client, "search_laws", broken)
+
+    with pytest.raises(ToolError) as caught:
+        await mcp.call_tool("search_legislation", {})
+
+    assert "secret-input-value" not in str(caught.value)
+    assert "invalid_argument" not in str(caught.value)
+    assert "ValidationError" not in str(caught.value)
 
 
 async def test_malformed_identifier_is_reported_as_an_invalid_argument(mcp: Client[Any]) -> None:

@@ -11,14 +11,17 @@ from collections import Counter
 from collections.abc import Iterable, Sequence
 from datetime import UTC, date, datetime
 from typing import Literal
+from zoneinfo import ZoneInfo
 
-from boe_insights_mcp.client import BoeClient
+from boe_insights_mcp.client import AuxiliaryTable, BoeClient
 from boe_insights_mcp.errors import BoeNotFoundError
 from boe_insights_mcp.models import LawAnalysis, LawMetadata, LawReference, LawSummary
 from boe_insights_mcp.query import SortField, build_search_query
-from boe_insights_mcp.references import ParsedReference, parse_reference
+from boe_insights_mcp.references import ParsedReference, fold, normalise_identifier, parse_reference
 from boe_insights_mcp.schemas import (
     AmendmentSummary,
+    CodeMatch,
+    FindCodesResult,
     LawBrief,
     LawOverview,
     LawStatus,
@@ -30,9 +33,11 @@ from boe_insights_mcp.schemas import (
 )
 
 __all__ = [
+    "CodeKind",
     "RankFilter",
     "ScopeFilter",
     "derive_status",
+    "find_codes",
     "get_law_overview",
     "resolve_reference",
     "search_legislation",
@@ -51,6 +56,13 @@ RankFilter = Literal[
     "instruccion",
 ]
 ScopeFilter = Literal["state", "regional", "any"]
+CodeKind = Literal["department", "subject", "rank"]
+
+_CODE_TABLES: dict[CodeKind, AuxiliaryTable] = {
+    "department": "departamentos",
+    "subject": "materias",
+    "rank": "rangos",
+}
 
 _RANK_CODES: dict[RankFilter, str] = {
     "constitucion": "1070",
@@ -79,6 +91,9 @@ _FORMATS_HINT = (
 )
 
 
+_MADRID = ZoneInfo("Europe/Madrid")
+
+
 def _utc(now: datetime | None) -> datetime:
     return now if now is not None else datetime.now(UTC)
 
@@ -102,10 +117,16 @@ def _newest_update(laws: Iterable[LawSummary]) -> datetime | None:
     return max(stamps, default=None)
 
 
-def derive_status(metadata: LawMetadata, today: date) -> tuple[LawStatus, str]:
+def derive_status(
+    metadata: LawMetadata, today: date, repeal_references: int
+) -> tuple[LawStatus, str]:
     """Return the legal status of a law and a plain-English note explaining it.
 
-    Precedence: annulled, repealed, validity exhausted, not yet in force, in force.
+    ``repeal_references`` is the number of later norms whose relation is a repeal
+    (:func:`_repeal_reference_count`). Precedence: annulled, repealed, validity exhausted, not
+    yet in force, partially repealed, in force. The BOE's repeal flag marks only whole-law
+    repeals, so a law that later norms repeal in part (or in full, without the flag) is
+    reported as ``partially_repealed`` rather than ``in_force``.
     """
     if metadata.annulled:
         return "annulled", "The BOE flags this law as annulled (declared void)."
@@ -124,11 +145,28 @@ def derive_status(metadata: LawMetadata, today: date) -> tuple[LawStatus, str]:
             f"This law takes effect on {metadata.effective_from.isoformat()}, which is in the "
             "future.",
         )
+    if repeal_references > 0:
+        plural = "reference" if repeal_references == 1 else "references"
+        return (
+            "partially_repealed",
+            f"The BOE analysis has {repeal_references} {plural} in which later norms repeal this "
+            "law or parts of it. The BOE flag only marks whole repeals and is not set here, so "
+            "the law may be repealed in full or in part: check the amendment summary.",
+        )
     return (
         "in_force",
-        "The BOE does not flag this law as repealed. The flag covers only whole-law repeals, "
-        "so individual provisions may have been amended or repealed: check the amendment "
-        "summary.",
+        "The BOE does not flag this law as repealed and no later norm is recorded as "
+        "repealing it. Individual provisions may still have been amended: check the "
+        "amendment summary.",
+    )
+
+
+def _repeal_reference_count(analysis: LawAnalysis) -> int:
+    """Count the later references whose relation is a repeal (BOE codes 210-217, "SE DEROGA...")."""
+    return sum(
+        1
+        for reference in analysis.later
+        if reference.relation.text.casefold().startswith("se deroga")
     )
 
 
@@ -179,7 +217,7 @@ async def search_legislation(
         offset=offset,
         has_more=has_more,
         next_offset=offset + consumed if has_more else None,
-        provenance=Provenance(retrieved_at=_utc(now), data_updated_at=_newest_update(kept)),
+        provenance=Provenance(generated_at=_utc(now), data_updated_at=_newest_update(kept)),
     )
 
 
@@ -228,9 +266,10 @@ def _resolution(
     *,
     hint: str | None,
     now: datetime,
+    resolvable: bool = True,
 ) -> ResolveReferenceResult:
-    """Build a result: one law is resolved, several ambiguous, none not found."""
-    if len(laws) == 1:
+    """Build a result: resolved (one sure law), ambiguous (several or an unsure one), not found."""
+    if len(laws) == 1 and resolvable:
         status: Literal["resolved", "ambiguous", "not_found"] = "resolved"
     else:
         status = "ambiguous" if laws else "not_found"
@@ -240,7 +279,46 @@ def _resolution(
         interpreted_as=interpreted_as,
         matches=[_brief(law) for law in laws[:_MAX_CANDIDATES]],
         hint=None if status == "resolved" else hint,
-        provenance=Provenance(retrieved_at=now, data_updated_at=_newest_update(laws)),
+        provenance=Provenance(generated_at=now, data_updated_at=_newest_update(laws)),
+    )
+
+
+async def find_codes(
+    client: BoeClient,
+    kind: CodeKind,
+    text: str,
+    *,
+    limit: int = 20,
+    now: datetime | None = None,
+) -> FindCodesResult:
+    """Find the codes of departments, subjects or ranks whose name contains all words of ``text``.
+
+    Matching ignores case and accents. The shortest names come first, since they are the
+    closest matches. Raises ``ValueError`` for an unknown ``kind``, a blank ``text`` or a
+    ``limit`` outside ``1..MAX_LIMIT``.
+    """
+    if kind not in _CODE_TABLES:
+        raise ValueError(f"kind must be one of {', '.join(_CODE_TABLES)}")
+    words = fold(text).split()
+    if not words:
+        raise ValueError("text must not be empty")
+    if not 1 <= limit <= MAX_LIMIT:
+        raise ValueError(f"limit must be between 1 and {MAX_LIMIT}")
+    table = await client.get_auxiliary_table(_CODE_TABLES[kind])
+    found: list[tuple[int, str, str, str]] = []
+    for code, name in table.items():
+        folded = fold(name)
+        if all(word in folded for word in words):
+            found.append((len(name), folded, code, name))
+    found.sort()
+    shown = [CodeMatch(code=code, text=name) for _, _, code, name in found[:limit]]
+    return FindCodesResult(
+        kind=kind,
+        query=text,
+        matches=shown,
+        returned=len(shown),
+        total_matches=len(found),
+        provenance=Provenance(generated_at=_utc(now)),
     )
 
 
@@ -261,29 +339,79 @@ async def _resolve_identifier(
     )
 
 
+def _scope_plan(parsed: ParsedReference) -> tuple[tuple[str | None, str], ...]:
+    """Decide which scopes to search, in order, as ``(ambito code, label)`` pairs.
+
+    Regional laws are numbered independently of state laws, so a state-scope hit for a number
+    is the wrong answer when the text may refer to a regional law (a regional rank, a rank word
+    we do not know, or a region name). Then only the any-scope search makes sense. Otherwise
+    state laws come first, with any scope as the fallback.
+    """
+    if parsed.may_be_regional:
+        return ((None, "any scope"),)
+    return ((_STATE_SCOPE_CODE, "state"), (None, "any scope"))
+
+
+def _may_resolve(parsed: ParsedReference, laws: Sequence[LawSummary]) -> bool:
+    """Whether a lone match can be reported as resolved rather than as a candidate.
+
+    An unknown rank word means the rank could not be checked, and a region name contradicts a
+    state-scope match, so in neither case is a single hit certain.
+    """
+    if len(laws) != 1 or parsed.unrecognised_rank_word is not None:
+        return False
+    scope = laws[0].scope
+    return parsed.region is None or scope is None or scope.code != _STATE_SCOPE_CODE
+
+
+def _ambiguous_hint(parsed: ParsedReference) -> str:
+    if parsed.may_be_regional:
+        unknown = (
+            f" The rank word {parsed.unrecognised_rank_word!r} is not recognised."
+            if parsed.unrecognised_rank_word
+            else ""
+        )
+        return (
+            "This reference may be a regional law, and regional laws share numbers with state "
+            f"laws and with each other.{unknown} Choose among the matches by title, department "
+            "or scope, or give the BOE identifier."
+        )
+    if parsed.rank_name:
+        return (
+            "Several laws share this rank and number: regional laws are numbered independently "
+            "of state laws and share numbers. Choose among the matches by title or department, "
+            "or give the BOE identifier."
+        )
+    return (
+        "Several laws share this number. Repeat the reference with its rank "
+        "(Ley, Real Decreto, ...) or pick one of the matches."
+    )
+
+
 async def _resolve_numbered(
     client: BoeClient, reference: str, parsed: ParsedReference, now: datetime
 ) -> ResolveReferenceResult:
-    """Look for an exact official number, first among state laws, then in any scope."""
+    """Look for an exact official number, in the scopes chosen by :func:`_scope_plan`."""
     description = (
         f"{parsed.rank_name} {parsed.official_number}"
         if parsed.rank_name
         else f"official number {parsed.official_number} (rank not given)"
     )
-    for scope_code, label in ((_STATE_SCOPE_CODE, "state"), (None, "any scope")):
+    plan = _scope_plan(parsed)
+    for scope_code, label in plan:
         laws = await _exact_number_matches(client, parsed, scope_code)
         if laws:
             return _resolution(
                 reference,
                 f"{description} ({label})",
                 laws,
-                hint="Several laws share this number. Repeat the reference with its rank "
-                "(Ley, Real Decreto, ...) or pick one of the matches.",
+                hint=_ambiguous_hint(parsed),
                 now=now,
+                resolvable=_may_resolve(parsed, laws),
             )
     return _resolution(
         reference,
-        f"{description} (state, then any scope)",
+        f"{description} ({', then '.join(label for _, label in plan)})",
         [],
         hint="No consolidated law has this number. Check the rank and year, or search by "
         "title with search_legislation.",
@@ -316,7 +444,10 @@ async def _resolve_by_title(
     client: BoeClient, reference: str, text: str, now: datetime
 ) -> ResolveReferenceResult:
     """Fall back to a title search for text with no identifier or official number."""
-    page = await search_legislation(client, title=text, limit=_TITLE_SEARCH_LIMIT, now=now)
+    # Oldest first: the original law comes before the later laws that amend it and cite its name.
+    page = await search_legislation(
+        client, title=text, descending=False, limit=_TITLE_SEARCH_LIMIT, now=now
+    )
     if not page.items:
         return ResolveReferenceResult(
             reference=reference,
@@ -361,6 +492,20 @@ def _amendment_summary(analysis: LawAnalysis) -> AmendmentSummary:
     )
 
 
+async def _fetch_both(client: BoeClient, law_id: str) -> tuple[LawMetadata, LawAnalysis]:
+    """Fetch metadata and analysis together; if one fails the other is cancelled.
+
+    The original error (not an ``ExceptionGroup``) is raised, preferring the metadata's.
+    """
+    try:
+        async with asyncio.TaskGroup() as group:
+            metadata = group.create_task(client.get_law_metadata(law_id))
+            analysis = group.create_task(client.get_law_analysis(law_id))
+    except ExceptionGroup as failures:
+        raise failures.exceptions[0] from None
+    return metadata.result(), analysis.result()
+
+
 async def get_law_overview(
     client: BoeClient,
     law_id: str,
@@ -370,13 +515,17 @@ async def get_law_overview(
 ) -> LawOverview:
     """Return a law's identity, derived legal status and amendment summary.
 
+    The identifier is normalised like ``resolve_reference`` does (case, surrounding spaces).
     Raises ``ValueError`` for a malformed identifier and ``BoeNotFoundError`` for an unknown one.
     """
-    metadata, analysis = await asyncio.gather(
-        client.get_law_metadata(law_id), client.get_law_analysis(law_id)
-    )
+    metadata, analysis = await _fetch_both(client, normalise_identifier(law_id) or law_id)
     moment = _utc(now)
-    status, note = derive_status(metadata, today if today is not None else moment.date())
+    # The BOE works in Madrid time, so "today" is the Madrid date, not the UTC one.
+    status, note = derive_status(
+        metadata,
+        today if today is not None else moment.astimezone(_MADRID).date(),
+        _repeal_reference_count(analysis),
+    )
     brief = _brief(metadata)
     return LawOverview(
         identifier=metadata.identifier,
@@ -397,5 +546,5 @@ async def get_law_overview(
         amendments=_amendment_summary(analysis),
         url=metadata.html_url,
         eli_url=metadata.eli_url,
-        provenance=Provenance(retrieved_at=moment, data_updated_at=metadata.updated_at),
+        provenance=Provenance(generated_at=moment, data_updated_at=metadata.updated_at),
     )

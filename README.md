@@ -7,7 +7,7 @@
 
 An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that gives AI assistants such as Claude analytical tools over the open data of Spain's BOE (Boletín Oficial del Estado). Instead of one tool per API endpoint, the tools are shaped around the questions people actually ask: "is this law still in force?", "what changed in this article?", "how has legislation on X evolved?".
 
-**Status:** early development. Three tools are available today (law lookup, search and status overview); everything else is on the [roadmap](#roadmap). Not yet published on PyPI: run it from source.
+**Status:** early development. Four tools are available today (law lookup, search, status overview and code lookup); everything else is on the [roadmap](#roadmap). Not yet published on PyPI: run it from source.
 
 ## What you can ask
 
@@ -19,6 +19,7 @@ An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that g
 | "Which organic laws about data protection are in the consolidated legislation?" | `search_legislation` |
 | "List the state laws on energy published in 2020." | `search_legislation` |
 | "What are the most recently published laws?" | `search_legislation` |
+| "Which department code does the Agencia Española de Protección de Datos have?" | `find_codes`, then `search_legislation` |
 
 ## Tools
 
@@ -27,24 +28,25 @@ An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that g
 | `resolve_reference` | What is the BOE identifier of "Ley 40/2015"? | `reference` (a name such as `Ley Orgánica 3/2018`, `RDL 6/2019`, an identifier, or a title fragment) |
 | `search_legislation` | Which laws are about X, or were published recently? | `title`, `text`, `rank`, `department_code`, `scope`, `subject_code`, `published_from`, `published_to`, `sort_by`, `descending`, `limit` (1-50), `offset` |
 | `get_law_overview` | Is this law in force, and how much has it changed? | `law_id` (e.g. `BOE-A-2015-10566`) |
+| `find_codes` | What is the code of this department, subject or rank (for the `search_legislation` filters)? | `kind` (`department`, `subject` or `rank`), `text`, `limit` (1-50) |
 
-All three tools are read-only. `resolve_reference` returns `resolved`, `ambiguous` (with candidates and a hint) or `not_found`. `search_legislation` pages with `next_offset`, because the API gives no total count. `get_law_overview` returns a derived `status` (`in_force`, `repealed`, `annulled`, `validity_exhausted` or `not_yet_in_force`) with a plain-English note, plus counts and samples of the norms that amend the law or that it amends.
+All four tools are read-only. `resolve_reference` returns `resolved`, `ambiguous` (with candidates and a hint) or `not_found`. `search_legislation` pages with `next_offset`, because the API gives no total count. `get_law_overview` returns a `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` or `not_yet_in_force`) derived from the BOE flags and the amendment references (so it is an indication, not a legal determination), with a plain-English note, plus counts and samples of the norms that amend the law or that it amends.
 
-Every result carries a `provenance` block. Trimmed output of `get_law_overview` for `BOE-A-2015-10566` (recorded test fixtures, no live request):
+`find_codes` returns the matching `{code, text}` pairs. Every result carries a `provenance` block. Trimmed output of `get_law_overview` for `BOE-A-2015-10566` (recorded test fixtures, no live request):
 
 ```json
 {
   "identifier": "BOE-A-2015-10566",
   "title": "Ley 40/2015, de 1 de octubre, de Régimen Jurídico del Sector Público.",
   "rank": "Ley",
-  "status": "in_force",
-  "status_note": "The BOE does not flag this law as repealed. The flag covers only whole-law repeals, so individual provisions may have been amended or repealed: check the amendment summary.",
+  "status": "partially_repealed",
+  "status_note": "The BOE analysis has 1 reference in which later norms repeal this law or parts of it. The BOE flag only marks whole repeals and is not set here, so the law may be repealed in full or in part: check the amendment summary.",
   "amendments": { "affected_by_count": 24, "affects_count": 19 },
   "provenance": {
     "source": "Agencia Estatal Boletín Oficial del Estado",
     "attribution": "Basado en datos de la Agencia Estatal Boletín Oficial del Estado",
     "source_url": "https://www.boe.es",
-    "retrieved_at": "2026-11-21T06:51:30.747423Z",
+    "generated_at": "2026-11-21T06:51:30.747423Z",
     "data_updated_at": "2026-11-20T08:50:00Z",
     "notice": "Consolidated texts are provided for information only and have no official legal value. Only the texts published in the official gazette are authentic."
   }
@@ -134,7 +136,7 @@ BOE open data API    https://www.boe.es/datosabiertos/
 - **Polite by default.** The BOE publishes no rate limit, so the server imposes its own: at least one second between requests and at most two at a time.
 - **Typed, structured results.** Every tool returns a pydantic model with a declared output schema, not free text.
 - **Actionable errors.** Failures say what happened, whether retrying makes sense and what to do next (for example, "use `resolve_reference` to find the correct identifier").
-- **Provenance everywhere.** Each result states its source, the required attribution, when it was retrieved, the API's last-update stamp and the informational-only notice.
+- **Provenance everywhere.** Each result states its source, the required attribution, when the result was assembled (`generated_at`; the data itself may come from the cache), the API's last-update stamp and the informational-only notice.
 
 ## Data source, attribution and legal notice
 

@@ -41,7 +41,7 @@ class Settings:
         cache_dir = env.get("BOE_INSIGHTS_CACHE_DIR")
         return cls(
             cache_backend=_backend(env.get("BOE_INSIGHTS_CACHE"), defaults.cache_backend),
-            cache_dir=Path(cache_dir) if cache_dir else defaults.cache_dir,
+            cache_dir=Path(cache_dir) if cache_dir else default_cache_dir(env),
             min_interval=_min_interval(env.get("BOE_INSIGHTS_MIN_INTERVAL"), defaults.min_interval),
             max_concurrency=_max_concurrency(
                 env.get("BOE_INSIGHTS_MAX_CONCURRENCY"), defaults.max_concurrency

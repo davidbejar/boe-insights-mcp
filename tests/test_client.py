@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import inspect
 import json
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -1014,7 +1015,7 @@ async def test_retry_after_applies_to_its_own_retry_only(
 @pytest.mark.parametrize("value", ["60", "61", "3600", "99999"])
 async def test_retry_after_is_capped_at_sixty_seconds(
     router: respx.MockRouter,
-    client: BoeClient,
+    make_client: MakeClient,
     sleeps: SleepRecorder,
     load_fixture: Loader,
     json_response: JsonResponse,
@@ -1026,7 +1027,8 @@ async def test_retry_after_is_capped_at_sixty_seconds(
             json_response(load_fixture("search_page_limit10.json")),
         ]
     )
-    await client.search_laws()
+    # A budget larger than the default, which would refuse to wait that long (see below).
+    await make_client(total_timeout=120.0).search_laws()
     assert sleeps.delays == pytest.approx([60.0])
 
 
@@ -1308,3 +1310,280 @@ async def test_concurrent_calls_for_different_resources_all_succeed(
     assert len(search) == 10
     assert table == {"1": "Estatal", "2": "Autonómico"}
     assert client.stats.requests_sent == 7
+
+
+# --- single-flight: concurrent identical calls share one request --------------------------------
+
+
+async def test_concurrent_identical_calls_send_one_request(
+    router: respx.MockRouter, client: BoeClient, load_fixture: Loader, json_response: JsonResponse
+) -> None:
+    async def slow(request: httpx.Request) -> httpx.Response:
+        await asyncio.sleep(0.02)
+        return json_response(load_fixture("search_page_limit10.json"))
+
+    route = router.get(SEARCH_URL).mock(side_effect=slow)
+
+    results = await asyncio.gather(*(client.search_laws(limit=10) for _ in range(5)))
+
+    assert route.call_count == 1
+    assert client.stats.requests_sent == 1
+    assert all(len(result) == 10 for result in results)
+    assert all(result == results[0] for result in results)
+
+
+async def test_concurrent_identical_calls_do_not_share_mutable_results(
+    router: respx.MockRouter, client: BoeClient, load_fixture: Loader, json_response: JsonResponse
+) -> None:
+    async def slow(request: httpx.Request) -> httpx.Response:
+        await asyncio.sleep(0.01)
+        return json_response(load_fixture("aux_ambitos.json"))
+
+    router.get(AMBITOS_URL).mock(side_effect=slow)
+
+    first, second = await asyncio.gather(
+        client.get_auxiliary_table("ambitos"), client.get_auxiliary_table("ambitos")
+    )
+    first["1"] = "changed"
+
+    assert second["1"] == "Estatal"
+
+
+async def test_concurrent_calls_with_different_params_are_not_merged(
+    router: respx.MockRouter, client: BoeClient, load_fixture: Loader, json_response: JsonResponse
+) -> None:
+    async def slow(request: httpx.Request) -> httpx.Response:
+        await asyncio.sleep(0.01)
+        return json_response(load_fixture("search_page_limit10.json"))
+
+    router.get(SEARCH_URL).mock(side_effect=slow)
+
+    await asyncio.gather(client.search_laws(limit=10), client.search_laws(limit=11))
+
+    assert client.stats.requests_sent == 2
+
+
+async def test_concurrent_identical_calls_all_get_the_error_and_the_next_call_retries(
+    router: respx.MockRouter,
+    client: BoeClient,
+    xml_response: XmlResponse,
+    load_fixture: Loader,
+    json_response: JsonResponse,
+) -> None:
+    async def slow_404(request: httpx.Request) -> httpx.Response:
+        await asyncio.sleep(0.01)
+        return xml_response(load_fixture("error_404_unknown_id.xml"), 404)
+
+    route = router.get(METADATA_URL).mock(side_effect=slow_404)
+
+    outcomes = await asyncio.gather(
+        *(client.get_law_metadata(LAW_ID) for _ in range(4)), return_exceptions=True
+    )
+
+    assert route.call_count == 1
+    assert all(isinstance(outcome, BoeNotFoundError) for outcome in outcomes)
+
+    route.mock(
+        side_effect=None,
+        return_value=json_response(load_fixture("metadatos_in_force_ley40_2015.json")),
+    )
+    assert (await client.get_law_metadata(LAW_ID)).identifier == LAW_ID
+    assert route.call_count == 2
+
+
+async def test_cancelling_the_first_caller_does_not_break_the_others(
+    router: respx.MockRouter, client: BoeClient, load_fixture: Loader, json_response: JsonResponse
+) -> None:
+    started = asyncio.Event()
+
+    async def slow(request: httpx.Request) -> httpx.Response:
+        started.set()
+        await asyncio.sleep(0.05)
+        return json_response(load_fixture("search_page_limit10.json"))
+
+    route = router.get(SEARCH_URL).mock(side_effect=slow)
+    first = asyncio.create_task(client.search_laws(limit=10))
+    await started.wait()
+    second = asyncio.create_task(client.search_laws(limit=10))
+    await asyncio.sleep(0)
+    first.cancel()
+
+    assert len(await second) == 10
+    assert first.cancelled()
+    assert client.stats.requests_sent == 1
+    assert route.call_count == 1
+
+
+async def test_cancelling_every_caller_cancels_the_request_and_leaves_nothing_behind(
+    router: respx.MockRouter, client: BoeClient, load_fixture: Loader, json_response: JsonResponse
+) -> None:
+    started = asyncio.Event()
+    request_cancelled = asyncio.Event()
+
+    async def hang(request: httpx.Request) -> httpx.Response:
+        started.set()
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            request_cancelled.set()
+            raise
+        return json_response(b"")
+
+    route = router.get(SEARCH_URL).mock(side_effect=hang)
+    callers = [asyncio.create_task(client.search_laws(limit=10)) for _ in range(2)]
+    await started.wait()
+    for caller in callers:
+        caller.cancel()
+    await asyncio.gather(*callers, return_exceptions=True)
+    await asyncio.sleep(0)
+
+    assert request_cancelled.is_set()
+    route.mock(
+        side_effect=None, return_value=json_response(load_fixture("search_page_limit10.json"))
+    )
+    assert len(await client.search_laws(limit=10)) == 10
+    assert client.stats.requests_sent == 2  # the cancelled one and the new one
+
+
+# --- a cached body that no longer parses ----------------------------------------------------------
+
+SEARCH_KEY_PARAMS = {"limit": 50, "offset": 0}
+STALE_SEARCH_BODY = b'{"status":{"code":"200","text":"ok"},"data":[{"unexpected":"shape"}]}'
+
+
+async def test_unparseable_cached_body_is_dropped_and_fetched_once_from_the_network(
+    router: respx.MockRouter,
+    client: BoeClient,
+    cache: RecordingCache,
+    load_fixture: Loader,
+    json_response: JsonResponse,
+) -> None:
+    key = make_key(SEARCH_URL, SEARCH_KEY_PARAMS, "application/json")
+    await cache.set(key, STALE_SEARCH_BODY)
+    route = mock_ok(router, SEARCH_URL, load_fixture("search_page_limit10.json"), json_response)
+
+    assert len(await client.search_laws()) == 10
+
+    assert route.call_count == 1
+    assert await cache.get(key) == load_fixture("search_page_limit10.json")
+    assert client.stats == ClientStats(requests_sent=1, cache_hits=0)
+
+
+async def test_unparseable_cached_body_and_unparseable_network_body_fail_after_one_fetch(
+    router: respx.MockRouter,
+    client: BoeClient,
+    cache: RecordingCache,
+    json_response: JsonResponse,
+) -> None:
+    key = make_key(SEARCH_URL, SEARCH_KEY_PARAMS, "application/json")
+    await cache.set(key, STALE_SEARCH_BODY)
+    route = mock_ok(router, SEARCH_URL, STALE_SEARCH_BODY, json_response)
+
+    with pytest.raises(BoeResponseError):
+        await client.search_laws()
+
+    assert route.call_count == 1
+    assert await cache.get(key) is None
+
+
+# --- total time budget -------------------------------------------------------------------------
+
+
+class FakeClock:
+    """A monotonic clock that only moves when a test (or a fake sleep) advances it."""
+
+    def __init__(self) -> None:
+        self.now = 0.0
+        self.sleeps: list[float] = []
+
+    def __call__(self) -> float:
+        return self.now
+
+    async def sleep(self, delay: float) -> None:
+        self.sleeps.append(delay)
+        self.now += delay
+
+
+@pytest.fixture
+def clock() -> FakeClock:
+    return FakeClock()
+
+
+def timing_out(clock: FakeClock, timeouts_seen: list[float]) -> Callable[[httpx.Request], Any]:
+    """A mocked endpoint on which every attempt runs into its own read timeout."""
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        seconds: float = request.extensions["timeout"]["read"]
+        timeouts_seen.append(seconds)
+        clock.now += seconds
+        raise httpx.ReadTimeout("slow")
+
+    return respond
+
+
+def test_defaults_are_a_20_second_attempt_inside_a_45_second_budget(
+    router: respx.MockRouter, limiter: RateLimiter
+) -> None:
+    signature = inspect.signature(BoeClient.__init__)
+
+    assert signature.parameters["timeout"].default == 20.0
+    assert signature.parameters["total_timeout"].default == 45.0
+
+
+async def test_attempts_and_backoffs_never_run_past_the_total_budget(
+    router: respx.MockRouter, make_client: MakeClient, clock: FakeClock
+) -> None:
+    timeouts_seen: list[float] = []
+    router.get(SEARCH_URL).mock(side_effect=timing_out(clock, timeouts_seen))
+    client = make_client(
+        timeout=20.0, total_timeout=45.0, sleep=clock.sleep, clock=clock, max_retries=10
+    )
+
+    with pytest.raises(BoeUnavailableError, match="within 45"):
+        await client.search_laws()
+
+    assert clock.now <= 45.0
+    assert timeouts_seen[0] == 20.0
+    assert all(0 < seconds <= 20.0 for seconds in timeouts_seen)
+    assert len(timeouts_seen) < 10  # the budget, not max_retries, ended the call
+
+
+async def test_a_backoff_that_does_not_fit_in_the_budget_is_not_slept(
+    router: respx.MockRouter, make_client: MakeClient, clock: FakeClock
+) -> None:
+    route = router.get(SEARCH_URL).mock(return_value=server_error(503, {"Retry-After": "30"}))
+    client = make_client(total_timeout=10.0, sleep=clock.sleep, clock=clock)
+
+    with pytest.raises(BoeUnavailableError) as caught:
+        await client.search_laws()
+
+    assert route.call_count == 1
+    assert clock.sleeps == []
+    assert caught.value.status == 503
+
+
+async def test_a_backoff_that_fits_in_the_budget_is_still_slept_and_retried(
+    router: respx.MockRouter, make_client: MakeClient, clock: FakeClock, load_fixture: Loader
+) -> None:
+    router.get(SEARCH_URL).mock(
+        side_effect=[
+            server_error(503),
+            httpx.Response(200, content=load_fixture("search_page_limit10.json")),
+        ]
+    )
+    client = make_client(total_timeout=10.0, sleep=clock.sleep, clock=clock)
+
+    assert len(await client.search_laws(limit=10)) == 10
+    assert clock.sleeps == [1.0]
+
+
+async def test_a_budget_already_spent_raises_without_a_request(
+    router: respx.MockRouter, make_client: MakeClient, clock: FakeClock
+) -> None:
+    route = router.get(SEARCH_URL).mock(return_value=server_error(503))
+    client = make_client(total_timeout=0.0, sleep=clock.sleep, clock=clock)
+
+    with pytest.raises(BoeUnavailableError):
+        await client.search_laws()
+
+    assert route.call_count == 0
