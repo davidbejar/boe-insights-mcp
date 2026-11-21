@@ -16,7 +16,12 @@ import httpx
 import pytest
 import respx
 
-from boe_insights_mcp.client import BASE_URL, BoeClient, ClientStats
+from boe_insights_mcp.client import (
+    BASE_URL,
+    DEFAULT_MAX_RESPONSE_BYTES,
+    BoeClient,
+    ClientStats,
+)
 from boe_insights_mcp.errors import (
     BoeNotFoundError,
     BoeResponseError,
@@ -758,3 +763,114 @@ async def test_initial_note_with_an_invalid_law_id_raises_before_any_request(
     with pytest.raises(ValueError):
         await client.get_initial_note(law_id)
     assert router.calls.call_count == 0
+
+
+# --- response size limit -------------------------------------------------------------------------
+
+
+async def test_a_body_larger_than_the_limit_is_a_response_error_and_is_not_cached(
+    router: respx.MockRouter,
+    make_client: MakeClient,
+    cache: RecordingCache,
+    xml_response: XmlResponse,
+    load_fixture: Loader,
+) -> None:
+    body = load_fixture(A48)
+    client = make_client(max_response_bytes=len(body) - 1)
+    router.get(BLOCK_URL).mock(return_value=xml_response(body, 200))
+
+    with pytest.raises(BoeResponseError, match="too large"):
+        await client.get_text_block(LAW_ID, "a48")
+
+    assert cache.sets == []
+
+
+async def test_a_body_exactly_at_the_limit_is_accepted(
+    router: respx.MockRouter,
+    make_client: MakeClient,
+    xml_response: XmlResponse,
+    load_fixture: Loader,
+) -> None:
+    body = load_fixture(A48)
+    client = make_client(max_response_bytes=len(body))
+    router.get(BLOCK_URL).mock(return_value=xml_response(body, 200))
+
+    assert (await client.get_text_block(LAW_ID, "a48")).block_id == "a48"
+
+
+async def test_the_declared_content_length_is_checked_before_reading(
+    router: respx.MockRouter, make_client: MakeClient, load_fixture: Loader
+) -> None:
+    client = make_client(max_response_bytes=100)
+    router.get(BLOCK_URL).mock(
+        return_value=httpx.Response(
+            200, content=load_fixture(A48), headers={"Content-Length": "10000000"}
+        )
+    )
+
+    with pytest.raises(BoeResponseError, match="too large"):
+        await client.get_text_block(LAW_ID, "a48")
+
+
+async def test_an_oversized_response_is_not_retried(
+    router: respx.MockRouter,
+    make_client: MakeClient,
+    xml_response: XmlResponse,
+    load_fixture: Loader,
+    sleeps: SleepRecorder,
+) -> None:
+    client = make_client(max_response_bytes=10)
+    route = router.get(BLOCK_URL).mock(return_value=xml_response(load_fixture(A48), 200))
+
+    with pytest.raises(BoeResponseError):
+        await client.get_text_block(LAW_ID, "a48")
+
+    assert route.call_count == 1
+    assert sleeps.delays == []
+
+
+async def test_the_default_limit_is_twenty_five_megabytes(
+    router: respx.MockRouter, client: BoeClient, xml_response: XmlResponse, load_fixture: Loader
+) -> None:
+    router.get(BLOCK_URL).mock(return_value=xml_response(load_fixture(A48), 200))
+
+    assert (await client.get_text_block(LAW_ID, "a48")).block_id == "a48"
+    assert DEFAULT_MAX_RESPONSE_BYTES == 25 * 1024 * 1024
+
+
+# --- the initial note reads the cache once per call -----------------------------------------------
+
+
+class _CountingCache(RecordingCache):
+    """``RecordingCache`` that also counts ``get`` calls."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.gets = 0
+
+    async def get(self, key: str) -> bytes | None:
+        self.gets += 1
+        return await super().get(key)
+
+
+@pytest.mark.parametrize("note_exists", [True, False])
+async def test_get_initial_note_reads_the_cache_once_per_call(
+    router: respx.MockRouter,
+    http: httpx.AsyncClient,
+    limiter: RateLimiter,
+    xml_response: XmlResponse,
+    load_fixture: Loader,
+    note_exists: bool,
+) -> None:
+    counting = _CountingCache()
+    client = BoeClient(cache=counting, limiter=limiter, http=http)
+    router.get(NOTE_URL).mock(
+        return_value=xml_response(load_fixture(NOTE_REPEALED), 200)
+        if note_exists
+        else xml_response(load_fixture(NOT_FOUND_NOTE), 404)
+    )
+
+    await client.get_initial_note(LAW_ID)  # miss
+    assert counting.gets == 1
+    await client.get_initial_note(LAW_ID)  # hit, whether a note or the "no note" marker
+    assert counting.gets == 2

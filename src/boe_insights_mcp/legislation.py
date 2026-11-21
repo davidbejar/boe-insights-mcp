@@ -21,6 +21,7 @@ from datetime import date, datetime
 from typing import Literal, get_args
 
 from boe_insights_mcp.client import AuxiliaryTable, BoeClient
+from boe_insights_mcp.clock import madrid_today, utc_now
 from boe_insights_mcp.errors import BoeError, BoeNotFoundError
 from boe_insights_mcp.identifiers import normalise_identifier
 from boe_insights_mcp.models import (
@@ -33,6 +34,7 @@ from boe_insights_mcp.models import (
 )
 from boe_insights_mcp.query import SortField, build_search_query
 from boe_insights_mcp.references import ParsedReference, fold, parse_reference
+from boe_insights_mcp.repeal import whole_law_repeal
 from boe_insights_mcp.schemas import (
     AmendmentGroup,
     AmendmentHistoryResult,
@@ -49,10 +51,8 @@ from boe_insights_mcp.schemas import (
     ResolveReferenceResult,
     SearchLegislationResult,
     YearCount,
-    madrid_today,
-    utc_now,
 )
-from boe_insights_mcp.versions import repeal_note
+from boe_insights_mcp.versions import repeal_date, repeal_note, repeal_version_date
 
 __all__ = [
     "AmendmentFilter",
@@ -160,16 +160,20 @@ def derive_status(
     today: date,
     repeal_references: int,
     repeal_note: BlockVersion | None,
+    *,
+    repeal_on: date | None = None,
 ) -> tuple[LawStatus, str]:
     """Return the legal status of a law and a plain-English note explaining it.
 
     ``repeal_references`` is the number of later norms whose relation is a repeal
     (:func:`_repeal_reference_count`); ``repeal_note`` is the version of the law's initial note
-    that announces a repeal (``versions.repeal_note``), or ``None``. Precedence: annulled,
-    repealed (the flag or the note), validity exhausted, not yet in force, partially repealed,
-    in force. The BOE's repeal flag marks only whole-law repeals, so a law that later norms
-    repeal in part (or in full, without the flag) is reported as ``partially_repealed`` rather
-    than ``in_force``.
+    that announces a repeal (``versions.repeal_note``), or ``None``, and ``repeal_on`` the date
+    that note gives (``versions.repeal_date``; read from ``repeal_note`` itself when omitted).
+    Precedence: annulled, repealed (the flag or the note, in effect today), validity exhausted,
+    not yet in force, partially repealed, in force. A repeal dated after ``today`` is only
+    announced: the status is then the one the other rules give, and the note says so. The BOE's
+    repeal flag marks only whole-law repeals, so a law that later norms repeal in part (or in
+    full, without the flag) is reported as ``partially_repealed`` rather than ``in_force``.
     """
     # Order encodes how strong each signal is. The two BOE flags are authoritative, so they come
     # first and an annulled or repealed law is never reported as "not yet in force". The repeal
@@ -180,17 +184,41 @@ def derive_status(
     # date (api-notes 4), so it only ever yields "not yet". "partially_repealed" is a heuristic
     # read from the amendment references, so it is checked last: it must not mask a stronger
     # signal, and it downgrades only a law that would otherwise be shown as plainly in force.
+    # A repeal that takes effect in the future (an announced one) is not a repeal yet, so it is
+    # left out of this order and only mentioned at the end.
     if metadata.annulled:
         return "annulled", "The BOE flags this law as annulled (declared void)."
-    if metadata.repealed:
+    if repeal_on is None and repeal_note is not None:
+        repeal_on = repeal_version_date(repeal_note)
+    repeal = whole_law_repeal(
+        flagged=metadata.repealed,
+        flag_on=metadata.repealed_on,
+        note_version=repeal_note,
+        note_on=repeal_on,
+        today=today,
+    )
+    if repeal.in_effect and metadata.repealed:
         when = f" on {metadata.repealed_on.isoformat()}" if metadata.repealed_on else ""
         return "repealed", f"The BOE flags this law as repealed{when}."
-    if repeal_note is not None:
+    if repeal.in_effect and repeal_note is not None:
         return (
             "repealed",
             "The BOE's consolidated text opens with a repeal note "
             f'("{_first_sentence(repeal_note)}"), even though the BOE metadata flag is not set.',
         )
+    status, note = _status_without_repeal(metadata, today, repeal_references)
+    if repeal.announced and repeal.on is not None:
+        note += (
+            f" A repeal of the whole law is announced for {repeal.on.isoformat()}, which is in "
+            "the future."
+        )
+    return status, note
+
+
+def _status_without_repeal(
+    metadata: LawMetadata, today: date, repeal_references: int
+) -> tuple[LawStatus, str]:
+    """The status from the rules that come after the whole-law repeal (see ``derive_status``)."""
     if metadata.validity_exhausted:
         return (
             "validity_exhausted",
@@ -238,15 +266,6 @@ def _initial_note_text(note: Block | None) -> str | None:
     # ``Block.versions`` is ascending by start date, so the last one is the current note.
     text = note.versions[-1].text if note is not None and note.versions else ""
     return _truncate(text, _INITIAL_NOTE_LIMIT) if text else None
-
-
-def _repealed_on(
-    metadata: LawMetadata, status: LawStatus, repeal_version: BlockVersion | None
-) -> date | None:
-    """The repeal date: the metadata's, else (for a repealed law) the note version's start."""
-    if metadata.repealed_on is not None or status != "repealed" or repeal_version is None:
-        return metadata.repealed_on
-    return repeal_version.effective_from or repeal_version.published_on
 
 
 def _repeal_reference_count(analysis: LawAnalysis) -> int:
@@ -691,11 +710,20 @@ async def get_law_overview(
     metadata, analysis = data.metadata, data.analysis
     moment = utc_now(now)
     repeal_version = repeal_note(data.note)
+    now_day = madrid_today(moment, today)
     status, note = derive_status(
         metadata,
-        madrid_today(moment, today),
+        now_day,
         _repeal_reference_count(analysis),
         repeal_version,
+        repeal_on=repeal_date(data.note),
+    )
+    repeal = whole_law_repeal(
+        flagged=metadata.repealed,
+        flag_on=metadata.repealed_on,
+        note_version=repeal_version,
+        note_on=repeal_date(data.note),
+        today=now_day,
     )
     if not data.note_checked:
         note += (
@@ -715,7 +743,8 @@ async def get_law_overview(
         effective_from=metadata.effective_from,
         status=status,
         status_note=note,
-        repealed_on=_repealed_on(metadata, status, repeal_version),
+        # An announced repeal has not happened yet: its date is in the status note only.
+        repealed_on=None if repeal.announced else repeal.on,
         initial_note=_initial_note_text(data.note),
         consolidation_state=(
             metadata.consolidation_state.text if metadata.consolidation_state else None

@@ -156,3 +156,14 @@ async def test_live_lopd_1999_is_repealed_although_the_metadata_flag_is_not_set(
     assert overview.status == "repealed"
     assert overview.initial_note is not None
     assert overview.initial_note.startswith("Norma derogada")
+
+
+async def test_live_article_of_a_wholly_repealed_law_reads_as_repealed(mcp: Client[Any]) -> None:
+    # Ley 30/1992 was repealed as a whole; its article 1 carries no repeal marker of its own.
+    result = await mcp.call_tool("read_article", {"law_id": "BOE-A-1992-26318", "article": "1"})
+
+    article = ReadArticleResult.model_validate(result.structured_content)
+    assert article.outcome == "found"
+    assert article.state == "repealed"
+    assert article.law_repealed is True
+    assert article.text

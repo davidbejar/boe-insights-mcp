@@ -1,8 +1,7 @@
 """Output models of the MCP tools (pydantic v2).
 
 Every tool result embeds a :class:`Provenance`, which carries the attribution and the
-"informational only" notice the BOE reuse conditions require. The clock helpers that every use
-case shares (``utc_now``, ``madrid_today``) live here too, next to the stamp they fill.
+"informational only" notice the BOE reuse conditions require.
 
 These are the return types of the tools in ``server``; ``legislation`` and ``articles`` build
 them from the client's ``models`` types. FastMCP derives each tool's output schema from them, so
@@ -13,9 +12,8 @@ comments.
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import Literal
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -31,6 +29,7 @@ __all__ = [
     "ArticleHistoryEvent",
     "ArticleHistoryResult",
     "ArticleLocation",
+    "ArticleResult",
     "ArticleState",
     "CodeMatch",
     "CompareArticleVersionsResult",
@@ -46,12 +45,7 @@ __all__ = [
     "SearchLegislationResult",
     "VersionInfo",
     "YearCount",
-    "madrid_today",
-    "utc_now",
 ]
-
-# Calendar days of Spanish legislation are Madrid days.
-_MADRID = ZoneInfo("Europe/Madrid")
 
 LawStatus = Literal[
     "in_force",
@@ -61,19 +55,6 @@ LawStatus = Literal[
     "validity_exhausted",
     "not_yet_in_force",
 ]
-
-
-def utc_now(now: datetime | None = None) -> datetime:
-    """Return ``now``, or the current UTC time when it is ``None`` (the injectable clock)."""
-    return now if now is not None else datetime.now(UTC)
-
-
-def madrid_today(moment: datetime, today: date | None = None) -> date:
-    """Return ``today`` if given, else the Madrid calendar date at ``moment``."""
-    # The BOE works in Madrid time, so "today" is the Madrid date, not the UTC one. Madrid is one
-    # or two hours ahead, so for a short window around midnight UTC the dates differ, and a law
-    # taking effect "tomorrow" in UTC terms may already be in force.
-    return today if today is not None else moment.astimezone(_MADRID).date()
 
 
 class _Output(BaseModel):
@@ -271,7 +252,7 @@ class AmendmentHistoryResult(_Output):
 class ArticleCandidate(_Output):
     """A block of the law's text that may be the one meant."""
 
-    block_id: str = Field(description="Pass this as `article` to select the block exactly.")
+    block_id: str = Field(description="Pass this as `block_id` to select the block exactly.")
     title: str = Field(description="The block's title in the law's index, e.g. 'Artículo 46 bis'.")
 
 
@@ -292,6 +273,26 @@ class ArticleLocation(_Output):
     provenance: Provenance
 
 
+class ArticleResult(ArticleLocation):
+    """An article result: the location plus what is known of a repeal of the whole law."""
+
+    law_repealed: bool | None = Field(
+        default=None,
+        description="True when the whole law is repealed (an article then shows no marker); "
+        "None when that could not be checked.",
+    )
+    law_repealed_on: date | None = Field(
+        default=None,
+        description="When the whole law is repealed, if known; a future date is an announced "
+        "repeal.",
+    )
+    note: str | None = Field(
+        default=None,
+        description="Explains an empty, upcoming, truncated or special result, or a repeal of "
+        "the whole law.",
+    )
+
+
 class VersionInfo(_Output):
     """One version of an article: the text as amended by one norm."""
 
@@ -304,7 +305,7 @@ class VersionInfo(_Output):
     introduced_by: str = Field(description="Identifier of the norm that introduced this version.")
 
 
-class ReadArticleResult(ArticleLocation):
+class ReadArticleResult(ArticleResult):
     """The text of one article as in force on a date."""
 
     as_of: date = Field(description="The date the text is valid for.")
@@ -329,15 +330,15 @@ class ReadArticleResult(ArticleLocation):
         "quoted paragraphs start with '> '. Joining the pages gives the full text.",
     )
     notes: list[str] = Field(
-        default_factory=list, description="Footnotes of the version; only on the first page."
+        default_factory=list,
+        description="Footnotes of the version, up to 2000 characters in all; only on the first "
+        "page.",
     )
+    notes_truncated: bool = Field(default=False, description="True when notes were cut.")
     total_chars: int = Field(default=0, description="Length of the whole text.")
     truncated: bool = Field(default=False, description="True when text is only a part.")
     next_offset: int | None = Field(
         default=None, description="Pass as offset, with the same other arguments, for the rest."
-    )
-    note: str | None = Field(
-        default=None, description="Explains an empty, upcoming or truncated result."
     )
 
 
@@ -345,15 +346,20 @@ class ArticleChange(_Output):
     """What changed in one paragraph between two versions."""
 
     op: Literal["added", "removed", "changed"]
-    old_text: str | None = Field(description="Paragraph before; None when added.")
-    new_text: str | None = Field(description="Paragraph after; None when removed.")
+    old_text: str | None = Field(
+        description="Paragraph before; None when added, or when 'inline' shows the change."
+    )
+    new_text: str | None = Field(
+        description="Paragraph after; None when removed, or when 'inline' shows the change."
+    )
     inline: str | None = Field(
-        description="For 'changed': the new paragraph with removed words as [-...-] and "
-        "added words as {+...+}."
+        description="For a 'changed' paragraph: the new paragraph with removed words as [-...-] "
+        "and added words as {+...+}. None for multi-line paragraphs (tables): see old_text and "
+        "new_text. Text cut to fit the size budget ends in '…[truncated]'."
     )
 
 
-class CompareArticleVersionsResult(ArticleLocation):
+class CompareArticleVersionsResult(ArticleResult):
     """The difference between an article's text on two dates."""
 
     from_date: date
@@ -371,10 +377,13 @@ class CompareArticleVersionsResult(ArticleLocation):
     changed: int = Field(default=0, description="Paragraphs reworded.")
     unchanged: int = Field(default=0, description="Paragraphs left as they were.")
     changes: list[ArticleChange] = Field(
-        default_factory=list, description="The paragraphs that differ, in reading order."
+        default_factory=list,
+        description="The paragraphs that differ, in reading order, within max_changes and "
+        "max_chars.",
     )
     changes_truncated: bool = Field(
-        default=False, description="True when more changes exist than max_changes allowed."
+        default=False,
+        description="True when more changes exist than max_changes or max_chars allowed.",
     )
     intermediate_versions: int = Field(
         default=0, description="Versions strictly between the two compared."
@@ -389,7 +398,6 @@ class CompareArticleVersionsResult(ArticleLocation):
     unified_truncated: bool = Field(
         default=False, description="True when unified_diff was cut at 6000 characters."
     )
-    note: str | None = Field(default=None, description="Explains an empty or special result.")
 
 
 class ArticleHistoryEvent(_Output):
@@ -405,7 +413,7 @@ class ArticleHistoryEvent(_Output):
     changed: int
 
 
-class ArticleHistoryResult(ArticleLocation):
+class ArticleHistoryResult(ArticleResult):
     """When and by which norm an article was amended."""
 
     version_count: int = Field(default=0, description="Number of versions the article has.")

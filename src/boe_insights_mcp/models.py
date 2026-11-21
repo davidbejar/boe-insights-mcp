@@ -267,6 +267,11 @@ class BlockVersion(_ApiModel):
         return self.effective_from or self.published_on
 
     @property
+    def start_key(self) -> tuple[bool, date]:
+        """Sort key placing versions without any start date before dated ones."""
+        return (self.starts_on is not None, self.starts_on or date.min)
+
+    @property
     def body(self) -> tuple[Paragraph, ...]:
         """The paragraphs that are not footnotes, quoted ones included."""
         return tuple(p for p in self.paragraphs if not _is_footnote(p))

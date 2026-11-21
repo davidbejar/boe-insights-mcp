@@ -150,7 +150,9 @@ async def test_article_parameters_show_accepted_wordings_and_formats(
     properties = tools["read_article"].input_schema["properties"]
 
     assert "46 bis" in properties["article"]["description"]
+    assert "art. 1.902" in properties["article"]["description"]
     assert "block_id" in properties["article"]["description"]
+    assert "candidates" in properties["block_id"]["description"]
     assert "ISO" in properties["as_of"]["description"]
     assert "resolve_reference" in properties["law_id"]["description"]
     assert (properties["max_chars"]["minimum"], properties["max_chars"]["maximum"]) == (500, 20000)
@@ -163,11 +165,17 @@ async def test_compare_and_amendment_parameter_bounds_and_defaults(
     compare = tools["compare_article_versions"].input_schema
     history = tools["get_amendment_history"].input_schema["properties"]
 
-    assert compare["required"] == ["law_id", "article", "from_date"]
+    # article and block_id are both optional in the schema: exactly one is checked by the use case.
+    assert compare["required"] == ["law_id", "from_date"]
     assert (
         compare["properties"]["max_changes"]["maximum"],
         compare["properties"]["max_changes"]["default"],
     ) == (200, 40)
+    assert (
+        compare["properties"]["max_chars"]["minimum"],
+        compare["properties"]["max_chars"]["maximum"],
+        compare["properties"]["max_chars"]["default"],
+    ) == (1000, 30000, 8000)
     assert history["group"]["enum"] == [
         "all",
         "repeals",
@@ -177,7 +185,7 @@ async def test_compare_and_amendment_parameter_bounds_and_defaults(
         "other",
     ]
     assert (history["limit"]["minimum"], history["limit"]["maximum"]) == (1, 100)
-    assert tools["get_article_history"].input_schema["required"] == ["law_id", "article"]
+    assert tools["get_article_history"].input_schema["required"] == ["law_id"]
 
 
 async def test_instructions_mention_the_article_tools(boe_client: BoeClient) -> None:
@@ -222,7 +230,7 @@ async def test_required_parameters(tools: dict[str, Tool]) -> None:
     assert tools["resolve_reference"].input_schema["required"] == ["reference"]
     assert tools["get_law_overview"].input_schema["required"] == ["law_id"]
     assert tools["find_codes"].input_schema["required"] == ["kind", "text"]
-    assert tools["read_article"].input_schema["required"] == ["law_id", "article"]
+    assert tools["read_article"].input_schema["required"] == ["law_id"]
 
 
 async def test_find_codes_kind_is_an_enum_and_limit_is_bounded(tools: dict[str, Tool]) -> None:
@@ -395,6 +403,10 @@ def ley_40_text_routes(
                 200, content=load_fixture(fixture), headers={"Content-Type": "application/xml"}
             )
         )
+    # Article tools also check whether the whole law is repealed.
+    router.get(f"{prefix}/metadatos").mock(
+        return_value=json_response(load_fixture("metadatos_in_force_ley40_2015.json"))
+    )
 
 
 @pytest.mark.usefixtures("ley_40_text_routes")
@@ -437,6 +449,29 @@ async def test_compare_article_versions_returns_structured_content(mcp: Client[A
     assert comparison.amending_laws == ["BOE-A-2020-17340"]
     assert comparison.changed == 1
     assert comparison.from_date == date(2017, 1, 1)
+
+
+@pytest.mark.usefixtures("ley_40_text_routes")
+async def test_article_tools_take_a_block_id_instead_of_the_wording(mcp: Client[Any]) -> None:
+    result = await mcp.call_tool("read_article", {"law_id": LEY_40, "block_id": "a4-2"})
+
+    article = ReadArticleResult.model_validate(result.structured_content)
+    assert (article.outcome, article.block_id) == ("found", "a4-2")
+    assert article.law_repealed is False
+
+
+@pytest.mark.usefixtures("ley_40_text_routes")
+@pytest.mark.parametrize(
+    "arguments",
+    [{}, {"article": "48", "block_id": "a48"}, {"article": "x" * 201}],
+    ids=["neither", "both", "too-long"],
+)
+@pytest.mark.parametrize("tool", ["read_article", "get_article_history"])
+async def test_article_tools_reject_a_bad_selector_as_an_invalid_argument(
+    mcp: Client[Any], tool: str, arguments: dict[str, Any]
+) -> None:
+    with pytest.raises(ToolError, match="invalid_argument"):
+        await mcp.call_tool(tool, {"law_id": LEY_40, **arguments})
 
 
 @pytest.mark.usefixtures("ley_40_text_routes")

@@ -13,8 +13,9 @@ import pytest
 
 from boe_insights_mcp.legislation import derive_status
 from boe_insights_mcp.models import Block, BlockVersion, LawMetadata, Paragraph
+from boe_insights_mcp.repeal import whole_law_repeal
 from boe_insights_mcp.textparse import parse_block
-from boe_insights_mcp.versions import repeal_note
+from boe_insights_mcp.versions import repeal_date, repeal_note
 
 TODAY = date(2026, 11, 21)
 
@@ -312,3 +313,100 @@ def test_the_note_ranks_below_annulled_and_above_the_remaining_statuses(
     status, _ = derive_status(make_law(**flags), TODAY, 2, version)  # type: ignore[arg-type]
 
     assert status == expected
+
+
+# --- Repeal date and announced repeals --------------------------------------------------
+
+
+def synthetic_note(first_paragraph: str, *, effective: date | None = None) -> Block:
+    """An initial note whose only version starts with ``first_paragraph``."""
+    version = BlockVersion(
+        source_law_id="BOE-A-2026-1",
+        published_on=date(2026, 1, 1),
+        effective_from=effective,
+        paragraphs=(Paragraph(kind="siempreSeVe", text=first_paragraph),),
+    )
+    return Block(block_id="no", kind="nota_inicial", title="", versions=(version,))
+
+
+@pytest.mark.parametrize(
+    ("fixture", "expected"),
+    [
+        ("texto_bloque_no_ley11_2007_repealed_with_tengase.xml", date(2016, 10, 2)),
+        ("texto_bloque_no_ley30_1992_two_versions_empty_vigencia.xml", date(2016, 10, 2)),
+        ("texto_bloque_no_lopd1999_repealed.xml", date(2018, 12, 7)),
+    ],
+)
+def test_overview_repeal_date_logic_reads_the_date_from_the_note_wording(
+    load_fixture: Callable[[str], bytes], fixture: str, expected: date
+) -> None:
+    note = parse_block(load_fixture(fixture))
+
+    verdict = whole_law_repeal(
+        flagged=False,
+        flag_on=None,
+        note_version=repeal_note(note),
+        note_on=repeal_date(note),
+        today=TODAY,
+    )
+
+    assert (verdict.in_effect, verdict.on) == (True, expected)
+
+
+def test_a_repeal_dated_in_the_future_is_announced_and_the_status_stays_as_derived() -> None:
+    note = synthetic_note("Norma derogada, con efectos de 1 de enero de 2027, por la ley X.")
+
+    status, text = derive_status(
+        make_law(), TODAY, 0, repeal_note(note), repeal_on=repeal_date(note)
+    )
+
+    assert status == "in_force"
+    assert "announced" in text
+    assert "2027-01-01" in text
+    assert "opens with a repeal note" not in text
+
+
+def test_a_flagged_repeal_dated_in_the_future_is_announced_too() -> None:
+    status, text = derive_status(
+        make_law(repealed=True, repealed_on=TODAY + timedelta(days=30)), TODAY, 0, None
+    )
+
+    assert status == "in_force"
+    assert (TODAY + timedelta(days=30)).isoformat() in text
+    assert "announced" in text
+
+
+def test_an_announced_repeal_does_not_hide_a_stronger_status() -> None:
+    status, text = derive_status(
+        make_law(annulled=True, repealed=True, repealed_on=TODAY + timedelta(days=30)),
+        TODAY,
+        0,
+        None,
+    )
+
+    assert status == "annulled"
+    assert "announced" not in text
+
+
+def test_a_repeal_dated_today_is_in_effect() -> None:
+    status, _ = derive_status(make_law(repealed=True, repealed_on=TODAY), TODAY, 0, None)
+
+    assert status == "repealed"
+
+
+def test_a_partially_repealed_note_is_not_a_whole_law_repeal() -> None:
+    note = synthetic_note("Norma derogada parcialmente, con efectos de 1 de enero de 2020.")
+
+    status, _ = derive_status(make_law(), TODAY, 0, repeal_note(note))
+
+    assert repeal_note(note) is None
+    assert status == "in_force"
+
+
+def test_without_a_given_date_derive_status_reads_it_from_the_note_version() -> None:
+    note = synthetic_note("Norma derogada, con efectos de 1 de enero de 2027.")
+
+    status, text = derive_status(make_law(), TODAY, 0, repeal_note(note))
+
+    assert status == "in_force"
+    assert "2027-01-01" in text

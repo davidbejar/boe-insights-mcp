@@ -13,12 +13,13 @@ from __future__ import annotations
 import dataclasses
 import json
 import re
+import time
 from collections.abc import Callable, Sequence
 from typing import Any
 
 import pytest
 
-from boe_insights_mcp.locator import LocateResult, locate
+from boe_insights_mcp.locator import LocateResult, locate, locate_block_id
 from boe_insights_mcp.models import IndexEntry
 
 FIXTURES = {
@@ -108,7 +109,7 @@ REAL_FOUND: list[tuple[str, str, str]] = [
     ("constitucion", "disposición derogatoria", "dd"),
     ("constitucion", "Disposición final", "df"),
     ("constitucion", "preámbulo", "preambulo"),
-    ("constitucion", "primera", "primera"),  # a block id, case-sensitive passthrough
+    ("constitucion", "primera", "primera"),  # no title is just "Primera": the id is the answer
     # Ley 39/2015 (NBSP in most article titles).
     ("ley39", "artículo 1", "a1"),
     ("ley39", "disposición adicional 4", "dacuaa"),
@@ -127,10 +128,8 @@ REAL_FOUND: list[tuple[str, str, str]] = [
     ("rd1624", "1 bis", "a1-3"),
     ("rd1624", "61 quáter", "a61quater"),
     ("rd1624", "disposición transitoria cuarta", "dt"),
-    ("rd1624", "dt", "dt"),  # block id wins over the abbreviation reading
     ("rd1624", "a1-2", "a1-2"),
     # Real Decreto 1006/2026: ids that are also abbreviations.
-    ("rd1006", "df", "df"),
     ("rd1006", "disposición derogatoria única", "dd"),
     ("rd1006", "preámbulo", "pr"),
     # Real Decreto 784/2021: bracketed preamble, sole article plus a Reglamento.
@@ -162,7 +161,6 @@ REAL_FOUND: list[tuple[str, str, str]] = [
     ("codigo_civil", "1873 bis", "arts.1863bisa1873bis."),
     ("codigo_civil", "§ 1", "S1"),
     ("codigo_civil", "décima", "decima"),
-    ("codigo_civil", "primera", "primera"),  # block id
     # LOPD 1999 (repealed).
     ("lopd", "disposición derogatoria única", "ddunica"),
 ]
@@ -210,6 +208,7 @@ REAL_AMBIGUOUS: list[tuple[str, str, list[str]]] = [
     ("rd424", "disposición transitoria primera", ["dtprimera", "dtprimera-2"]),
     ("rd424", "DT 2", ["dtsegunda", "dtsegunda-2"]),
     ("codigo_civil", "Primera", ["primera", "primera-2"]),
+    ("codigo_civil", "primera", ["primera", "primera-2"]),  # as ambiguous as "Primera"
     ("codigo_civil", "SEGUNDA", ["segunda", "segunda-2"]),
 ]
 
@@ -342,7 +341,7 @@ def test_real_index_invariants(index_of: IndexLoader, law: str) -> None:
 
     # Every block id finds its own block, whatever its title (including empty ones).
     for entry in index:
-        by_id = locate(index, entry.block_id)
+        by_id = locate_block_id(index, entry.block_id)
         assert by_id.outcome == "found", entry.block_id
         assert by_id.entry == entry
         assert by_id.candidates == ()
@@ -888,11 +887,13 @@ def test_forty_six_and_forty_six_bis_are_told_apart() -> None:
 # --- Block ids -------------------------------------------------------------------------
 
 
-def test_block_id_beats_a_title_that_matches_something_else() -> None:
-    # The query "2" is the id of the first block and also the designation of the second.
+def test_a_designation_beats_a_block_id_that_looks_like_it() -> None:
+    # The query "2" is the id of the first block and also the designation of the second: the
+    # designation wins in ``locate``, and ``locate_block_id`` is the way to ask for the id.
     index = _pairs(("2", "Artículo 1"), ("a2", "Artículo 2"))
 
-    assert _found_id(index, "2") == "2"
+    assert _found_id(index, "2") == "a2"
+    assert locate_block_id(index, "2").entry == index[0]
 
 
 def test_block_id_match_is_case_sensitive() -> None:
@@ -1080,3 +1081,272 @@ def test_locate_result_is_frozen() -> None:
     with pytest.raises(dataclasses.FrozenInstanceError):
         result.outcome = "not_found"  # type: ignore[misc]
     assert dataclasses.is_dataclass(result)
+
+
+# === Review findings: suffix family, thousands, trailing context, block ids, speed ===========
+
+
+_IVA_163_FAMILY = [
+    "decies",
+    "undecies",
+    "duodecies",
+    "terdecies",
+    "quaterdecies",
+    "quinquiesdecies",
+    "sexiesdecies",
+    "septiesdecies",
+    "octiesdecies",
+    "noniesdecies",
+    "vicies",
+    "unvicies",
+    "duovicies",
+    "tervicies",
+    "quatervicies",
+    "quinvicies",
+    "septvicies",
+    "octovicies",
+]
+
+
+def test_real_iva_bare_163_is_its_own_article_not_ambiguous_among_the_suffixed_ones(
+    index_of: IndexLoader,
+) -> None:
+    index = index_of("iva")
+
+    result = locate(index, "163")
+
+    # There is no plain "Artículo 163" in the trimmed index: the suffixed blocks must not match.
+    assert result.outcome == "not_found"
+
+
+@pytest.mark.parametrize("suffix", _IVA_163_FAMILY)
+def test_real_iva_every_latin_suffix_of_article_163_finds_its_own_block(
+    index_of: IndexLoader, suffix: str
+) -> None:
+    index = index_of("iva")
+    expected = next(e for e in index if e.title.split() == ["Artículo", "163", suffix]).block_id
+
+    assert _found_id(index, f"163 {suffix}") == expected
+    assert _found_id(index, f"artículo 163{suffix}") == expected
+
+
+def test_real_iva_vicies_is_found_and_distinct_from_decies(index_of: IndexLoader) -> None:
+    index = index_of("iva")
+
+    assert _found_id(index, "163 vicies") != _found_id(index, "163 decies")
+
+
+def test_the_source_typo_sexvivies_is_read_like_sexvicies() -> None:
+    # The real IVA index spells "Artículo 163 sexvivies" (api-notes, "Index title patterns").
+    index = _pairs(("t", "Artículo 163 sexvivies"), ("d", "Artículo 163 sexies"))
+
+    assert _found_id(index, "163 sexvicies") == "t"
+    assert _found_id(index, "163 sexvivies") == "t"
+
+
+@pytest.mark.parametrize(
+    ("suffix", "other"),
+    [
+        ("tricies", "vicies"),
+        ("untricies", "unvicies"),
+        ("noviesvicies", "vicies"),
+        ("octiesdecies", "octies"),
+    ],
+)
+def test_latin_suffixes_compose_from_units_and_tens(suffix: str, other: str) -> None:
+    index = _pairs(("t", f"Artículo 9 {suffix}"), ("d", f"Artículo 9 {other}"))
+
+    assert _found_id(index, f"9 {suffix}") == "t"
+
+
+def test_an_unknown_trailing_word_in_a_title_prevents_the_bare_number_match() -> None:
+    index = _pairs(("x", "Artículo 163 foobar"), ("a", "Artículo 164"))
+
+    result = locate(index, "163")
+
+    assert result.outcome == "not_found"
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("artículo 1.240", "a1240"),
+        ("art. 1.902", "a1902"),
+        ("1.240", "a1240"),
+        ("art 1.240 bis", "a1240bis"),
+    ],
+)
+def test_thousands_dot_reads_as_one_number(query: str, expected: str) -> None:
+    index = _pairs(
+        ("a1240", "Artículo 1240"),
+        ("a1902", "Art. 1902"),
+        ("a1240bis", "Artículo 1240 bis"),
+        ("a124", "Artículo 124"),
+        ("a1", "Artículo 1"),
+    )
+
+    result = locate(index, query)
+
+    assert result.outcome == "found"
+    assert result.entry is not None and result.entry.block_id == expected
+    assert result.ignored is None
+
+
+@pytest.mark.parametrize(
+    ("query", "ignored"),
+    [
+        ("46.2", ".2"),
+        ("artículo 46.2", ".2"),
+        ("artículo 46, apartado 2", ", apartado 2"),
+        ("artículo 46 de la Constitución", "de la Constitución"),
+        ("art. 46 CE", "CE"),
+        ("artículo 46 de la Ley 39/2015", "de la Ley 39/2015"),
+        ("46 bis.2", ".2"),
+    ],
+)
+def test_trailing_paragraph_and_context_are_ignored_and_reported(query: str, ignored: str) -> None:
+    index = _pairs(("p", "Artículo 46"), ("b", "Artículo 46 bis"), ("o", "Artículo 460"))
+
+    result = locate(index, query)
+
+    assert result.outcome == "found"
+    assert result.entry is not None
+    assert result.entry.block_id == ("b" if "bis" in query else "p")
+    assert result.ignored == ignored
+
+
+def test_constitution_paragraph_citation_locates_the_article(index_of: IndexLoader) -> None:
+    result = locate(index_of("constitucion"), "artículo 149.1.18ª")
+
+    assert result.outcome == "found"
+    assert result.entry is not None and result.entry.block_id == "a149"
+    assert result.ignored == ".1.18ª"
+
+
+@pytest.mark.parametrize("query", ["46 bis", "artículo 46 bis.", "Art. 46bis", "46.", "46"])
+def test_nothing_ignored_for_a_plain_designation(query: str) -> None:
+    index = _pairs(("p", "Artículo 46"), ("b", "Artículo 46 bis"))
+
+    assert locate(index, query).ignored is None
+
+
+def test_ordinal_indicator_of_a_provision_is_not_reported_as_ignored() -> None:
+    index = _pairs(("t", "Disposición transitoria tercera"))
+
+    result = locate(index, "disposición transitoria 3.ª")
+
+    assert result.outcome == "found"
+    assert result.ignored is None
+
+
+def test_a_query_without_a_leading_designation_is_compared_whole_as_before() -> None:
+    index = _pairs(("a1", "Artículo 1"), ("x", "Libro Segundo"))
+
+    result = locate(index, "libro segundo")
+
+    assert (result.outcome, result.ignored) == ("found", None)
+    assert locate(index, "régimen del libro segundo").outcome == "not_found"
+
+
+@pytest.mark.parametrize("query", ["da", "dt", "df", "dd", "DT"])
+def test_abbreviation_is_a_designation_not_a_block_id(query: str) -> None:
+    # Two blocks of each type, and ids equal to the abbreviations: the id must not win silently.
+    index = _pairs(
+        ("da", "Disposición adicional primera"),
+        ("dt", "Disposición transitoria primera"),
+        ("df", "Disposición final primera"),
+        ("dd", "Disposición derogatoria primera"),
+        ("da-2", "Disposición adicional segunda"),
+        ("dt-2", "Disposición transitoria segunda"),
+        ("df-2", "Disposición final segunda"),
+        ("dd-2", "Disposición derogatoria segunda"),
+    )
+
+    result = locate(index, query)
+
+    assert result.outcome == "not_found"
+    assert result.candidates
+
+
+def test_bare_ordinal_in_another_case_is_as_ambiguous_as_the_capitalised_one() -> None:
+    index = _pairs(("primera", "Primera"), ("primera-2", "Primera"))
+
+    assert locate(index, "Primera").outcome == "ambiguous"
+    assert locate(index, "primera").outcome == "ambiguous"
+
+
+def test_block_id_that_is_not_a_designation_still_resolves() -> None:
+    index = _pairs(("co", ""), ("no", ""), ("a1-2", "Artículo 1"), ("a1", "Artículo 1"))
+
+    assert _found_id(index, "co") == "co"
+    assert _found_id(index, "a1-2") == "a1-2"
+
+
+def test_locate_block_id_finds_exact_ids_only() -> None:
+    index = _pairs(("dt", "Disposición transitoria primera"), ("dt-2", "Disposición transitoria"))
+
+    found = locate_block_id(index, "dt")
+    missing = locate_block_id(index, "DT")
+
+    assert (found.outcome, found.entry) == ("found", index[0])
+    assert missing.outcome == "not_found"
+    assert missing.entry is None
+    assert missing.candidates
+
+
+def test_locate_block_id_not_found_offers_titled_blocks() -> None:
+    index = _pairs(("no", ""), ("a1", "Artículo 1"), ("a2", "Artículo 2"))
+
+    result = locate_block_id(index, "zzz")
+
+    assert result.outcome == "not_found"
+    assert _ids(result.candidates) == ["a1", "a2"]
+
+
+def _big_index(size: int = 2500) -> list[IndexEntry]:
+    titles = [f"Art {n}" for n in range(1, size - 200)] + [f"Art {n} bis" for n in range(1, 200)]
+    titles += ["Disposición adicional primera", "§ 1", "Capítulo I", "Primera", "Primera"]
+    return [IndexEntry(block_id=f"b{i}", title=t) for i, t in enumerate(titles)]
+
+
+def test_locate_stays_fast_on_a_code_sized_index() -> None:
+    index = _big_index()
+    queries = [
+        "1",
+        "artículo 1240",
+        "art. 1.902",
+        "46 bis",
+        "artículo 46.2",
+        "artículo 14 de la Constitución",
+        "disposición adicional primera",
+        "Primera",
+        "da",
+        "artículo 99999",
+        "régimen sancionador de las entidades locales",
+        "§ 1",
+    ] * 2
+
+    started = time.perf_counter()
+    for query in queries[:20]:
+        locate(index, query)
+    elapsed = time.perf_counter() - started
+
+    assert elapsed < 1.0, elapsed
+
+
+def test_a_two_hundred_character_query_is_still_fast() -> None:
+    index = _big_index()
+
+    started = time.perf_counter()
+    locate(index, "x" * 200)
+    locate(index, "artículo 5 " + "de la ley " * 18)
+
+    assert time.perf_counter() - started < 1.0
+
+
+def test_real_bare_abbreviations_no_longer_resolve_by_id(index_of: IndexLoader) -> None:
+    # RD 1624/1992 has several transitional provisions, one of them with the id "dt".
+    index = index_of("rd1624")
+
+    assert locate(index, "dt").outcome == "not_found"
+    assert locate_block_id(index, "dt").outcome == "found"

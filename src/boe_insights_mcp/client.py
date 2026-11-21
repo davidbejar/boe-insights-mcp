@@ -58,6 +58,7 @@ __all__ = [
     "ANALYSIS_TTL",
     "AUXILIARY_TTL",
     "BASE_URL",
+    "DEFAULT_MAX_RESPONSE_BYTES",
     "DEFAULT_USER_AGENT",
     "INITIAL_NOTE_TTL",
     "METADATA_TTL",
@@ -89,6 +90,10 @@ TEXT_BLOCK_TTL = 6 * 3600.0
 # is part of the cache key, so a block fetched with it can be kept for a long time.
 TEXT_BLOCK_VERSIONED_TTL = 30 * 24 * 3600.0
 INITIAL_NOTE_TTL = 6 * 3600.0
+# The largest response body accepted. The biggest real one seen is the 763 KB Código Civil index
+# (api-notes 6.1); a whole-law ``/texto`` can reach several MB, so the limit is generous. It
+# exists so that a hostile or broken server cannot make us hold an unbounded body in memory.
+DEFAULT_MAX_RESPONSE_BYTES = 25 * 1024 * 1024
 
 AuxiliaryTable = Literal[
     "materias",
@@ -219,7 +224,7 @@ def _build_index(data: object) -> list[IndexEntry]:
     return entries
 
 
-def _api_message(response: httpx.Response) -> str | None:
+def _api_message(body: bytes) -> str | None:
     """Extract the ``<text>`` of the XML error envelope the API sends even for JSON requests.
 
     Only that one field is read, with a regular expression rather than an XML parser, so a
@@ -230,7 +235,7 @@ def _api_message(response: httpx.Response) -> str | None:
     # small shape (api-notes 2, "Errors"), so a regex is enough and avoids parser attack
     # surface such as entity expansion. ``errors="replace"`` keeps a bad byte from raising while
     # we are already handling a failure.
-    match = _ERROR_TEXT.search(response.content.decode("utf-8", errors="replace"))
+    match = _ERROR_TEXT.search(body.decode("utf-8", errors="replace"))
     if match is None:
         return None
     return html.unescape(match.group(1)).strip() or None
@@ -245,12 +250,12 @@ def _is_query_error(message: str | None) -> bool:
     return match is not None and match.group(1) in _QUERY_ERROR_CODES
 
 
-def _error_for(response: httpx.Response) -> BoeError:
-    """Map a non-200 response to the error describing it (check ``retryable``)."""
+def _error_for(response: httpx.Response, body: bytes) -> BoeError:
+    """Map a non-200 response and its body to the error describing it (check ``retryable``)."""
     # 429 is mapped defensively: it was never seen (api-notes 9), but it plainly means "slow
     # down" and so is retryable like a 5xx. Anything else (3xx, other 4xx) is not retried.
     status = response.status_code
-    message = _api_message(response)
+    message = _api_message(body)
     error_class: type[BoeError]
     if status == 404:
         error_class, summary = BoeNotFoundError, "BOE resource not found"
@@ -307,6 +312,7 @@ class BoeClient:
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         jitter: Callable[[], float] = random.random,
         clock: Callable[[], float] = time.monotonic,
+        max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
     ) -> None:
         """Create a client.
 
@@ -319,7 +325,8 @@ class BoeClient:
         jitter, or the server's ``Retry-After`` when it gives one. ``timeout`` limits one
         attempt; ``total_timeout`` limits the whole call, retries and waits included, measured
         with the monotonic ``clock``: no attempt or wait that cannot finish inside it is
-        started, and the call then fails with ``BoeUnavailableError``.
+        started, and the call then fails with ``BoeUnavailableError``. A response body larger than
+        ``max_response_bytes`` fails with ``BoeResponseError`` (not retried, not cached).
         """
         self._cache = cache
         self._limiter = limiter
@@ -330,6 +337,7 @@ class BoeClient:
         self._timeout = timeout
         self._total_timeout = total_timeout
         self._clock = clock
+        self._max_response_bytes = max_response_bytes
         # cache key -> fetch currently in flight; entries exist only while the fetch runs.
         self._flights: dict[str, _Flight] = {}
         self._max_retries = max_retries
@@ -398,11 +406,15 @@ class BoeClient:
         # 200 is cached by ``_get``, and without this a note-less law (most of them) would cost a
         # request on every overview. Exactly one entry is written, with the note's lifetime.
         key = self._cache_key(path, None, _XML, None)
-        if await self._cache.get(key) == _NO_NOTE:
+        # One cache read serves both questions ("is it the no-note marker?" and "is it a note?").
+        cached = await self._cache.get(key)
+        if cached == _NO_NOTE:
             self._cache_hits += 1
             return None
         try:
-            return await self._get(path, None, INITIAL_NOTE_TTL, parse_block, accept=_XML)
+            return await self._resolve(
+                cached, key, f"{self._base_url}{path}", None, INITIAL_NOTE_TTL, parse_block, _XML
+            )
         except BoeNotFoundError:
             await self._cache.set(key, _NO_NOTE, INITIAL_NOTE_TTL)
             return None
@@ -482,6 +494,19 @@ class BoeClient:
         url = f"{self._base_url}{path}"
         key = self._cache_key(path, params, accept, revision)
         cached = await self._cache.get(key)
+        return await self._resolve(cached, key, url, params, ttl, build, accept)
+
+    async def _resolve(
+        self,
+        cached: bytes | None,
+        key: str,
+        url: str,
+        params: Mapping[str, str | int] | None,
+        ttl: float,
+        build: Callable[[bytes], _T],
+        accept: str,
+    ) -> _T:
+        """Parse ``cached`` (what the cache held under ``key``) or fetch the body from the API."""
         if cached is not None:
             try:
                 result = _parse(cached, build)
@@ -587,20 +612,22 @@ class BoeClient:
             async with self._limiter:
                 self._requests_sent += 1
                 try:
-                    response = await self._http.get(
+                    async with self._http.stream(
+                        "GET",
                         url,
                         params=params,
                         headers={"Accept": accept, "User-Agent": self._user_agent},
                         timeout=min(self._timeout, remaining),
-                    )
+                    ) as response:
+                        body = await self._read_limited(response)
                 except (httpx.TimeoutException, httpx.TransportError) as error:
                     failure: BoeError = BoeUnavailableError(
                         f"Could not reach BOE ({type(error).__name__})"
                     )
                 else:
                     if response.status_code == 200:
-                        return response.content
-                    failure = _error_for(response)
+                        return body
+                    failure = _error_for(response, body)
                     delay = _retry_after(response)
             if not failure.retryable or attempt == self._max_retries:
                 raise failure
@@ -612,6 +639,29 @@ class BoeClient:
                 raise self._out_of_time(failure)
             await self._sleep(wait)
             attempt += 1
+
+    async def _read_limited(self, response: httpx.Response) -> bytes:
+        """Read the body of a streamed response, stopping at ``max_response_bytes``.
+
+        Raises ``BoeResponseError`` as soon as the declared ``Content-Length`` or the bytes
+        received exceed the limit, so an oversized body is never held in memory in full.
+        """
+        # Both checks matter: Content-Length lets us refuse before reading anything, but a
+        # chunked response has none and a server can lie about it, so the received length is
+        # counted too. The error is not retryable: asking again would fetch the same body.
+        too_large = BoeResponseError(
+            f"BOE response is too large (over {self._max_response_bytes} bytes)",
+            status=response.status_code,
+        )
+        declared = response.headers.get("Content-Length", "")
+        if declared.isdigit() and int(declared) > self._max_response_bytes:
+            raise too_large
+        received = bytearray()
+        async for chunk in response.aiter_bytes():
+            received += chunk
+            if len(received) > self._max_response_bytes:
+                raise too_large
+        return bytes(received)
 
     def _out_of_time(self, last: BoeError | None) -> BoeUnavailableError:
         """The error for an exhausted ``total_timeout``, keeping the last failure's details."""

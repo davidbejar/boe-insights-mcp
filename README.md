@@ -39,20 +39,20 @@ An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that g
 
 | Tool | Question it answers | Key parameters |
 |---|---|---|
-| `read_article` | What does this article say, today or on a past date? | `law_id`, `article`, `as_of`, `max_chars` (500-20000), `offset` |
-| `compare_article_versions` | What changed in this article between two dates? | `law_id`, `article`, `from_date`, `to_date`, `max_changes` (1-200) |
-| `get_article_history` | When did this article change, and which law changed it? | `law_id`, `article` |
+| `read_article` | What does this article say, today or on a past date? | `law_id`, `article` or `block_id`, `as_of`, `max_chars` (500-20000), `offset` |
+| `compare_article_versions` | What changed in this article between two dates? | `law_id`, `article` or `block_id`, `from_date`, `to_date`, `max_changes` (1-200), `max_chars` (1000-30000) |
+| `get_article_history` | When did this article change, and which law changed it? | `law_id`, `article` or `block_id` |
 | `get_amendment_history` | Which norms have affected this law, by kind and by year? | `law_id`, `group` (`all`, `repeals`, `modifies`, `adds`, `corrections` or `other`), `limit` (1-100), `offset` |
 
 All eight tools are read-only. `resolve_reference` returns `resolved`, `ambiguous` (with candidates and a hint) or `not_found`. `search_legislation` pages with `next_offset`, because the API gives no total count. `find_codes` returns the matching `{code, text}` pairs.
 
 **Law status.** `get_law_overview` returns a `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` or `not_yet_in_force`) with a plain-English note, the BOE's initial note when the text has one, and counts and samples of the norms that amend the law or that it amends. The status is derived from the BOE flags and the amendment references, so it is an indication, not a legal determination. A whole repeal is also detected from the opening note of the consolidated text ("Norma derogada..."), because some wholly repealed laws carry only that note and not the metadata flag.
 
-**Article states.** `read_article` reports the article's `state` on the requested date and `get_article_history` its `current_state`: `in_force`, `repealed`, `not_yet_in_force` (text published but not yet effective) or `did_not_exist` (the date precedes the article's first version).
+**Article states.** `read_article` reports the article's `state` on the requested date and `get_article_history` its `current_state`: `in_force`, `repealed`, `not_yet_in_force` (text published but not yet effective) or `did_not_exist` (the date precedes the article's first version). An article of a law repealed as a whole carries no repeal marker, so the article tools also check the law (its metadata and, when the text has one, its initial note): from the repeal date on, the state is `repealed` (the last text is still returned), `law_repealed` and `law_repealed_on` say so, and `note` explains it. A repeal dated in the future is only announced, and if that check cannot be done `law_repealed` is `null` and `note` says so.
 
-**Naming an article.** The `article` argument accepts the wording people use: `46 bis`, `art. 12`, `artículo 48`, `disposición adicional tercera` (or `DA 3`), `anexo I`, `preámbulo`, or a `block_id` taken from `candidates`. If the wording matches several blocks (`ambiguous`) or none (`not_found`), the result is not an error: `outcome` says so and `candidates` lists blocks to retry with, using their `block_id`.
+**Naming an article.** The `article` argument (at most 200 characters) accepts the wording people use: `46 bis`, `art. 12`, `art. 1.902`, `artículo 48`, `disposición adicional tercera` (or `DA 3`), `anexo I`, `preámbulo`. Anything after the designation, such as a paragraph number (`46.2`, `149.1.18ª`) or a context (`14 de la Constitución`), is ignored, because the tools return whole articles; `note` says what was ignored. To pick an exact block, pass its `block_id` from `candidates` instead of `article` (exactly one of the two is required). If the wording matches several blocks (`ambiguous`) or none (`not_found`), the result is not an error: `outcome` says so and `candidates` lists blocks to retry with, using their `block_id`.
 
-Every result carries a `provenance` block. Trimmed output of `compare_article_versions` for article 48 of `BOE-A-2015-10566` between 2016-10-02 and 2026-11-21 (recorded test fixtures, no live request). Besides the fields shown, the real result also has the old and new text of each change, a `unified_diff` and the truncation flags; `[-old-] {+new+}` marks a rewording inside a paragraph:
+Every result carries a `provenance` block. Trimmed output of `compare_article_versions` for article 48 of `BOE-A-2015-10566` between 2016-10-02 and 2026-11-21 (recorded test fixtures, no live request). Long strings (`inline`, `unified_diff`) are shortened here with `…`. `[-old-] {+new+}` marks a rewording inside a paragraph: a reworded paragraph is returned as `inline` alone (`old_text` and `new_text` are `null`), except tables, which return both texts and no `inline`:
 
 ```json
 {
@@ -60,6 +60,19 @@ Every result carries a `provenance` block. Trimmed output of `compare_article_ve
   "outcome": "found",
   "block_id": "a48",
   "block_title": "Artículo 48",
+  "candidates": [],
+  "hint": null,
+  "provenance": {
+    "source": "Agencia Estatal Boletín Oficial del Estado",
+    "attribution": "Basado en datos de la Agencia Estatal Boletín Oficial del Estado",
+    "source_url": "https://www.boe.es",
+    "generated_at": "2026-11-21T12:41:13.262679Z",
+    "data_updated_at": "2020-12-31T00:00:00Z",
+    "notice": "Consolidated texts are provided for information only and have no official legal value. Only the texts published in the official gazette are authentic."
+  },
+  "law_repealed": false,
+  "law_repealed_on": null,
+  "note": null,
   "from_date": "2016-10-02",
   "to_date": "2026-11-21",
   "from_version": {
@@ -84,18 +97,18 @@ Every result carries a `provenance` block. Trimmed output of `compare_article_ve
   "changes": [
     {
       "op": "changed",
-      "inline": "... resultarán eficaces una vez [-inscritos-] {+inscritos, en el plazo de 5 días hábiles desde su formalización,+} en el Registro Electrónico estatal de Órganos e Instrumentos de Cooperación ..."
+      "old_text": null,
+      "new_text": null,
+      "inline": "… resultarán eficaces una vez [-inscritos-] {+inscritos, en el plazo de 5 días hábiles desde su formalización,+} en el Registro Electrónico estatal de Órganos e Instrumentos de Cooperación del sector público estatal, al que se …"
     }
   ],
-  "amending_laws": ["BOE-A-2020-17340"],
-  "provenance": {
-    "source": "Agencia Estatal Boletín Oficial del Estado",
-    "attribution": "Basado en datos de la Agencia Estatal Boletín Oficial del Estado",
-    "source_url": "https://www.boe.es",
-    "generated_at": "2026-11-21T12:09:47.258224Z",
-    "data_updated_at": "2020-12-31T00:00:00Z",
-    "notice": "Consolidated texts are provided for information only and have no official legal value. Only the texts published in the official gazette are authentic."
-  }
+  "changes_truncated": false,
+  "intermediate_versions": 0,
+  "amending_laws": [
+    "BOE-A-2020-17340"
+  ],
+  "unified_diff": "--- old\n+++ new\n@@ -8,5 +8,5 @@\n …",
+  "unified_truncated": false
 }
 ```
 

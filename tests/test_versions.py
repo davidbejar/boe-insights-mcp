@@ -1107,3 +1107,235 @@ def test_repeal_note_does_not_depend_on_the_block_kind() -> None:
     version = note_version("Norma derogada, con efectos de 2018.")
     block = Block(block_id="a1", kind="precepto", title="", versions=(version,))
     assert repeal_note(block) is version
+
+
+# === Review findings: diff cost and history size =================================================
+
+import random  # noqa: E402
+import time  # noqa: E402
+
+
+def _paragraphs_like_an_annex(count: int, *, reword: bool) -> list[str]:
+    """``count`` paragraphs of about 260 characters; ``reword`` changes one word in each."""
+    rng = random.Random(7)  # the same words for the old and the new text
+    vocabulary = [f"palabra{n}" for n in range(300)]
+    texts = []
+    for number in range(count):
+        words = [rng.choice(vocabulary) for _ in range(32)]
+        if reword:
+            words[5] = "modificada"
+        texts.append(f"{number}. " + " ".join(words))
+    return texts
+
+
+def test_an_uneven_run_of_two_hundred_reworded_paragraphs_diffs_quickly() -> None:
+    old = _paragraphs_like_an_annex(200, reword=False)
+    new = _paragraphs_like_an_annex(200, reword=True)
+    new.insert(100, "Un párrafo nuevo en medio del texto.")
+
+    started = time.perf_counter()
+    diff = diff_versions(texts_version(old), texts_version(new))
+
+    assert time.perf_counter() - started < 2.0
+    assert diff.added + diff.changed == len(new)
+
+
+def test_a_large_uneven_run_pairs_by_position_and_leaves_the_remainder_added() -> None:
+    old = [f"Párrafo antiguo {n}" for n in range(50)]
+    new = [f"Párrafo nuevo {n}" for n in range(53)]
+
+    diff = diff_versions(texts_version(old), texts_version(new))
+
+    # 50 x 53 cells is far above the pairing matrix limit: by position, the rest added.
+    assert (diff.changed, diff.added, diff.removed) == (50, 3, 0)
+    assert [c.old_text for c in diff.changes[:2]] == ["Párrafo antiguo 0", "Párrafo antiguo 1"]
+    assert [c.new_text for c in diff.changes[-3:]] == [f"Párrafo nuevo {n}" for n in (50, 51, 52)]
+
+
+def test_a_large_uneven_run_with_more_old_paragraphs_leaves_the_remainder_removed() -> None:
+    old = [f"Párrafo antiguo {n}" for n in range(53)]
+    new = [f"Párrafo nuevo {n}" for n in range(50)]
+
+    diff = diff_versions(texts_version(old), texts_version(new))
+
+    assert (diff.changed, diff.added, diff.removed) == (50, 0, 3)
+
+
+def test_pairing_prefilter_does_not_change_the_result_of_a_small_uneven_run() -> None:
+    old = texts_version(["Inicio", "El plazo será de diez días hábiles", "Zzz qqq www", "Fin"])
+    new = texts_version(["Inicio", "El plazo será de veinte días hábiles", "Fin"])
+
+    diff = diff_versions(old, new)
+
+    assert (diff.added, diff.removed, diff.changed) == (0, 1, 1)
+
+
+def _many_version_block(count: int) -> Block:
+    versions = [
+        make_version(
+            para(HEADING, "articulo"),
+            para(f"Texto de la versión {n}."),
+            law=f"law{n}",
+            effective=date(2000 + n % 20, 1 + n // 20, 1),
+        )
+        for n in range(count)
+    ]
+    return make_block(*versions)
+
+
+def test_history_with_a_limit_returns_only_the_last_events_with_their_real_index() -> None:
+    block = _many_version_block(10)
+
+    events = history(block, limit=3)
+
+    assert [e.index for e in events] == [8, 9, 10]
+    assert [(e.added, e.removed, e.changed) for e in events] == [(0, 0, 1)] * 3
+    assert events == history(block)[-3:]
+
+
+def test_history_with_a_limit_diffs_only_the_events_it_returns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = []
+    real = versions_module.diff_versions
+    monkeypatch.setattr(
+        versions_module, "diff_versions", lambda a, b: calls.append(1) or real(a, b)
+    )
+
+    history(_many_version_block(30), limit=5)
+
+    assert len(calls) == 5
+
+
+def test_history_limit_larger_than_the_block_returns_everything() -> None:
+    block = _many_version_block(4)
+
+    assert history(block, limit=60) == history(block)
+
+
+# === Review findings: plural markers, quoted notes, repeal date from the note ====================
+
+
+@pytest.mark.parametrize(
+    "marker",
+    [
+        "(Derogados)",
+        "(Derogadas).",
+        "Derogados",
+        "(Suprimidos)",
+        "(Suprimidas).",
+        "(Anulados)",
+        "(Anuladas)",
+        "(Anulados/as)",
+    ],
+)
+def test_plural_repeal_markers_are_recognised(marker: str) -> None:
+    assert is_repealed(repeal_version(marker)) is True
+
+
+@pytest.mark.parametrize("text", ["Derogados parcialmente.", "Suprimidas las tasas del título."])
+def test_plural_words_inside_a_sentence_are_live_text(text: str) -> None:
+    assert is_repealed(repeal_version(text)) is False
+
+
+def test_a_quoted_paragraph_does_not_hide_the_repeal_marker() -> None:
+    version = make_version(
+        para(HEADING, "articulo"),
+        para("(Derogado)."),
+        para("Téngase en cuenta que este artículo se aplica a ...", quoted=True),
+    )
+
+    assert is_repealed(version) is True
+
+
+def test_a_quoted_paragraph_alone_does_not_make_live_text_repealed() -> None:
+    version = make_version(
+        para(HEADING, "articulo"),
+        para("Texto vigente del artículo."),
+        para("(Derogado).", quoted=True),
+    )
+
+    assert is_repealed(version) is False
+
+
+@pytest.mark.parametrize(
+    ("fixture", "expected"),
+    [
+        ("texto_bloque_no_ley11_2007_repealed_with_tengase.xml", date(2016, 10, 2)),
+        (LEY30_NOTE, date(2016, 10, 2)),
+        ("texto_bloque_no_lopd1999_repealed.xml", date(2018, 12, 7)),
+        ("texto_bloque_no_ley22_2011_repealed.xml", date(2022, 4, 10)),
+        ("texto_bloque_no_ley7_2010_repealed_transitional.xml", date(2022, 7, 9)),
+    ],
+)
+def test_repeal_date_comes_from_the_wording_of_the_note(
+    load_fixture: Loader, fixture: str, expected: date
+) -> None:
+    assert versions_module.repeal_date(parse_block(load_fixture(fixture))) == expected
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    [
+        "texto_bloque_no_rd424_2005_rename_not_repeal.xml",
+        "texto_bloque_no_rd1624_1992_correction_not_repeal.xml",
+    ],
+)
+def test_repeal_date_of_a_note_that_is_not_a_repeal_is_none(
+    load_fixture: Loader, fixture: str
+) -> None:
+    assert versions_module.repeal_date(parse_block(load_fixture(fixture))) is None
+
+
+def test_repeal_date_of_nothing_or_of_a_block_without_versions_is_none() -> None:
+    assert versions_module.repeal_date(None) is None
+    assert versions_module.repeal_date(make_block()) is None
+
+
+def test_repeal_date_falls_back_to_the_earliest_repeal_version_start() -> None:
+    later = note_version("Norma derogada, sin fecha.", law="b", effective=date(2018, 1, 1))
+    earlier = note_version("Norma derogada, sin fecha.", law="a", effective=date(2016, 1, 1))
+    corrections = note_version("Incluye correcciones.", law="c", effective=date(2001, 1, 1))
+
+    assert versions_module.repeal_date(make_block(later, corrections, earlier)) == date(2016, 1, 1)
+
+
+def test_repeal_date_uses_the_publication_date_when_the_version_has_no_effective_date() -> None:
+    version = note_version("Norma derogada.", published=date(2015, 10, 2))
+
+    assert versions_module.repeal_date(make_block(version)) == date(2015, 10, 2)
+
+
+def test_repeal_date_ignores_an_impossible_date_in_the_wording() -> None:
+    version = note_version(
+        "Norma derogada, con efectos de 31 de abril de 2018.", effective=date(2018, 5, 1)
+    )
+
+    assert versions_module.repeal_date(make_block(version)) == date(2018, 5, 1)
+
+
+def test_repeal_date_reads_a_date_with_non_breaking_spaces_and_upper_case_month() -> None:
+    version = note_version(f"Norma derogada, con efectos de 7{NBSP}de Diciembre{NBSP}de 2018.")
+
+    assert versions_module.repeal_date(make_block(version)) == date(2018, 12, 7)
+
+
+def test_a_partially_repealed_note_is_not_a_whole_law_repeal() -> None:
+    version = note_version(
+        "Norma derogada parcialmente, con efectos de 7 de diciembre de 2018.",
+        effective=date(2018, 12, 7),
+    )
+    block = make_block(version)
+
+    assert repeal_note(block) is None
+    assert versions_module.repeal_date(block) is None
+
+
+def test_a_changed_multi_line_paragraph_has_no_inline_marks() -> None:
+    old = texts_version(["Cabecera", "A | B\nC | D"])
+    new = texts_version(["Cabecera", "A | B\nC | X"])
+
+    (change,) = changes_of(diff_versions(old, new), "changed")
+
+    assert change.inline is None
+    assert (change.old_text, change.new_text) == ("A | B\nC | D", "A | B\nC | X")

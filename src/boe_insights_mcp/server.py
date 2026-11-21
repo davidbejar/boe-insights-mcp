@@ -333,11 +333,15 @@ _LAW_ID = Annotated[
     ),
 ]
 _ARTICLE = Annotated[
-    str,
+    str | None,
     Field(
-        description="The article as people write it: '46 bis', 'artículo 48', 'disposición "
-        "adicional tercera', 'anexo I', 'preámbulo', or a block_id from candidates."
+        description="The article or provision designation, e.g. '46 bis', 'art. 1.902', "
+        "'disposición adicional tercera'. Give this or block_id."
     ),
+]
+_BLOCK_ID = Annotated[
+    str | None,
+    Field(description="Exact block_id taken from candidates. Give this or article, not both."),
 ]
 
 
@@ -374,7 +378,8 @@ async def get_amendment_history(
 async def read_article(
     ctx: Context,
     law_id: _LAW_ID,
-    article: _ARTICLE,
+    article: _ARTICLE = None,
+    block_id: _BLOCK_ID = None,
     as_of: Annotated[
         date | None,
         Field(
@@ -403,14 +408,21 @@ async def read_article(
 
     Answers 'what does article 46 bis of Ley 40/2015 say, today or on 2017-01-01?'. Get law_id
     from resolve_reference. If several blocks match, or none, outcome is 'ambiguous' or
-    'not_found' and candidates lists blocks to retry with. Long texts come in parts: while
-    truncated is true, pass next_offset as offset. For changes over time use
+    'not_found' and candidates lists blocks to retry with as block_id. When the whole law is
+    repealed, state is 'repealed' although the article shows no marker. Long texts come in
+    parts: while truncated is true, pass next_offset as offset. For changes over time use
     compare_article_versions or get_article_history. Consolidated text is informational, not
     official.
     """
     return await _guard(
         articles.read_article(
-            _client(ctx), law_id, article, as_of=as_of, max_chars=max_chars, offset=offset
+            _client(ctx),
+            law_id,
+            article,
+            block_id=block_id,
+            as_of=as_of,
+            max_chars=max_chars,
+            offset=offset,
         ),
         "read_article",
     )
@@ -419,8 +431,9 @@ async def read_article(
 async def compare_article_versions(
     ctx: Context,
     law_id: _LAW_ID,
-    article: _ARTICLE,
     from_date: Annotated[date, Field(description="Earlier date, ISO format, e.g. 2017-01-01.")],
+    article: _ARTICLE = None,
+    block_id: _BLOCK_ID = None,
     to_date: Annotated[
         date | None, Field(description="Later date, ISO format. Default: today.")
     ] = None,
@@ -428,26 +441,42 @@ async def compare_article_versions(
         int,
         Field(ge=1, le=articles.MAX_CHANGES, description="Most changed paragraphs to list."),
     ] = articles.DEFAULT_CHANGES,
+    max_chars: Annotated[
+        int,
+        Field(
+            ge=articles.MIN_COMPARE_CHARS,
+            le=articles.MAX_COMPARE_CHARS,
+            description="Largest total text of the listed changes.",
+        ),
+    ] = articles.DEFAULT_COMPARE_CHARS,
 ) -> CompareArticleVersionsResult:
     """Show how one article's text differs between two dates.
 
     Answers 'what changed in article 48 between 2017-01-01 and today?'. Returns the added,
-    removed and reworded paragraphs (rewordings marked [-old-] {+new+}), a unified diff and the
-    norms that amended the article in between. If the article did not exist on from_date,
-    everything shows as added. Output is capped: see changes_truncated and unified_truncated,
-    and raise max_changes for more. To list every amendment use get_article_history. Consolidated
-    text is informational, not official.
+    removed and reworded paragraphs (rewordings marked [-old-] {+new+}; tables give both
+    texts), a unified diff and the norms that amended the article in between. If the article
+    did not exist on from_date, everything shows as added. If the whole law was repealed, note
+    says so. Output is capped: see changes_truncated and unified_truncated, and raise
+    max_changes or max_chars for more. To list every amendment use get_article_history.
+    Consolidated text is informational, not official.
     """
     return await _guard(
         articles.compare_article_versions(
-            _client(ctx), law_id, article, from_date, to_date, max_changes
+            _client(ctx),
+            law_id,
+            article,
+            from_date,
+            to_date,
+            max_changes,
+            max_chars,
+            block_id=block_id,
         ),
         "compare_article_versions",
     )
 
 
 async def get_article_history(
-    ctx: Context, law_id: _LAW_ID, article: _ARTICLE
+    ctx: Context, law_id: _LAW_ID, article: _ARTICLE = None, block_id: _BLOCK_ID = None
 ) -> ArticleHistoryResult:
     """List the versions of one article: when each took effect, who amended it, what changed.
 
@@ -455,10 +484,12 @@ async def get_article_history(
     or repealed, with the paragraphs added, removed and changed against the previous version. To
     see what changed between two dates use compare_article_versions; for the amendments of the
     whole law, not one article, use get_amendment_history. At most the 60 most recent versions
-    are returned; truncated says when older ones are left out. Informational, not official.
+    are returned; truncated says when older ones are left out. current_state is 'repealed' also
+    when the whole law is repealed. Informational, not official.
     """
     return await _guard(
-        articles.get_article_history(_client(ctx), law_id, article), "get_article_history"
+        articles.get_article_history(_client(ctx), law_id, article, block_id=block_id),
+        "get_article_history",
     )
 
 

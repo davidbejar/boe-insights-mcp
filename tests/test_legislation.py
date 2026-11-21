@@ -1662,3 +1662,26 @@ async def test_find_codes_rejects_invalid_arguments_without_a_request(
         await find_codes(client, kind, text, limit=limit)
 
     assert router.calls.call_count == 0
+
+
+async def test_overview_of_a_law_with_a_future_dated_repeal_note_is_not_repealed_yet(
+    client: BoeClient, router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
+) -> None:
+    mock_law(router, json_response, load_fixture, LEY_40, "metadatos_in_force_ley40_2015.json")
+    future = load_fixture("texto_bloque_no_lopd1999_repealed.xml").replace(
+        b"7 de diciembre de 2018", b"7 de diciembre de 2026"
+    )
+    router.get(f"{SEARCH_URL}/id/{LEY_40}/texto/bloque/no").mock(
+        return_value=httpx.Response(
+            200, content=future, headers={"Content-Type": "application/xml"}
+        )
+    )
+
+    overview = await get_law_overview(client, LEY_40, today=date(2026, 11, 21), now=NOW)
+
+    # The status is the one the rest of the evidence gives (Ley 40/2015's analysis lists repeals
+    # of parts of it), never "repealed".
+    assert overview.status == "partially_repealed"
+    assert overview.repealed_on is None
+    assert "2026-12-07" in overview.status_note
+    assert "announced" in overview.status_note

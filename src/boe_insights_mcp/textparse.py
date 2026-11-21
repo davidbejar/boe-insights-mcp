@@ -23,6 +23,10 @@ _DATE_FORMAT = re.compile(r"\d{8}")
 # Elements that separate words even though they are written inline; every other inline tag
 # (``a``, ``strong``, ``sup``...) is glued to its neighbours, so ``m<sup>2</sup>`` is ``m2``.
 _SEPARATING_TAGS = frozenset({"br", "p", "div"})
+# Real blocks nest at most a few levels (a table cell holds a ``p`` holding an ``a`` holding an
+# ``a``). The flattening below recurses once per level, so a hostile document nested thousands
+# deep would end in ``RecursionError``; anything beyond this depth is refused instead.
+_MAX_DEPTH = 100
 
 
 def parse_block(xml: bytes | str) -> Block:
@@ -43,7 +47,7 @@ def parse_block(xml: bytes | str) -> Block:
     # chronological, and an empty ``fecha_vigencia`` occurs (api-notes 6.1), hence ``starts_on``
     # (which falls back to the publication date). ``sort`` is stable, so ties and fully undated
     # versions keep the server's order; undated ones go first.
-    versions.sort(key=_start_key)
+    versions.sort(key=lambda version: version.start_key)
     return Block(
         block_id=block_id,
         kind=bloque.get("tipo", ""),
@@ -59,14 +63,22 @@ def _parse_xml(xml: bytes | str) -> Element:
     # entity declarations and external references by raising a ``ValueError`` subclass, while a
     # plain DOCTYPE without entities, which is harmless, is still accepted.
     try:
-        return fromstring(xml)
+        root = fromstring(xml)
     except ParseError as error:
         raise ValueError(f"malformed XML: {error}") from error
+    _check_depth(root)
+    return root
 
 
-def _start_key(version: BlockVersion) -> tuple[bool, date]:
-    """Sort key placing versions without any start date before dated ones."""
-    return (version.starts_on is not None, version.starts_on or date.min)
+def _check_depth(root: Element) -> None:
+    """Raise ``ValueError`` when the tree is nested deeper than ``_MAX_DEPTH`` levels."""
+    # Iterative on purpose: the check itself must survive the document it guards against.
+    pending = [(root, 1)]
+    while pending:
+        element, depth = pending.pop()
+        if depth > _MAX_DEPTH:
+            raise ValueError(f"XML nested more than {_MAX_DEPTH} levels deep")
+        pending.extend((child, depth + 1) for child in element)
 
 
 def _parse_date(value: str | None) -> date | None:

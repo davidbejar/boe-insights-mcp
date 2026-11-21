@@ -39,20 +39,20 @@ Servidor [MCP](https://modelcontextprotocol.io) (Model Context Protocol) que ofr
 
 | Herramienta | Pregunta a la que responde | Parámetros principales |
 |---|---|---|
-| `read_article` | ¿Qué dice este artículo, hoy o en una fecha pasada? | `law_id`, `article`, `as_of`, `max_chars` (500-20000), `offset` |
-| `compare_article_versions` | ¿Qué cambió en este artículo entre dos fechas? | `law_id`, `article`, `from_date`, `to_date`, `max_changes` (1-200) |
-| `get_article_history` | ¿Cuándo cambió este artículo y qué norma lo modificó? | `law_id`, `article` |
+| `read_article` | ¿Qué dice este artículo, hoy o en una fecha pasada? | `law_id`, `article` o `block_id`, `as_of`, `max_chars` (500-20000), `offset` |
+| `compare_article_versions` | ¿Qué cambió en este artículo entre dos fechas? | `law_id`, `article` o `block_id`, `from_date`, `to_date`, `max_changes` (1-200), `max_chars` (1000-30000) |
+| `get_article_history` | ¿Cuándo cambió este artículo y qué norma lo modificó? | `law_id`, `article` o `block_id` |
 | `get_amendment_history` | ¿Qué normas han afectado a esta norma, por tipo y por año? | `law_id`, `group` (`all`, `repeals`, `modifies`, `adds`, `corrections` u `other`), `limit` (1-100), `offset` |
 
 Las ocho herramientas son de solo lectura. `resolve_reference` devuelve `resolved`, `ambiguous` (con candidatas y una pista) o `not_found`. `search_legislation` pagina con `next_offset`, porque la API no ofrece el número total de resultados. `find_codes` devuelve los pares `{code, text}` que coinciden.
 
 **Situación de vigencia de la norma.** `get_law_overview` devuelve un `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` o `not_yet_in_force`) con una nota explicativa, la nota inicial del BOE si el texto la tiene, y recuentos y muestras de las normas que modifican la norma consultada o que esta modifica. El `status` se deriva de los indicadores del BOE y de las referencias de modificación, por lo que es una indicación, no una determinación jurídica. La derogación total también se detecta a partir de la nota inicial del texto consolidado ("Norma derogada..."), porque algunas normas derogadas por completo solo llevan esa nota y no el indicador de los metadatos.
 
-**Estados de un artículo.** `read_article` indica el `state` del artículo en la fecha pedida y `get_article_history` su `current_state`: `in_force` (en vigor), `repealed` (derogado), `not_yet_in_force` (texto publicado, pero todavía sin vigencia) o `did_not_exist` (la fecha es anterior a la primera versión del artículo).
+**Estados de un artículo.** `read_article` indica el `state` del artículo en la fecha pedida y `get_article_history` su `current_state`: `in_force` (en vigor), `repealed` (derogado), `not_yet_in_force` (texto publicado, pero todavía sin vigencia) o `did_not_exist` (la fecha es anterior a la primera versión del artículo). Un artículo de una norma derogada por completo no lleva ninguna marca de derogación, así que las herramientas de artículos comprueban también la norma (sus metadatos y, si el texto la tiene, su nota inicial): desde la fecha de derogación el estado es `repealed` (se sigue devolviendo el último texto), `law_repealed` y `law_repealed_on` lo indican y `note` lo explica. Una derogación con fecha futura solo está anunciada, y si no se puede hacer la comprobación `law_repealed` es `null` y `note` lo dice.
 
-**Cómo nombrar un artículo.** El argumento `article` acepta las formas habituales: `46 bis`, `art. 12`, `artículo 48`, `disposición adicional tercera` (o `DA 3`), `anexo I`, `preámbulo`, o un `block_id` tomado de `candidates`. Si la denominación coincide con varios bloques (`ambiguous`) o con ninguno (`not_found`), no es un error: `outcome` lo indica y `candidates` lista bloques para reintentar con su `block_id`.
+**Cómo nombrar un artículo.** El argumento `article` (como máximo 200 caracteres) acepta las formas habituales: `46 bis`, `art. 12`, `art. 1.902`, `artículo 48`, `disposición adicional tercera` (o `DA 3`), `anexo I`, `preámbulo`. Lo que siga a la designación, como un número de apartado (`46.2`, `149.1.18ª`) o un contexto (`14 de la Constitución`), se ignora, porque las herramientas devuelven artículos completos; `note` indica qué se ignoró. Para elegir un bloque exacto, pasa su `block_id` de `candidates` en lugar de `article` (hace falta exactamente uno de los dos). Si la denominación coincide con varios bloques (`ambiguous`) o con ninguno (`not_found`), no es un error: `outcome` lo indica y `candidates` lista bloques para reintentar con su `block_id`.
 
-Cada resultado incluye un bloque `provenance`. Salida abreviada de `compare_article_versions` para el artículo 48 de `BOE-A-2015-10566` entre el 2016-10-02 y el 2026-11-21 (fixtures de pruebas grabados, sin peticiones reales). Además de los campos mostrados, el resultado real incluye el texto anterior y el nuevo de cada cambio, un `unified_diff` y los indicadores de truncamiento; `[-antes-] {+después+}` marca una reformulación dentro de un párrafo. Los textos de las claves y de las notas se mantienen tal como los devuelve la herramienta:
+Cada resultado incluye un bloque `provenance`. Salida abreviada de `compare_article_versions` para el artículo 48 de `BOE-A-2015-10566` entre el 2016-10-02 y el 2026-11-21 (fixtures de pruebas grabados, sin peticiones reales). Las cadenas largas (`inline`, `unified_diff`) se acortan aquí con `…`. `[-antes-] {+después+}` marca una reformulación dentro de un párrafo: un párrafo reformulado se devuelve solo como `inline` (`old_text` y `new_text` son `null`), salvo las tablas, que devuelven ambos textos y no `inline`. Los textos de las claves y de las notas se mantienen tal como los devuelve la herramienta:
 
 ```json
 {
@@ -60,6 +60,19 @@ Cada resultado incluye un bloque `provenance`. Salida abreviada de `compare_arti
   "outcome": "found",
   "block_id": "a48",
   "block_title": "Artículo 48",
+  "candidates": [],
+  "hint": null,
+  "provenance": {
+    "source": "Agencia Estatal Boletín Oficial del Estado",
+    "attribution": "Basado en datos de la Agencia Estatal Boletín Oficial del Estado",
+    "source_url": "https://www.boe.es",
+    "generated_at": "2026-11-21T12:41:13.262679Z",
+    "data_updated_at": "2020-12-31T00:00:00Z",
+    "notice": "Consolidated texts are provided for information only and have no official legal value. Only the texts published in the official gazette are authentic."
+  },
+  "law_repealed": false,
+  "law_repealed_on": null,
+  "note": null,
   "from_date": "2016-10-02",
   "to_date": "2026-11-21",
   "from_version": {
@@ -84,18 +97,18 @@ Cada resultado incluye un bloque `provenance`. Salida abreviada de `compare_arti
   "changes": [
     {
       "op": "changed",
-      "inline": "... resultarán eficaces una vez [-inscritos-] {+inscritos, en el plazo de 5 días hábiles desde su formalización,+} en el Registro Electrónico estatal de Órganos e Instrumentos de Cooperación ..."
+      "old_text": null,
+      "new_text": null,
+      "inline": "… resultarán eficaces una vez [-inscritos-] {+inscritos, en el plazo de 5 días hábiles desde su formalización,+} en el Registro Electrónico estatal de Órganos e Instrumentos de Cooperación del sector público estatal, al que se …"
     }
   ],
-  "amending_laws": ["BOE-A-2020-17340"],
-  "provenance": {
-    "source": "Agencia Estatal Boletín Oficial del Estado",
-    "attribution": "Basado en datos de la Agencia Estatal Boletín Oficial del Estado",
-    "source_url": "https://www.boe.es",
-    "generated_at": "2026-11-21T12:09:47.258224Z",
-    "data_updated_at": "2020-12-31T00:00:00Z",
-    "notice": "Consolidated texts are provided for information only and have no official legal value. Only the texts published in the official gazette are authentic."
-  }
+  "changes_truncated": false,
+  "intermediate_versions": 0,
+  "amending_laws": [
+    "BOE-A-2020-17340"
+  ],
+  "unified_diff": "--- old\n+++ new\n@@ -8,5 +8,5 @@\n …",
+  "unified_truncated": false
 }
 ```
 

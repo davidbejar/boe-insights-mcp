@@ -8,17 +8,19 @@ provisions with or without an ordinal, annexes, empty and bracketed titles for t
 
 The approach is one pipeline applied to the query and to every title alike:
 
-1. ``_tokenise`` folds case and accents, drops punctuation and ordinal indicators and splits
+1. ``_scan`` folds case and accents, drops punctuation and ordinal indicators and splits
    letters from digits, so ``Art.46bis``, ``ARTÍCULO 46 BIS.`` and ``art 46 bis`` give the same
-   tokens.
-2. ``_designate`` reads the tokens into a small structured ``_Designation`` (kind, provision
-   type, number or range, Latin suffix). Anything it does not recognise becomes an ``other``
-   designation that is compared by its whole normalised text.
+   tokens; a thousands dot (``1.240``) stays inside one token. Each token remembers where it
+   sat in the original text.
+2. ``_parse_leading`` reads the leading tokens into a small structured ``_Designation`` (kind,
+   provision type, number or range, Latin suffix). A query may carry more after the designation
+   (``46.2``, ``14 de la Constitución``): that remainder is reported as ``ignored``. Text with no
+   leading designation becomes an ``other`` designation compared by its whole normalised text.
 3. ``locate`` compares designations, never strings, and ranks the closest titles when nothing
    matches.
 
 The module is pure: no I/O, and it imports only from ``models`` and the standard library.
-``versions`` and ``articles`` (increment 2) call it to turn the person's wording into a block id.
+``articles`` calls it to turn the person's wording (or a block id) into a block of the index.
 """
 
 from __future__ import annotations
@@ -28,14 +30,18 @@ import unicodedata
 from collections.abc import Sequence
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+from functools import lru_cache
 from typing import Literal
 
 from boe_insights_mcp.models import IndexEntry
 
-__all__ = ["LocateResult", "locate"]
+__all__ = ["LocateResult", "locate", "locate_block_id"]
 
 _MAX_AMBIGUOUS = 10
 _MAX_CANDIDATES = 8
+# Similarity ranking compares the query with every title; bounding the query keeps that cheap
+# even when a caller passes far more text than a designation can have.
+_MAX_QUERY_TEXT = 200
 
 # A position inside a law: (article number, Latin suffix rank). Rank 0 means no suffix, so
 # (163, 0) < (163, 2) < (163, 4), which is the order of "163", "163 bis", "163 quater".
@@ -52,6 +58,9 @@ class LocateResult:
     """Set only when ``outcome`` is ``found``."""
     candidates: tuple[IndexEntry, ...]
     """``ambiguous``: every match (at most 10). ``not_found``: up to 8 closest titled blocks."""
+    ignored: str | None = None
+    """The part of the query after its leading designation that was not used, in the original
+    wording (``.2`` for ``46.2``); ``None`` when nothing was left over."""
 
 
 @dataclass(frozen=True)
@@ -143,7 +152,9 @@ _ROMAN_VALUES = {"i": 1, "v": 5, "x": 10, "l": 50, "c": 100}
 _ROMAN_NUMERAL = re.compile(r"c{0,3}(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})")
 
 # Latin suffixes by rank. "cuarter" is the spelling the IVA law uses for "quater" (api-notes 5).
-# Ranks 13 to 19 are composed (``_latin_rank``): "terdecies" is "ter" + "decies".
+# Ranks above 9 are composed (``_latin_rank``): "terdecies" is "ter" + "decies" (13) and
+# "quinvicies" is "quin" + "vicies" (25), which covers the whole family the IVA law goes through
+# (up to "octovicies").
 _LATIN_SUFFIXES = {
     "bis": 2,
     "ter": 3,
@@ -156,9 +167,33 @@ _LATIN_SUFFIXES = {
     "octies": 8,
     "nonies": 9,
     "novies": 9,
-    "decies": 10,
-    "undecies": 11,
-    "duodecies": 12,
+}
+# "vivies" is a typo of the source: the IVA index has "Artículo 163 sexvivies" (api-notes
+# "Index title patterns"); reading it as "vicies" makes "163 sexvicies" find that block.
+_LATIN_TENS = {"decies": 10, "vicies": 20, "vivies": 20, "tricies": 30}
+# What may stand in front of a tens word, by the unit it adds: "un", "duo", "ter"... and the
+# fuller forms "quinquies", "sexies"... ("quinquiesdecies" next to "quinvicies").
+_LATIN_UNITS = {
+    "un": 1,
+    "duo": 2,
+    "ter": 3,
+    "quater": 4,
+    "cuarter": 4,
+    "quin": 5,
+    "quinque": 5,
+    "quinquies": 5,
+    "sex": 6,
+    "sexies": 6,
+    "sept": 7,
+    "septies": 7,
+    "oct": 8,
+    "octo": 8,
+    "octies": 8,
+    "nov": 9,
+    "novo": 9,
+    "novies": 9,
+    "non": 9,
+    "nonies": 9,
 }
 
 _ARTICLE_HEADS = frozenset({"articulo", "articulos", "art", "arts"})
@@ -248,13 +283,16 @@ def _roman(token: str) -> int | None:
 
 
 def _latin_rank(word: str) -> int:
-    """Return the rank of a Latin suffix (``bis`` 2, ``quater`` 4, ``terdecies`` 13), else 0."""
+    """Return the rank of a Latin suffix (``bis`` 2, ``terdecies`` 13, ``unvicies`` 21), else 0."""
     if word in _LATIN_SUFFIXES:
         return _LATIN_SUFFIXES[word]
-    # The RD 1624/1992 index goes up to "Artículo 61 septiesdecies".
-    units = word.removesuffix("decies")
-    if units != word and 3 <= _LATIN_SUFFIXES.get(units, 0) <= 9:
-        return 10 + _LATIN_SUFFIXES[units]
+    for tens_word, tens in _LATIN_TENS.items():
+        if word.endswith(tens_word):
+            units = word.removesuffix(tens_word)
+            if not units:
+                return tens
+            if units in _LATIN_UNITS:
+                return tens + _LATIN_UNITS[units]
     return 0
 
 
@@ -271,20 +309,57 @@ def _parse_position(tokens: Sequence[str]) -> tuple[_Position, int] | None:
 # --- Normalisation pipeline -----------------------------------------------------------------
 
 
-def _tokenise(text: str) -> list[str]:
-    """Reduce ``text`` to lower-case unaccented tokens; the one normalisation step.
+@dataclass(frozen=True)
+class _Token:
+    """One folded token and where it sat in the original text."""
+
+    text: str
+    start: int
+    end: int
+    """Offsets in the original string: ``original[start:end]`` is the token as written."""
+
+
+# Alternatives in order: a number with thousands dots ("1.240"; three digits after the dot, so
+# "46.2" is 46 followed by 2), a plain number, dotted single letters ("d.a."), a word, and "§".
+_TOKEN = re.compile(r"\d{1,3}(?:\.\d{3})+(?!\d)|\d+|(?<![a-z])[a-z](?:\.[a-z](?![a-z]))+|[a-z]+|§")
+
+
+def _fold(text: str) -> tuple[str, list[int]]:
+    """Lower-case ``text`` without accents; also give, per output character, its original offset."""
+    chars: list[str] = []
+    origin: list[int] = []
+    for offset, char in enumerate(text):
+        for part in unicodedata.normalize("NFD", char.lower()):
+            if not unicodedata.combining(part):
+                chars.append(part)
+                origin.append(offset)
+    return "".join(chars), origin
+
+
+def _scan(text: str) -> list[_Token]:
+    """Reduce ``text`` to lower-case unaccented tokens, each with its place in ``text``.
 
     Case, accents, NBSP, repeated spaces, ordinal indicators (``3.ª``) and punctuation vanish;
-    ``d.a.`` becomes ``da``; letters and digits are split (``46bis`` -> ``46 bis``); ``§`` is
-    kept as a token of its own because ``§ 1`` is a title, not an article.
+    ``d.a.`` becomes ``da`` and ``1.240`` becomes ``1240``; letters and digits are split
+    (``46bis`` -> ``46 bis``); ``§`` is kept as a token of its own because ``§ 1`` is a title,
+    not an article.
     """
-    decomposed = unicodedata.normalize("NFD", text.lower())
-    folded = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
-    folded = re.sub(r"(?<=\b[a-z])\.(?=[a-z]\b)", "", folded)
-    folded = re.sub(r"§", " § ", folded)
-    folded = re.sub(r"[^a-z0-9§]+", " ", folded)
-    folded = re.sub(r"(?<=\d)(?=[a-z])|(?<=[a-z])(?=\d)", " ", folded)
-    return folded.split()
+    folded, origin = _fold(text)
+    tokens = []
+    for match in _TOKEN.finditer(folded):
+        tokens.append(
+            _Token(
+                match.group().replace(".", ""),
+                origin[match.start()],
+                origin[match.end() - 1] + 1,
+            )
+        )
+    return tokens
+
+
+def _tokenise(text: str) -> list[str]:
+    """The token texts of ``text`` (see :func:`_scan`); the one normalisation step."""
+    return [token.text for token in _scan(text)]
 
 
 def _parse_article(tokens: Sequence[str]) -> tuple[_Designation, int] | None:
@@ -344,27 +419,59 @@ def _parse_leading(tokens: Sequence[str]) -> tuple[_Designation, int] | None:
     return None
 
 
-def _designate(text: str, *, whole: bool) -> _Designation | None:
-    """Reduce a title or query to a designation; ``None`` when it has no tokens at all.
+# What may separate a title's designation from its heading text: "Artículo 5. Definiciones",
+# "Art. 6.- Objeto". A bare space is not enough (see ``_designate_title``).
+_HEADING_SEPARATOR = re.compile(r"[.:;\-\u2013\u2014]")
 
-    With ``whole`` (queries) every token must belong to the designation, otherwise the text is
-    compared as a whole; without it (titles) a designation may be followed by heading text
-    (``Artículo 5. Definiciones``).
+
+@lru_cache(maxsize=16384)
+def _designate_title(title: str) -> _Designation | None:
+    """Reduce a block title to a designation; ``None`` when it has no tokens at all.
+
+    A designation may be followed by heading text (``Artículo 5. Definiciones``), which is
+    ignored. For an article, though, a trailing word that follows the number after a space only
+    is not heading text but a suffix we cannot read: ``Artículo 163 foobar`` must not be taken
+    for ``Artículo 163``, so such a title is kept as ``other`` and matches only itself.
     """
-    tokens = _tokenise(text)
+    # Cached because ``locate`` designates every title of the index on each call and the Código
+    # Civil index has 2,400 of them; titles are pure input, so the cache never goes stale.
+    tokens = _scan(title)
     if not tokens:
         return None
-    parsed = _parse_leading(tokens)
-    if parsed is not None and (not whole or parsed[1] == len(tokens)):
-        return parsed[0]
+    parsed = _parse_leading([token.text for token in tokens])
+    if parsed is not None:
+        designation, used = parsed
+        gap = title[tokens[used - 1].end : tokens[used].start] if used < len(tokens) else ""
+        if used == len(tokens) or designation.kind != "article" or _HEADING_SEPARATOR.search(gap):
+            return designation
     # Bare ordinals ("Primera"), "§ 1", headings and free text: only an exact match counts.
     # Reading "tercera" as "any third provision" would pick an arbitrary block.
-    return _Designation("other", text=" ".join(tokens))
+    return _Designation("other", text=" ".join(token.text for token in tokens))
+
+
+def _designate_query(text: str) -> tuple[_Designation | None, str | None]:
+    """Reduce a query to ``(designation, ignored)``; the designation is ``None`` without tokens.
+
+    The designation is the leading one, and ``ignored`` is what follows it in the original
+    wording (``.2`` for ``46.2``, ``de la Constitución`` for ``14 de la Constitución``), or
+    ``None`` when no token was left over. Text with no leading designation is compared as a
+    whole (``other``) and ignores nothing.
+    """
+    tokens = _scan(text)
+    if not tokens:
+        return None, None
+    parsed = _parse_leading([token.text for token in tokens])
+    if parsed is None:
+        return _Designation("other", text=" ".join(token.text for token in tokens)), None
+    designation, used = parsed
+    if used >= len(tokens):
+        return designation, None
+    return designation, text[tokens[used - 1].end :].strip()
 
 
 def _designate_entry(entry: IndexEntry) -> _Designation | None:
     """Designation of an index entry, falling back to its id for an untitled preamble."""
-    designation = _designate(entry.title, whole=False)
+    designation = _designate_title(entry.title)
     if designation is None and entry.block_id in _PREAMBLE_IDS:
         return _Designation("preamble")
     return designation
@@ -431,6 +538,7 @@ def _closest(
 ) -> tuple[IndexEntry, ...]:
     """Up to eight titled blocks nearest to the query; untitled blocks are never offered."""
     titled = [(entry, d) for entry, d in designated if entry.title.strip()]
+    query_text = query_text[:_MAX_QUERY_TEXT]
     # ``sorted`` is stable, so equally near blocks keep their index order.
     ranked = sorted(titled, key=lambda pair: _rank(query, query_text, pair[0].title, pair[1]))
     return tuple(entry for entry, _ in ranked[:_MAX_CANDIDATES])
@@ -439,29 +547,53 @@ def _closest(
 def locate(index: Sequence[IndexEntry], query: str) -> LocateResult:
     """Find the block of ``index`` that ``query`` refers to.
 
-    A query equal to a block id is found at once. Otherwise the query and each title are reduced
-    to a designation: one match is ``found``, several are ``ambiguous`` (index order, at most
-    ten) and none is ``not_found`` with up to eight close titles. Raises ``ValueError`` for an
-    empty or whitespace-only query.
+    The query is reduced to a designation and compared with the designation of each title: one
+    match is ``found``, several are ``ambiguous`` (index order, at most ten) and none is
+    ``not_found`` with up to eight close titles. Text after the leading designation (``.2`` in
+    ``46.2``) does not take part and is returned as ``ignored``. Only a query that is no
+    designation at all (and matches no title as a whole) may be a block id; a designation such
+    as ``dt`` never is, use :func:`locate_block_id` for ids. Raises ``ValueError`` for an empty
+    or whitespace-only query.
     """
     text = query.strip()
     if not text:
         raise ValueError("The block query must not be empty.")
-    for entry in index:
-        if entry.block_id == text:
-            return LocateResult("found", entry, ())
-    wanted = _designate(text, whole=True)
+    wanted, ignored = _designate_query(text)
     designated = [(e, d) for e in index if (d := _designate_entry(e)) is not None]
     if wanted is None:
         # Only punctuation: nothing to compare, so only offer titles.
         return LocateResult("not_found", None, _closest(_Designation("other"), "", designated))
     matches = _matches(wanted, designated)
     if len(matches) == 1:
-        return LocateResult("found", matches[0], ())
+        return LocateResult("found", matches[0], (), ignored)
     if matches:
         # Duplicate designations are real (a Real Decreto and the Reglamento it approves both
         # have "Artículo 1", api-notes "Index title patterns"). Picking the first would silently
         # answer about the wrong text, so the caller gets all of them to choose from.
-        return LocateResult("ambiguous", None, tuple(matches[:_MAX_AMBIGUOUS]))
+        return LocateResult("ambiguous", None, tuple(matches[:_MAX_AMBIGUOUS]), ignored)
+    if wanted.kind == "other":
+        # An id is a last resort, after the titles: otherwise "primera" would resolve by id while
+        # "Primera" is ambiguous, and an id such as "dt" would silently beat the designation.
+        for entry in index:
+            if entry.block_id == text:
+                return LocateResult("found", entry, ())
     query_text = " ".join(_tokenise(text))
-    return LocateResult("not_found", None, _closest(wanted, query_text, designated))
+    return LocateResult("not_found", None, _closest(wanted, query_text, designated), ignored)
+
+
+def locate_block_id(index: Sequence[IndexEntry], block_id: str) -> LocateResult:
+    """Find the block whose id is exactly ``block_id``; else ``not_found`` with close titles.
+
+    This is the escape hatch of :func:`locate` for blocks that a designation cannot single out
+    (duplicated titles, bare ordinals, ids such as ``dt``). The comparison is exact and
+    case-sensitive. Raises ``ValueError`` for an empty or whitespace-only id.
+    """
+    text = block_id.strip()
+    if not text:
+        raise ValueError("The block id must not be empty.")
+    for entry in index:
+        if entry.block_id == text:
+            return LocateResult("found", entry, ())
+    designated = [(e, d) for e in index if (d := _designate_entry(e)) is not None]
+    other = _Designation("other")
+    return LocateResult("not_found", None, _closest(other, " ".join(_tokenise(text)), designated))

@@ -1250,3 +1250,35 @@ def test_rename_note_is_a_future_dated_nota_inicial_and_ignores_the_odd_attribut
     assert version.paragraphs[0].text.startswith(
         "Con efectos de 1 de enero de 2027, esta norma pasa a denominarse"
     )
+
+
+# --- hostile nesting ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("tag", ["a", "span", "div"])
+def test_deeply_nested_inline_markup_is_a_value_error_not_a_recursion_error(tag: str) -> None:
+    depth = 5000
+    body = f"<p>{f'<{tag}>' * depth}texto{f'</{tag}>' * depth}</p>"
+
+    with pytest.raises(ValueError, match="nested"):
+        parse_block(doc(version_xml(body)))
+
+
+def test_deeply_nested_blockquotes_are_a_value_error() -> None:
+    depth = 5000
+    body = f"{'<blockquote>' * depth}<p>texto</p>{'</blockquote>' * depth}"
+
+    with pytest.raises(ValueError, match="nested"):
+        parse_block(doc(version_xml(body)))
+
+
+def test_realistic_nesting_still_parses() -> None:
+    # The BOE nests a refPost inside a refPost inside a p; tables nest p inside td inside tr.
+    body = (
+        "<p>uno <a><a>dos</a></a> tres</p>"
+        "<table><tbody><tr><td><p>celda</p></td></tr></tbody></table>"
+    )
+
+    block = parse_block(doc(version_xml(body)))
+
+    assert [p.text for p in block.versions[0].paragraphs] == ["uno dos tres", "celda"]
