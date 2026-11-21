@@ -8,6 +8,8 @@ from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
 import pytest
+from platformdirs import user_cache_dir
+
 from boe_insights_mcp.cache import (
     Cache,
     DiskCache,
@@ -15,7 +17,6 @@ from boe_insights_mcp.cache import (
     default_cache_dir,
     make_key,
 )
-from platformdirs import user_cache_dir
 
 
 class FakeClock:
