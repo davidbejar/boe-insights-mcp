@@ -1,0 +1,397 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "fecha_actualizacion": "20261008T073957Z",
+            "identificador": "BOE-A-2018-16673",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "7723",
+                "texto": "Jefatura del Estado"
+            },
+            "rango": {
+                "codigo": "1290",
+                "texto": "Ley Org\u00e1nica"
+            },
+            "fecha_disposicion": "20181205",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley Org\u00e1nica 3\/2018, de 5 de diciembre, de Protecci\u00f3n de Datos Personales y garant\u00eda de los derechos digitales.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20181206",
+            "diario_numero": "294",
+            "fecha_vigencia": "20181207",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es\/lo\/2018\/12\/05\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-16673"
+        },
+        {
+            "fecha_actualizacion": "20260918T095159Z",
+            "identificador": "BOE-A-2018-3361",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8080",
+                "texto": "Comunidad Aut\u00f3noma de Extremadura"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20180221",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 21 de febrero, de C\u00e1maras Oficiales de Comercio, Industria y Servicios de la Comunidad Aut\u00f3noma de Extremadura.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20180310",
+            "diario_numero": "61",
+            "fecha_vigencia": "20180224",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-ex\/l\/2018\/02\/21\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-3361"
+        },
+        {
+            "fecha_actualizacion": "20260525T092913Z",
+            "identificador": "BOCL-h-2018-90415",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "9531",
+                "texto": "Comunidad de Castilla y Le\u00f3n"
+            },
+            "rango": {
+                "codigo": "1500",
+                "texto": "Decreto-ley"
+            },
+            "fecha_disposicion": "20180830",
+            "numero_oficial": "3\/2018",
+            "titulo": "Decreto-ley 3\/2018, de 30 de agosto, por el que se habilita el incremento de las retribuciones y se eliminan las limitaciones para el abono del 100% en las situaciones de incapacidad temporal del personal al servicio del sector p\u00fablico.",
+            "diario": "Bolet\u00edn Oficial de Castilla y Le\u00f3n",
+            "fecha_publicacion": "20180903",
+            "diario_numero": "170",
+            "fecha_vigencia": "20180904",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOCL-h-2018-90415"
+        },
+        {
+            "fecha_actualizacion": "20260112T105236Z",
+            "identificador": "BOE-A-2018-8160",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8121",
+                "texto": "Comunidad Aut\u00f3noma de las Illes Balears"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20180529",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 29 de mayo, del tercer sector de acci\u00f3n social.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20180619",
+            "diario_numero": "148",
+            "fecha_vigencia": "20180601",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-ib\/l\/2018\/05\/29\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-8160"
+        },
+        {
+            "fecha_actualizacion": "20251220T112028Z",
+            "identificador": "BOE-A-2019-3997",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8090",
+                "texto": "Comunidad Aut\u00f3noma de Galicia"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20181226",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 26 de diciembre, de medidas fiscales y administrativas.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20190320",
+            "diario_numero": "68",
+            "fecha_vigencia": "20190101",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-ga\/l\/2018\/12\/26\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2019-3997"
+        },
+        {
+            "fecha_actualizacion": "20251220T105306Z",
+            "identificador": "BOE-A-2018-15141",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8030",
+                "texto": "Comunidad Aut\u00f3noma de Canarias"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20181009",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 9 de octubre, de creaci\u00f3n del colegio Profesional de Logopedas de Canarias.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20181106",
+            "diario_numero": "268",
+            "fecha_vigencia": "20181020",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-cn\/l\/2018\/10\/09\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-15141"
+        },
+        {
+            "fecha_actualizacion": "20251220T105248Z",
+            "identificador": "BOE-A-2018-11414",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "9531",
+                "texto": "Comunidad de Castilla y Le\u00f3n"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20180702",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 2 de julio, por el que se modifica la Ley 9\/2003, de 8 de abril, de Coordinaci\u00f3n de Polic\u00edas Locales de Castilla y Le\u00f3n.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20180810",
+            "diario_numero": "193",
+            "fecha_vigencia": "20180730",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-cl\/l\/2018\/07\/02\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-11414"
+        },
+        {
+            "fecha_actualizacion": "20251220T105243Z",
+            "identificador": "BOE-A-2018-9415",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8060",
+                "texto": "Comunidad Aut\u00f3noma de Castilla-La Mancha"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20180524",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 24 de mayo, de protecci\u00f3n y apoyo garantizado para personas con discapacidad en Castilla-La Mancha.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20180706",
+            "diario_numero": "163",
+            "fecha_vigencia": "20180706",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-cm\/l\/2018\/05\/24\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-9415"
+        },
+        {
+            "fecha_actualizacion": "20251220T105238Z",
+            "identificador": "BOE-A-2018-8793",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8040",
+                "texto": "Comunidad Aut\u00f3noma de Cantabria"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20180528",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 28 de mayo, de creaci\u00f3n del Consejo de la Mujer.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20180627",
+            "diario_numero": "155",
+            "fecha_vigencia": "20180606",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-cb\/l\/2018\/05\/28\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-8793"
+        },
+        {
+            "fecha_actualizacion": "20251220T105238Z",
+            "identificador": "BOE-A-2018-8850",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8100",
+                "texto": "Comunidad Aut\u00f3noma de la Regi\u00f3n de Murcia"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20180326",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 26 de marzo, por la que se ordena el ejercicio de las profesiones del deporte en la Comunidad Aut\u00f3noma de la Regi\u00f3n de Murcia.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20180628",
+            "diario_numero": "156",
+            "fecha_vigencia": "20180930",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-mc\/l\/2018\/03\/26\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-8850"
+        },
+        {
+            "fecha_actualizacion": "20251220T105232Z",
+            "identificador": "BOE-A-2018-6938",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8010",
+                "texto": "Comunidad Aut\u00f3noma de Andaluc\u00eda"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20180508",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 8 de mayo, Andaluza de Fomento del Emprendimiento.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20180525",
+            "diario_numero": "127",
+            "fecha_vigencia": "20180515",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-an\/l\/2018\/05\/08\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-6938"
+        },
+        {
+            "fecha_actualizacion": "20251220T105232Z",
+            "identificador": "BOE-A-2018-7153",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8020",
+                "texto": "Comunidad Aut\u00f3noma de Arag\u00f3n"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20180419",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 19 de abril, de creaci\u00f3n del Colegio Profesional de Periodistas de Arag\u00f3n.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20180530",
+            "diario_numero": "131",
+            "fecha_vigencia": "20180501",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-ar\/l\/2018\/04\/19\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-7153"
+        },
+        {
+            "fecha_actualizacion": "20251220T105151Z",
+            "identificador": "BOE-A-2018-3000",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8110",
+                "texto": "Comunidad Aut\u00f3noma de La Rioja"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20180216",
+            "numero_oficial": "3\/2018",
+            "titulo": "Ley 3\/2018, de 16 de febrero, para la protecci\u00f3n, difusi\u00f3n y promoci\u00f3n de la tauromaquia en La Rioja.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20180303",
+            "diario_numero": "55",
+            "fecha_vigencia": "20180222",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-ri\/l\/2018\/02\/16\/3",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2018-3000"
+        }
+    ]
+}

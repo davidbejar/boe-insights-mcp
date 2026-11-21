@@ -1,0 +1,40 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "fecha_actualizacion": "20260626T073728Z",
+            "identificador": "BOE-A-1999-23750",
+            "ambito": {
+                "codigo": "1",
+                "texto": "Estatal"
+            },
+            "departamento": {
+                "codigo": "7723",
+                "texto": "Jefatura del Estado"
+            },
+            "rango": {
+                "codigo": "1290",
+                "texto": "Ley Org\u00e1nica"
+            },
+            "fecha_disposicion": "19991213",
+            "numero_oficial": "15\/1999",
+            "titulo": "Ley Org\u00e1nica 15\/1999, de 13 de diciembre, de Protecci\u00f3n de Datos de Car\u00e1cter Personal.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "19991214",
+            "diario_numero": "298",
+            "fecha_vigencia": "20000114",
+            "estatus_derogacion": "N",
+            "estatus_anulacion": "N",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es\/lo\/1999\/12\/13\/15",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-1999-23750"
+        }
+    ]
+}

@@ -1,0 +1,90 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "bloque": [
+                {
+                    "id": "pr",
+                    "titulo": "[preambulo]",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/pr"
+                },
+                {
+                    "id": "a1",
+                    "titulo": "Art\u00edculo\u00a01",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/a1"
+                },
+                {
+                    "id": "a2",
+                    "titulo": "Art\u00edculo\u00a02",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/a2"
+                },
+                {
+                    "id": "a3",
+                    "titulo": "Art\u00edculo\u00a03",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/a3"
+                },
+                {
+                    "id": "a4",
+                    "titulo": "Art\u00edculo\u00a04",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/a4"
+                },
+                {
+                    "id": "a5",
+                    "titulo": "Art\u00edculo\u00a05",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/a5"
+                },
+                {
+                    "id": "a6",
+                    "titulo": "Art\u00edculo\u00a06",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/a6"
+                },
+                {
+                    "id": "a7",
+                    "titulo": "Art\u00edculo\u00a07",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/a7"
+                },
+                {
+                    "id": "dd",
+                    "titulo": "Disposici\u00f3n derogatoria \u00fanica",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/dd"
+                },
+                {
+                    "id": "df",
+                    "titulo": "Disposici\u00f3n final primera",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/df"
+                },
+                {
+                    "id": "df-2",
+                    "titulo": "Disposici\u00f3n final segunda",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/df-2"
+                },
+                {
+                    "id": "df-3",
+                    "titulo": "Disposici\u00f3n final tercera",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/df-3"
+                },
+                {
+                    "id": "fi",
+                    "titulo": "[firma]",
+                    "fecha_actualizacion": "20261120",
+                    "url": "https:\/\/www.boe.es\/datosabiertos\/api\/legislacion-consolidada\/id\/BOE-A-2026-24302\/texto\/bloque\/fi"
+                }
+            ]
+        }
+    ]
+}

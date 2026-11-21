@@ -1,0 +1,28 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": {
+        "9527": "Administración de los Entes Preautonómicos",
+        "9525": "Administración Local",
+        "1012": "Agencia de Protección de Datos",
+        "1011": "Agencia Española de Protección de Datos",
+        "9556": "ANULACIONES",
+        "9540": "ANULACIONES DE REQUISITORIAS",
+        "9202": "Anuncios particulares",
+        "9552": "AUDIENCIA NACIONAL",
+        "9551": "AUDIENCIAS PROVINCIALES",
+        "1020": "Banco de España",
+        "8180": "Ciudad de Ceuta",
+        "8190": "Ciudad de Melilla",
+        "1030": "Comisión Interministerial de Retribuciones",
+        "9534": "Comisión Nacional de los Mercados y la Competencia",
+        "1040": "Comisión Nacional del Mercado de Valores",
+        "8010": "Comunidad Autónoma de Andalucía",
+        "8020": "Comunidad Autónoma de Aragón",
+        "8030": "Comunidad Autónoma de Canarias",
+        "8040": "Comunidad Autónoma de Cantabria",
+        "8060": "Comunidad Autónoma de Castilla-La Mancha"
+    }
+}

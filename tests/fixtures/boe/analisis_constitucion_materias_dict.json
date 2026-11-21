@@ -1,0 +1,166 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "materias": {
+                "materia": {
+                    "codigo": "1616",
+                    "texto": "Constituci\u00f3n Espa\u00f1ola"
+                }
+            },
+            "referencias": {
+                "anteriores": [
+                    {
+                        "anterior": [
+                            {
+                                "id_norma": "BOE-A-1977-165",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley 1\/1977, de 4 de enero"
+                            },
+                            {
+                                "id_norma": "BOE-A-1967-5",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley Org\u00e1nica del Estado, de 10 de enero de 1967"
+                            },
+                            {
+                                "id_norma": "BOE-B-1958-7949",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley de Principios del Movimiento Nacional, de 17 de mayo de 1958 (Gazeta)"
+                            },
+                            {
+                                "id_norma": "BOE-A-1947-7395",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley de Sucesi\u00f3n en la Jefatura del Estado, de 26 de julio de 1947 (Gazeta)"
+                            },
+                            {
+                                "id_norma": "BOE-A-1945-10289",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley de Refer\u00e9ndum Nacional, de 22 de octubre de 1945 (Gazeta)"
+                            },
+                            {
+                                "id_norma": "BOE-A-1945-7244",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley reguladora del Fuero de los Espa\u00f1oles, de 17 de julio de 1945 (Gazeta)"
+                            },
+                            {
+                                "id_norma": "BOE-A-1942-6528",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley Constitutiva de las Cortes, de 17 de julio de 1942 (Gazeta)"
+                            },
+                            {
+                                "id_norma": "BOE-A-1938-3093",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Fuero del Trabajo aprobado por Decreto de 9 de marzo de 1938 (Gazeta)"
+                            },
+                            {
+                                "id_norma": "BOE-A-1876-5680",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley sobre extensi\u00f3n a las Provincias Vascongadas de los deberes que la Constituci\u00f3n de la Monarqu\u00eda impone a todos los espa\u00f1oles, de 21 de julio de 1876 (Gazeta)"
+                            },
+                            {
+                                "id_norma": "BOE-A-1839-4417",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "Ley sancionando los fueros de las provincias vascongadas y Navarra, de 25 de octubre de 1839 (Gazeta)"
+                            }
+                        ]
+                    }
+                ],
+                "posteriores": [
+                    {
+                        "posterior": [
+                            {
+                                "id_norma": "BOE-A-2026-10881",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 69.3, por Reforma de 19 de mayo de 2026"
+                            },
+                            {
+                                "id_norma": "BOE-A-2024-3099",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 49, por Reforma de 15 de febrero de 2024"
+                            },
+                            {
+                                "id_norma": "BOE-A-2011-15210",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 135, por Reforma de 27 de septiembre de 2011"
+                            },
+                            {
+                                "id_norma": "BOE-A-1992-20403",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 13.2, por Reforma de 27 de agosto de 1992"
+                            },
+                            {
+                                "id_norma": "BOE-A-2026-22710",
+                                "relacion": {
+                                    "codigo": "693",
+                                    "texto": "SE DICTA"
+                                },
+                                "texto": "que no existe contradicci\u00f3n entre el art. 2.4 del Tratado de amistad y cooperaci\u00f3n entre el Reino de Espa\u00f1a y la Rep\u00fablica Francesa, de 19 de enero de 2023 y la Constituci\u00f3n, por Declaraci\u00f3n 1\/2026, de 23 de septiembre"
+                            },
+                            {
+                                "id_norma": "BOE-T-2005-111",
+                                "relacion": {
+                                    "codigo": "693",
+                                    "texto": "SE DICTA"
+                                },
+                                "texto": "que no existe contradicci\u00f3n entre los arts. I-6, II-111 y II-112 del Tratado de 29 de octubre de 2004 y la Constituci\u00f3n y la suficiencia del art. 93 de la misma, por Declaraci\u00f3n 1\/2004, de 13 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-T-1992-17448",
+                                "relacion": {
+                                    "codigo": "693",
+                                    "texto": "SE DICTA"
+                                },
+                                "texto": "que la estipulaci\u00f3n contenida en el futuro art. 8 B, apartado 1, del Tratado Constitutivo de la Comunidad Econ\u00f3mica Europea, tal y como quedar\u00e1 redactado por el Tratado de la Uni\u00f3n Europea, es contraria al art. 13.2 de la Constituci\u00f3n en lo relativo a la atribuci\u00f3n del derecho de sufragio pasivo en elecciones municipales a los ciudadanos de la Uni\u00f3n Europea que no sean nacionales espa\u00f1oles, y que el procedimiento de reforma constitucional que debe seguirse es el del art. 167, por Declaraci\u00f3n de 1 de julio de 1992"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

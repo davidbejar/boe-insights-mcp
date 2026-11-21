@@ -1,0 +1,450 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": {
+        "sumario": {
+            "metadatos": {
+                "publicacion": "BOE",
+                "fecha_publicacion": "20261120"
+            },
+            "diario": [
+                {
+                    "numero": "289",
+                    "sumario_diario": {
+                        "identificador": "BOE-S-2026-289",
+                        "url_pdf": {
+                            "szBytes": "490154",
+                            "szKBytes": "479",
+                            "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-S-2026-289.pdf"
+                        }
+                    },
+                    "seccion": [
+                        {
+                            "codigo": "1",
+                            "nombre": "I. Disposiciones generales",
+                            "departamento": [
+                                {
+                                    "codigo": "1220",
+                                    "nombre": "CORTES GENERALES",
+                                    "epigrafe": [
+                                        {
+                                            "nombre": "Medidas urgentes",
+                                            "item": [
+                                                {
+                                                    "identificador": "BOE-A-2026-24291",
+                                                    "control": "2026/18155",
+                                                    "titulo": "Resolución de 18 de noviembre de 2026, del Congreso de los Diputados, por la que se ordena la publicación del Acuerdo de convalidación del Real Decreto-ley 30/2026, de 13 de octubre, por el que se aprueban medidas extraordinarias y urgentes de apoyo financiero a la Ciudad de Ceuta.",
+                                                    "url_pdf": {
+                                                        "szBytes": "190151",
+                                                        "szKBytes": "186",
+                                                        "pagina_inicial": "157084",
+                                                        "pagina_final": "157084",
+                                                        "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24291.pdf"
+                                                    },
+                                                    "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24291",
+                                                    "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24291"
+                                                },
+                                                {
+                                                    "identificador": "BOE-A-2026-24292",
+                                                    "control": "2026/18156",
+                                                    "titulo": "Resolución de 18 de noviembre de 2026, del Congreso de los Diputados, por la que se ordena la publicación del Acuerdo de convalidación del Real Decreto-ley 31/2026, de 20 de octubre, para la mejora de la acción protectora de la Seguridad Social y de otras normas sociales.",
+                                                    "url_pdf": {
+                                                        "szBytes": "190156",
+                                                        "szKBytes": "186",
+                                                        "pagina_inicial": "157085",
+                                                        "pagina_final": "157085",
+                                                        "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24292.pdf"
+                                                    },
+                                                    "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24292",
+                                                    "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24292"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "9562",
+                                    "nombre": "MINISTERIO DE ASUNTOS EXTERIORES, UNIÓN EUROPEA Y COOPERACIÓN",
+                                    "epigrafe": [
+                                        {
+                                            "nombre": "Acuerdos internacionales administrativos",
+                                            "item": {
+                                                "identificador": "BOE-A-2026-24298",
+                                                "control": "2026/18011",
+                                                "titulo": "Acuerdo entre el Gobierno del Reino de España (El «Donante») y la Entidad de las Naciones Unidas para la igualdad de género y el empoderamiento de las mujeres («ONU Mujeres»), hecho en Nueva York el 10 de noviembre de 2026.",
+                                                "url_pdf": {
+                                                    "szBytes": "253519",
+                                                    "szKBytes": "248",
+                                                    "pagina_inicial": "157091",
+                                                    "pagina_final": "157099",
+                                                    "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24298.pdf"
+                                                },
+                                                "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24298",
+                                                "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24298"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "codigo": "2A",
+                            "nombre": "II. Autoridades y personal. - A. Nombramientos, situaciones e incidencias",
+                            "departamento": [
+                                {
+                                    "codigo": "9585",
+                                    "nombre": "MINISTERIO DE LA PRESIDENCIA, JUSTICIA Y RELACIONES CON LAS CORTES",
+                                    "epigrafe": [
+                                        {
+                                            "nombre": "Destinos",
+                                            "item": {
+                                                "identificador": "BOE-A-2026-24318",
+                                                "control": "2026/18115",
+                                                "titulo": "Resolución de 16 de noviembre de 2026, de la Subsecretaría, por la que se resuelve la convocatoria de libre designación, efectuada por Resolución de 3 de septiembre 2026.",
+                                                "url_pdf": {
+                                                    "szBytes": "218266",
+                                                    "szKBytes": "213",
+                                                    "pagina_inicial": "157412",
+                                                    "pagina_final": "157413",
+                                                    "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24318.pdf"
+                                                },
+                                                "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24318",
+                                                "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24318"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "6110",
+                                    "nombre": "MINISTERIO DE DEFENSA",
+                                    "epigrafe": [
+                                        {
+                                            "nombre": "Ascensos",
+                                            "item": [
+                                                {
+                                                    "identificador": "BOE-A-2026-24319",
+                                                    "control": "2026/18110",
+                                                    "titulo": "Real Decreto 1029/2026, de 18 de noviembre, por el que se promueve al empleo de Almirante del Cuerpo General de la Armada al Vicealmirante don Francisco Javier Roca Rivero.",
+                                                    "url_pdf": {
+                                                        "szBytes": "190399",
+                                                        "szKBytes": "186",
+                                                        "pagina_inicial": "157414",
+                                                        "pagina_final": "157414",
+                                                        "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24319.pdf"
+                                                    },
+                                                    "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24319",
+                                                    "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24319"
+                                                },
+                                                {
+                                                    "identificador": "BOE-A-2026-24320",
+                                                    "control": "2026/18111",
+                                                    "titulo": "Real Decreto 1030/2026, de 18 de noviembre, por el que se promueve al empleo de General de División del Cuerpo de Infantería de Marina al General de Brigada don Francisco Javier González Vázquez.",
+                                                    "url_pdf": {
+                                                        "szBytes": "191209",
+                                                        "szKBytes": "187",
+                                                        "pagina_inicial": "157415",
+                                                        "pagina_final": "157415",
+                                                        "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24320.pdf"
+                                                    },
+                                                    "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24320",
+                                                    "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24320"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "codigo": "2B",
+                            "nombre": "II. Autoridades y personal. - B. Oposiciones y concursos",
+                            "departamento": [
+                                {
+                                    "codigo": "7320",
+                                    "nombre": "MINISTERIO DEL INTERIOR",
+                                    "epigrafe": [
+                                        {
+                                            "nombre": "Cuerpo Nacional de Policía",
+                                            "item": {
+                                                "identificador": "BOE-A-2026-24330",
+                                                "control": "2026/18128",
+                                                "titulo": "Resolución de 11 de noviembre de 2026, de la Dirección General de la Policía, por la que se modifica la realización del módulo de formación práctica en el puesto de trabajo del personal facultativo y técnico en prácticas en sedes distintas de las correspondientes a los puestos de trabajo adjudicados, en relación con el proceso selectivo de personal facultativo y técnico del Cuerpo Policía Nacional, convocado por Resolución de 9 de enero de 2026.",
+                                                "url_pdf": {
+                                                    "szBytes": "221028",
+                                                    "szKBytes": "216",
+                                                    "pagina_inicial": "157433",
+                                                    "pagina_final": "157436",
+                                                    "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24330.pdf"
+                                                },
+                                                "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24330",
+                                                "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24330"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "9586",
+                                    "nombre": "MINISTERIO DE TRANSPORTES Y MOVILIDAD SOSTENIBLE",
+                                    "epigrafe": [
+                                        {
+                                            "nombre": "Escala Superior de Especialistas en Transporte, Infraestructuras y Seguridad de los Organismos Autónomos y las Agencias Estatales del Ministerio de Transportes, Movilidad y Agenda Urbana",
+                                            "item": {
+                                                "identificador": "BOE-A-2026-24331",
+                                                "control": "2026/17783",
+                                                "titulo": "Resolución de 10 de noviembre de 2026, de la Subsecretaría, por la que se convoca proceso selectivo para ingreso, por el sistema general de acceso libre y promoción interna, en la Escala Superior de Especialistas en Transporte, Infraestructuras y Seguridad de los Organismos Autónomos y las Agencias Estatales del Ministerio de Transportes, Movilidad y Agenda Urbana, especialidad Seguridad e Interoperabilidad Ferroviaria.",
+                                                "url_pdf": {
+                                                    "szBytes": "426714",
+                                                    "szKBytes": "417",
+                                                    "pagina_inicial": "157437",
+                                                    "pagina_final": "157468",
+                                                    "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24331.pdf"
+                                                },
+                                                "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24331",
+                                                "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24331"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "codigo": "3",
+                            "nombre": "III. Otras disposiciones",
+                            "departamento": [
+                                {
+                                    "codigo": "9585",
+                                    "nombre": "MINISTERIO DE LA PRESIDENCIA, JUSTICIA Y RELACIONES CON LAS CORTES",
+                                    "epigrafe": [
+                                        {
+                                            "nombre": "Convenios",
+                                            "item": {
+                                                "identificador": "BOE-A-2026-24365",
+                                                "control": "2026/18134",
+                                                "titulo": "Resolución de 16 de noviembre de 2026, de la Gerencia del Consejo de Administración del Patrimonio Nacional, por la que se publica la Adenda de modificación del Convenio con la Fundación Callia, por el que se establecen las bases de la colaboración para la canalización del mecenazgo para la conservación y restauración de piezas artísticas del Patrimonio Nacional.",
+                                                "url_pdf": {
+                                                    "szBytes": "212923",
+                                                    "szKBytes": "208",
+                                                    "pagina_inicial": "157599",
+                                                    "pagina_final": "157602",
+                                                    "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24365.pdf"
+                                                },
+                                                "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24365",
+                                                "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24365"
+                                            }
+                                        },
+                                        {
+                                            "nombre": "Fundaciones",
+                                            "item": [
+                                                {
+                                                    "identificador": "BOE-A-2026-24366",
+                                                    "control": "2026/17716",
+                                                    "titulo": "Resolución de 6 de noviembre de 2026, de la Dirección General de Seguridad Jurídica y Fe Pública, por la que se inscribe en el Registro de Fundaciones la Fundación Maribel Martín Fontelles.",
+                                                    "url_pdf": {
+                                                        "szBytes": "204066",
+                                                        "szKBytes": "199",
+                                                        "pagina_inicial": "157603",
+                                                        "pagina_final": "157604",
+                                                        "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24366.pdf"
+                                                    },
+                                                    "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24366",
+                                                    "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24366"
+                                                },
+                                                {
+                                                    "identificador": "BOE-A-2026-24367",
+                                                    "control": "2026/17717",
+                                                    "titulo": "Resolución de 6 de noviembre de 2026, de la Dirección General de Seguridad Jurídica y Fe Pública, por la que se inscribe en el Registro de Fundaciones la Fundación Mimalista.",
+                                                    "url_pdf": {
+                                                        "szBytes": "203010",
+                                                        "szKBytes": "198",
+                                                        "pagina_inicial": "157605",
+                                                        "pagina_final": "157606",
+                                                        "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24367.pdf"
+                                                    },
+                                                    "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24367",
+                                                    "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24367"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "6110",
+                                    "nombre": "MINISTERIO DE DEFENSA",
+                                    "epigrafe": [
+                                        {
+                                            "nombre": "Recursos",
+                                            "item": {
+                                                "identificador": "BOE-A-2026-24398",
+                                                "control": "2026/17809",
+                                                "titulo": "Resolución 160/38451/2026, de 11 de noviembre, de la Jefatura de Enseñanza de la Guardia Civil, por la que se emplaza a las personas interesadas en el recurso contencioso-administrativo 518/2026, interpuesto ante el Tribunal Superior de Justicia de Madrid, Sala de lo Contencioso-Administrativo, Sección Sexta.",
+                                                "url_pdf": {
+                                                    "szBytes": "192731",
+                                                    "szKBytes": "188",
+                                                    "pagina_inicial": "157906",
+                                                    "pagina_final": "157906",
+                                                    "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-A-2026-24398.pdf"
+                                                },
+                                                "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-24398",
+                                                "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-A-2026-24398"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "codigo": "5A",
+                            "nombre": "V. Anuncios. - A. Contratación del Sector Público",
+                            "departamento": [
+                                {
+                                    "codigo": "1220",
+                                    "nombre": "CORTES GENERALES",
+                                    "item": {
+                                        "identificador": "BOE-B-2026-38112",
+                                        "titulo": "Anuncio de formalización de contratos de: Mesa del Senado. Objeto: Servicios de mantenimiento de las instalaciones térmicas y de fluidos de los edificios del Senado. Expediente: 13/2026.",
+                                        "url_pdf": {
+                                            "szBytes": "222472",
+                                            "szKBytes": "217",
+                                            "pagina_inicial": "61661",
+                                            "pagina_final": "61663",
+                                            "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-B-2026-38112.pdf"
+                                        },
+                                        "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-38112",
+                                        "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-B-2026-38112"
+                                    }
+                                },
+                                {
+                                    "codigo": "9585",
+                                    "nombre": "MINISTERIO DE LA PRESIDENCIA, JUSTICIA Y RELACIONES CON LAS CORTES",
+                                    "item": [
+                                        {
+                                            "identificador": "BOE-B-2026-38113",
+                                            "titulo": "Anuncio de licitación de: Secretaría de Estado de Justicia. Objeto: Obras de construcción de Nuevo Edificio de Juzgados en Ciudadela de Menorca (Islas Baleares). Expediente: AOB/2026/135.",
+                                            "url_pdf": {
+                                                "szBytes": "224582",
+                                                "szKBytes": "219",
+                                                "pagina_inicial": "61664",
+                                                "pagina_final": "61666",
+                                                "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-B-2026-38113.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-38113",
+                                            "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-B-2026-38113"
+                                        },
+                                        {
+                                            "identificador": "BOE-B-2026-38114",
+                                            "titulo": "Anuncio de formalización de contratos de: Subdirección General de Programación y Gestión Económica del Servicio Público de Justicia. Objeto: Servicio de mudanza en Lorca. Expediente: ASE/2026/112.",
+                                            "url_pdf": {
+                                                "szBytes": "216144",
+                                                "szKBytes": "211",
+                                                "pagina_inicial": "61667",
+                                                "pagina_final": "61668",
+                                                "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-B-2026-38114.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-38114",
+                                            "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-B-2026-38114"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "codigo": "5B",
+                            "nombre": "V. Anuncios. - B. Otros anuncios oficiales",
+                            "departamento": [
+                                {
+                                    "codigo": "9586",
+                                    "nombre": "MINISTERIO DE TRANSPORTES Y MOVILIDAD SOSTENIBLE",
+                                    "item": [
+                                        {
+                                            "identificador": "BOE-B-2026-38185",
+                                            "titulo": "Anuncio de la Autoridad Portuaria de la Bahía de Cádiz por el que se hace público el otorgamiento de concesiones administrativas.",
+                                            "url_pdf": {
+                                                "szBytes": "220352",
+                                                "szKBytes": "215",
+                                                "pagina_inicial": "61827",
+                                                "pagina_final": "61830",
+                                                "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-B-2026-38185.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-38185",
+                                            "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-B-2026-38185"
+                                        },
+                                        {
+                                            "identificador": "BOE-B-2026-38186",
+                                            "titulo": "Anuncio de la Autoridad Portuaria de la Bahía de Cádiz por el que se hace público adjudicación del concurso de selección de oferta para tramitar expediente de concesión administrativa para la construcción y explotación de una terminal de pasajeros, zona complementaria, comercial y licencia parala prestación del servicio portuario al pasaje en la explanada del muelle Reina Sofía, zona de servicio del Puerto de la bahía de Cádiz.",
+                                            "url_pdf": {
+                                                "szBytes": "202176",
+                                                "szKBytes": "197",
+                                                "pagina_inicial": "61831",
+                                                "pagina_final": "61831",
+                                                "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-B-2026-38186.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-38186",
+                                            "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-B-2026-38186"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "codigo": "9573",
+                                    "nombre": "MINISTERIO DE TRABAJO Y ECONOMÍA SOCIAL",
+                                    "item": [
+                                        {
+                                            "identificador": "BOE-B-2026-38188",
+                                            "titulo": "Extracto de la Resolución de 19 de noviembre de 2026 del Servicio Público de Empleo Estatal, por la que se aprueba la convocatoria para la concesión de subvenciones públicas destinadas a la financiación de planes de formación de ámbito estatal, dirigidos a la capacitación para el desarrollo de las funciones relacionadas con el diálogo social y la negociación colectiva.",
+                                            "url_pdf": {
+                                                "szBytes": "210077",
+                                                "szKBytes": "205",
+                                                "pagina_inicial": "61833",
+                                                "pagina_final": "61834",
+                                                "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-B-2026-38188.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-38188",
+                                            "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-B-2026-38188"
+                                        },
+                                        {
+                                            "identificador": "BOE-B-2026-38189",
+                                            "titulo": "Resolución de 18 de noviembre de 2026, de la Subsecretaría, por la que se acuerda dar publicidad al inicio de los procedimientos de revocación de Medallas al Mérito en el Trabajo, acordado por la Vicepresidenta Segunda y Ministra de Trabajo y Economía Social, en cumplimiento de la Ley 20/2022, de 19 de octubre, de Memoria Democrática.",
+                                            "url_pdf": {
+                                                "szBytes": "205567",
+                                                "szKBytes": "201",
+                                                "pagina_inicial": "61835",
+                                                "pagina_final": "61835",
+                                                "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-B-2026-38189.pdf"
+                                            },
+                                            "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-38189",
+                                            "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-B-2026-38189"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "codigo": "5C",
+                            "nombre": "V. Anuncios. - C. Anuncios particulares",
+                            "departamento": {
+                                "codigo": "9202",
+                                "nombre": "ANUNCIOS PARTICULARES",
+                                "texto": {
+                                    "item": {
+                                        "identificador": "BOE-B-2026-38247",
+                                        "titulo": "ILUSTRE COLEGIO NOTARIAL DE MURCIA.",
+                                        "url_pdf": {
+                                            "szBytes": "199523",
+                                            "szKBytes": "195",
+                                            "pagina_inicial": "61913",
+                                            "pagina_final": "61913",
+                                            "texto": "https://www.boe.es/boe/dias/2026/11/20/pdfs/BOE-B-2026-38247.pdf"
+                                        },
+                                        "url_html": "https://www.boe.es/diario_boe/txt.php?id=BOE-B-2026-38247",
+                                        "url_xml": "https://www.boe.es/diario_boe/xml.php?id=BOE-B-2026-38247"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

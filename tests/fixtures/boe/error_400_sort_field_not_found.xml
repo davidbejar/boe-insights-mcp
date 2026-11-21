@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>400</code>
+    <text>Search error: [sort param field can't be found: nonexistent][{"query":"(TITULOS:energ\u00eda) ","sort":"nonexistent desc,FAC desc,id asc"}]</text>
+  </status>
+  <data/>
+</response>
