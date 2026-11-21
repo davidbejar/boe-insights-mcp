@@ -1,7 +1,8 @@
 """Turns the XML of a ``/texto/bloque/{id}`` response into ``Block`` models.
 
 This module is pure: it takes the response body and returns models, with no I/O. ``client`` calls
-``parse_block`` on the raw body and maps its ``ValueError`` to a response error; ``versions`` and
+``parse_block`` (one block) or ``parse_full_text`` (every block of a law) on the raw body and maps
+their ``ValueError`` to a response error; ``versions`` and
 the tools work on the resulting models and never see XML. The document shape is described in
 ``docs/api-notes.md`` section 6.
 """
@@ -17,7 +18,7 @@ from defusedxml.ElementTree import fromstring
 
 from boe_insights_mcp.models import Block, BlockVersion, Paragraph, collapse_whitespace
 
-__all__ = ["parse_block"]
+__all__ = ["parse_block", "parse_full_text"]
 
 _DATE_FORMAT = re.compile(r"\d{8}")
 # Elements that separate words even though they are written inline; every other inline tag
@@ -39,6 +40,24 @@ def parse_block(xml: bytes | str) -> Block:
     bloque = next(root.iter("bloque"), None)
     if bloque is None:
         raise ValueError("no <bloque> element in the response")
+    return _parse_bloque(bloque)
+
+
+def parse_full_text(xml: bytes | str) -> list[Block]:
+    """Parse a whole-law ``/texto`` response body into its blocks, in document order.
+
+    Each ``<bloque>`` is parsed exactly as :func:`parse_block` parses a single one. A well-formed
+    body without any ``<bloque>`` gives ``[]``. Raises ``ValueError`` in the same cases as
+    ``parse_block`` (malformed or unsafe XML, a ``<bloque>`` without an ``id``, a bad date).
+    """
+    # Document order, never sorted: the order of ``/texto`` is the only place the hierarchy of
+    # headings and articles is written down (api-notes, "Text structure"), and ``structure``
+    # relies on it. ``iter`` visits ``<bloque>`` elements in document order wherever they sit.
+    return [_parse_bloque(bloque) for bloque in _parse_xml(xml).iter("bloque")]
+
+
+def _parse_bloque(bloque: Element) -> Block:
+    """Build a ``Block`` from one ``<bloque>`` element; shared by both public parsers."""
     block_id = bloque.get("id")
     if not block_id:
         raise ValueError("<bloque> has no id attribute")
@@ -48,12 +67,32 @@ def parse_block(xml: bytes | str) -> Block:
     # (which falls back to the publication date). ``sort`` is stable, so ties and fully undated
     # versions keep the server's order; undated ones go first.
     versions.sort(key=lambda version: version.start_key)
+    expires_on, expired_marker = _parse_expiry(bloque.get("fecha_caducidad"))
     return Block(
         block_id=block_id,
         kind=bloque.get("tipo", ""),
         title=bloque.get("titulo", ""),
         versions=tuple(versions),
+        expires_on=expires_on,
+        expired_marker=expired_marker,
     )
+
+
+def _parse_expiry(value: str | None) -> tuple[date | None, bool]:
+    """Read ``fecha_caducidad``: the date if it is a real one, and whether the attribute is set.
+
+    Never raises: this attribute is informational and must not make a whole law unreadable.
+    """
+    # Unlike the version dates, a bad value is tolerated: the Código Civil has one block whose
+    # caducidad is the sentinel ``00000001`` (api-notes, "Text structure"). The block is still
+    # known to be expired, so the marker is set and only the date is missing. An empty attribute
+    # counts as absent.
+    if not value:
+        return None, False
+    try:
+        return _parse_date(value), True
+    except ValueError:  # not eight digits, or not a calendar date (month 00, day 30 of February)
+        return None, True
 
 
 def _parse_xml(xml: bytes | str) -> Element:

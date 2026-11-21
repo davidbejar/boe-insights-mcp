@@ -1,4 +1,4 @@
-"""Use cases over the text of one article: read it, compare versions, list its history.
+"""Use cases over the text of a law: read an article, compare versions, history, outline.
 
 Like ``legislation``, these functions take a :class:`BoeClient` and plain arguments, return
 pydantic models from ``schemas`` and know nothing of MCP. Each one follows the same flow: fetch
@@ -6,7 +6,9 @@ the law's block index, let ``locator`` find the block the person means (by wordi
 block id), then fetch that block (all its versions) together with what says whether the whole law
 is repealed (``repeal``), and answer with ``versions`` (version selection, diff, history).
 
-Public use cases: ``read_article``, ``compare_article_versions`` and ``get_article_history``.
+Public use cases: ``read_article``, ``compare_article_versions``, ``get_article_history`` and
+``get_law_structure``. The last one works on the whole law at once: it fetches the full text in one
+request, builds the table of contents with ``structure`` and pages it.
 A wording that matches no block or several blocks is a normal result with candidates, not an
 error; an unknown law raises ``BoeNotFoundError`` and bad arguments raise ``ValueError``. The CPU
 heavy parts (diff, history) run in a worker thread so they never block the event loop.
@@ -15,15 +17,23 @@ heavy parts (diff, history) run in a worker thread so they never block the event
 from __future__ import annotations
 
 import asyncio
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
+from typing import Literal
 
 from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.clock import madrid_today, utc_now
+from boe_insights_mcp.errors import BoeNotFoundError
 from boe_insights_mcp.identifiers import normalise_identifier
 from boe_insights_mcp.locator import LocateResult, locate, locate_block_id
 from boe_insights_mcp.models import Block, BlockVersion, IndexEntry
-from boe_insights_mcp.repeal import LawRepeal, assess_repeal, fetch_repeal_inputs
+from boe_insights_mcp.repeal import (
+    LawRepeal,
+    RepealInputs,
+    assess_repeal,
+    fetch_repeal_inputs,
+)
 from boe_insights_mcp.schemas import (
     ArticleCandidate,
     ArticleChange,
@@ -31,10 +41,13 @@ from boe_insights_mcp.schemas import (
     ArticleHistoryResult,
     ArticleLocation,
     CompareArticleVersionsResult,
+    LawStructureResult,
     Provenance,
     ReadArticleResult,
+    StructureItem,
     VersionInfo,
 )
+from boe_insights_mcp.structure import StructureEntry, build_structure
 from boe_insights_mcp.versions import (
     ArticleState,
     diff_versions,
@@ -47,20 +60,27 @@ __all__ = [
     "DEFAULT_CHANGES",
     "DEFAULT_COMPARE_CHARS",
     "DEFAULT_PAGE_CHARS",
+    "DEFAULT_STRUCTURE_LIMIT",
     "MAX_ARTICLE_CHARS",
     "MAX_CHANGES",
     "MAX_COMPARE_CHARS",
     "MAX_PAGE_CHARS",
+    "MAX_STRUCTURE_LIMIT",
     "MIN_COMPARE_CHARS",
     "MIN_PAGE_CHARS",
     "compare_article_versions",
     "get_article_history",
+    "get_law_structure",
     "read_article",
 ]
 
 DEFAULT_PAGE_CHARS = 6000
 MIN_PAGE_CHARS = 500
 MAX_PAGE_CHARS = 20000
+# Entries per page of a table of contents. The Código Civil has about 2 400 blocks, so a page is
+# bounded by ``limit`` however large the law is.
+DEFAULT_STRUCTURE_LIMIT = 200
+MAX_STRUCTURE_LIMIT = 400
 DEFAULT_CHANGES = 40
 MAX_CHANGES = 200
 # Total characters of old_text, new_text and inline over all returned changes.
@@ -78,6 +98,9 @@ _TRUNCATED = "…[truncated]"
 _MIN_CUT_CHARS = 100
 # The id of the block that holds a law's initial note (api-notes, "Initial note").
 _NOTE_BLOCK_ID = "no"
+
+# The two kinds a "headings only" outline leaves out.
+_PRECEPT_KINDS = frozenset({"article", "provision"})
 
 _PARAGRAPH_BREAK = "\n\n"
 # Compared against when an article did not exist yet: every paragraph then shows as added.
@@ -634,4 +657,178 @@ async def get_article_history(
         truncated=len(block.versions) > _MAX_HISTORY_EVENTS,
         current_state=state,
         note=" ".join(notes) or None,
+    )
+
+
+StructureDetail = Literal["headings", "all"]
+
+
+async def _fetch_structure_inputs(
+    client: BoeClient, law_id: str
+) -> tuple[list[Block], RepealInputs]:
+    """Fetch the whole text and the metadata concurrently; an unknown law raises.
+
+    The metadata request never fails the tool apart from "not found" (see
+    ``repeal.fetch_repeal_inputs``); the full text is what the answer is made of, so its failure
+    propagates.
+    """
+    try:
+        async with asyncio.TaskGroup() as group:
+            text_task = group.create_task(client.get_full_text(law_id))
+            repeal_task = group.create_task(fetch_repeal_inputs(client, law_id, with_note=False))
+    except ExceptionGroup as failures:
+        # Callers and ``server._guard`` catch ``BoeError`` and ``ValueError`` by type, not the
+        # group around them. When both requests fail, "not found" is the more useful one (it says
+        # the law does not exist); otherwise the arbitrary first is as good as any.
+        errors = failures.exceptions
+        raise next((e for e in errors if isinstance(e, BoeNotFoundError)), errors[0]) from None
+    return text_task.result(), repeal_task.result()
+
+
+def _uniform_state(entries: list[StructureEntry]) -> ArticleState | None:
+    """The one state every entry has when it is not "in force", else ``None``.
+
+    The entries then say nothing individually and the result's note says it once, which saves a
+    repeated ``state`` on every line of a large law.
+    """
+    states = {e.state for e in entries}
+    if len(states) == 1:
+        (only,) = states
+        if only in ("repealed", "not_yet_in_force"):
+            return only
+    return None
+
+
+def _structure_notes(
+    entries: list[StructureEntry],
+    repeal: LawRepeal,
+    on: date,
+    *,
+    as_of_given: bool,
+    effective_from: date | None,
+) -> list[str]:
+    """Sentences for the result's ``note``: empty, not yet in force, or repealed (whole law)."""
+    notes: list[str] = []
+    upcoming = sum(1 for e in entries if e.state == "not_yet_in_force")
+    if not entries:
+        notes.append(f"The law's text did not exist on {on.isoformat()}: there are no entries.")
+    elif upcoming == len(entries):
+        takes_effect = (
+            f"; it takes effect on {effective_from.isoformat()}"
+            if effective_from is not None and effective_from > on
+            else ""
+        )
+        notes.append(
+            f"On {on.isoformat()} this law was published but is not yet in force{takes_effect}. "
+            "Every entry is not yet in force and shows the upcoming text."
+        )
+    elif upcoming:
+        notes.append(
+            f"{upcoming} of {len(entries)} entries are published but not yet in force on "
+            f"{on.isoformat()}."
+        )
+    elif _uniform_state(entries) == "repealed":
+        notes.append(f"Every entry is repealed on {on.isoformat()}.")
+    # A repealed law's articles carry no repeal marker (api-notes, "Initial note"), so every
+    # entry reads "in force" and only this sentence tells the reader. Putting ``repealed`` on each
+    # entry instead would defeat the compact output.
+    if (
+        repeal.repealed
+        and _law_state("in_force", repeal, on, as_of_given=as_of_given) == "repealed"
+    ):
+        since = f" on {repeal.on.isoformat()}" if repeal.on is not None else " (no date given)"
+        notes.append(
+            f"The whole law was repealed{since}, so none of these entries is in force; the "
+            "table shows its last consolidated text."
+        )
+    elif (sentence := _repeal_note(repeal, on, "in_force")) is not None:
+        notes.append(sentence)
+    return notes
+
+
+async def get_law_structure(
+    client: BoeClient,
+    law_id: str,
+    *,
+    as_of: date | None = None,
+    detail: StructureDetail = "all",
+    offset: int = 0,
+    limit: int = DEFAULT_STRUCTURE_LIMIT,
+    today: date | None = None,
+    now: datetime | None = None,
+) -> LawStructureResult:
+    """Return a page of a law's table of contents as of ``as_of`` (default: today in Madrid).
+
+    ``detail="headings"`` leaves out articles and provisions. The page holds at most ``limit``
+    entries from ``offset`` on; ``counts`` always describes the whole law. Costs two requests:
+    the full text and the metadata. Raises ``ValueError`` for a malformed law id, a bad
+    ``detail``, ``limit`` or ``offset``, and ``BoeNotFoundError`` for an unknown law.
+    """
+    if detail not in ("headings", "all"):
+        raise ValueError("detail must be 'headings' or 'all'")
+    _check_range("limit", limit, 1, MAX_STRUCTURE_LIMIT)
+    if offset < 0:
+        raise ValueError("offset must not be negative")
+    moment = utc_now(now)
+    on = as_of if as_of is not None else madrid_today(moment, today)
+    # A malformed id is passed through unchanged so the client's own check raises the ValueError.
+    law_id = normalise_identifier(law_id) or law_id
+    blocks, inputs = await _fetch_structure_inputs(client, law_id)
+    # The initial note is block ``no`` of the text we already hold, so the repeal assessment needs
+    # no request of its own (``articles._load`` has to ask for it because it only has an index).
+    # Found by its kind, not its id: Ley 40/2015 calls it ``co`` (api-notes, third probe, "Text
+    # structure").
+    note_block = next((block for block in blocks if block.kind == "nota_inicial"), None)
+    repeal = assess_repeal(
+        RepealInputs(inputs.metadata, note_block, note_checked=True),
+        today=madrid_today(moment, today),
+    )
+
+    entries = build_structure(blocks, on)
+    uniform = _uniform_state(entries) is not None
+    shown = entries if detail == "all" else [e for e in entries if e.kind not in _PRECEPT_KINDS]
+    if offset > len(shown):
+        raise ValueError(f"offset is beyond the end of the structure ({len(shown)} entries)")
+    page = shown[offset : offset + limit]
+    end = offset + len(page)
+    metadata = inputs.metadata
+    return LawStructureResult(
+        law_id=law_id,
+        title=metadata.title if metadata is not None else law_id,
+        as_of=on,
+        entries=[
+            StructureItem(
+                block_id=e.block_id,
+                kind=e.kind,
+                level=e.level,
+                label=e.label,
+                heading=e.heading,
+                # ``in_force`` is the norm and is left out; ``did_not_exist`` never reaches here
+                # because ``build_structure`` skips such blocks. A state shared by every entry
+                # is left to the note.
+                state=None
+                if uniform or e.state not in ("repealed", "not_yet_in_force")
+                else e.state,  # type: ignore[arg-type]
+            )
+            for e in page
+        ],
+        returned=len(page),
+        total_entries=len(shown),
+        has_more=end < len(shown),
+        next_offset=end if end < len(shown) else None,
+        counts=dict(Counter(e.kind for e in entries)),
+        note=" ".join(
+            _structure_notes(
+                entries,
+                repeal,
+                on,
+                as_of_given=as_of is not None,
+                effective_from=metadata.effective_from if metadata is not None else None,
+            )
+        )
+        or None,
+        provenance=Provenance(
+            generated_at=moment,
+            data_updated_at=metadata.updated_at if metadata is not None else None,
+        ),
     )

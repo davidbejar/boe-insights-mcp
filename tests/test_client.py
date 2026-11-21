@@ -303,7 +303,7 @@ async def test_valid_law_ids_are_requested(
     assert result.identifier == law_id
 
 
-@pytest.mark.parametrize("limit", [0, -1, 1001])
+@pytest.mark.parametrize("limit", [0, -1, 5001])
 async def test_limit_out_of_range_raises_value_error(
     router: respx.MockRouter, client: BoeClient, limit: int
 ) -> None:
@@ -320,7 +320,7 @@ async def test_negative_offset_raises_value_error(
     assert_nothing_sent(router, client)
 
 
-@pytest.mark.parametrize("limit", [1, 1000])
+@pytest.mark.parametrize("limit", [1, 1000, 5000])
 async def test_limit_bounds_are_inclusive(
     router: respx.MockRouter,
     client: BoeClient,

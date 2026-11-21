@@ -40,7 +40,15 @@ NEW_TOOL_NAMES = {
     "compare_article_versions",
     "get_article_history",
 }
-TOOL_NAMES = OLD_TOOL_NAMES | NEW_TOOL_NAMES
+TREND_TOOL_NAMES = {
+    "legislation_over_time",
+    "top_departments",
+    "compare_topics",
+    "explain_spike",
+    "most_amended_laws",
+}
+STRUCTURE_TOOL_NAMES = {"get_law_structure"}
+TOOL_NAMES = OLD_TOOL_NAMES | NEW_TOOL_NAMES | TREND_TOOL_NAMES | STRUCTURE_TOOL_NAMES
 MAX_DESCRIPTION_WORDS = 120
 
 Loader = Callable[[str], bytes]
@@ -96,7 +104,7 @@ def ley_40_routes(
 # --- Discovery: what the model sees ---------------------------------------------------------
 
 
-async def test_server_exposes_exactly_the_eight_tools(tools: dict[str, Tool]) -> None:
+async def test_server_exposes_exactly_the_expected_tools(tools: dict[str, Tool]) -> None:
     assert set(tools) == TOOL_NAMES
 
 

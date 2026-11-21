@@ -5,7 +5,7 @@
 recorded in ``tests/fixtures/boe/texto_indice_*.json`` (the authority on what titles and block
 ids look like); the second half builds small synthetic indexes for the rules the fixtures
 cannot show. Only the public interface is used: no canonical form and no similarity score is
-asserted beyond what the spec states.
+asserted beyond the rules the tests spell out.
 """
 
 from __future__ import annotations
@@ -181,7 +181,7 @@ def test_real_index_query_finds_the_expected_block(
 
 
 def test_real_exact_article_beats_the_range_that_also_contains_it(index_of: IndexLoader) -> None:
-    # Ambiguity in the spec: "Artículo 163 quater" is both its own block and inside the range
+    # "Artículo 163 quater" is both its own block and inside the range
     # block "Artículos 163 bis a 163 quáter". The exact title is the more specific answer.
     index = index_of("iva")
 
@@ -317,8 +317,8 @@ def test_real_bare_provision_type_with_several_blocks_is_not_a_unique_hit(
 def test_real_preamble_with_two_untitled_candidates_still_resolves_to_the_preamble(
     index_of: IndexLoader,
 ) -> None:
-    # The IVA index lists both `preambulo` and `pr` with empty titles. The spec allows either
-    # a single hit or an ambiguity, but the `preambulo` block must be in the answer.
+    # The IVA index lists both `preambulo` and `pr` with empty titles. Either a single hit
+    # or an ambiguity is acceptable, but the `preambulo` block must be in the answer.
     result = locate(index_of("iva"), "preámbulo")
 
     assert result.outcome in ("found", "ambiguous")
@@ -1083,7 +1083,7 @@ def test_locate_result_is_frozen() -> None:
     assert dataclasses.is_dataclass(result)
 
 
-# === Review findings: suffix family, thousands, trailing context, block ids, speed ===========
+# === Edge cases: suffix family, thousands, trailing context, block ids, speed ===========
 
 
 _IVA_163_FAMILY = [

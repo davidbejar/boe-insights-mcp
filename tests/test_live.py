@@ -16,6 +16,7 @@ from boe_insights_mcp.schemas import (
     ArticleHistoryResult,
     CompareArticleVersionsResult,
     LawOverview,
+    LawStructureResult,
     ReadArticleResult,
     ResolveReferenceResult,
     SearchLegislationResult,
@@ -167,3 +168,82 @@ async def test_live_article_of_a_wholly_repealed_law_reads_as_repealed(mcp: Clie
     assert article.state == "repealed"
     assert article.law_repealed is True
     assert article.text
+
+
+async def test_live_trend_tools_share_one_catalogue_download(mcp: Client[Any]) -> None:
+    # One test for all five tools: the first call downloads the whole catalogue (3 large
+    # requests), the others reuse it, so the BOE is asked as little as possible.
+    window = {"from_date": "2015-01-01", "to_date": "2024-12-31"}
+
+    over_time = (
+        await mcp.call_tool("legislation_over_time", {"rank": "real_decreto_ley", **window})
+    ).structured_content
+    assert over_time is not None
+    assert over_time["coverage"]["catalogue_size"] > 10000
+    assert len(over_time["series"]) == 10
+    assert over_time["total"] > 50
+
+    departments = (
+        await mcp.call_tool("top_departments", {"scope": "state", **window, "limit": 3})
+    ).structured_content
+    assert departments is not None
+    assert len(departments["departments"]) == 3
+
+    compared = (
+        await mcp.call_tool(
+            "compare_topics",
+            {
+                "topics": [
+                    {"name": "teletrabajo", "title": "teletrabajo"},
+                    {"name": "datos", "title": "protección de datos"},
+                ],
+                **window,
+            },
+        )
+    ).structured_content
+    assert compared is not None
+    assert [t["name"] for t in compared["topics"]] == ["teletrabajo", "datos"]
+
+    spike = (await mcp.call_tool("explain_spike", {"period_key": "2020"})).structured_content
+    assert spike is not None
+    assert spike["found"] is True
+    assert spike["count"] > 100
+
+    amended = (
+        await mcp.call_tool(
+            "most_amended_laws", {"title": "protección de datos", "max_laws": 3, **window}
+        )
+    ).structured_content
+    assert amended is not None
+    assert amended["examined"] <= 3
+    assert amended["candidates"] >= 1
+
+
+async def test_live_law_structure_of_ley_40_2015_in_headings_mode(mcp: Client[Any]) -> None:
+    # One whole-law request (about 0.7 MB) plus the metadata.
+    result = await mcp.call_tool("get_law_structure", {"law_id": LEY_40, "detail": "headings"})
+
+    page = LawStructureResult.model_validate(result.structured_content)
+    assert page.entries[0].label == "TÍTULO PRELIMINAR"
+    assert page.counts["article"] > 100  # counts cover the articles that headings mode leaves out
+    assert {e.kind for e in page.entries} <= {
+        "preamble",
+        "book",
+        "title",
+        "chapter",
+        "section",
+        "subsection",
+        "group",
+        "annex",
+        "other",
+    }
+
+
+async def test_live_overview_of_an_asturian_law_names_the_regional_gazette(
+    mcp: Client[Any],
+) -> None:
+    result = await mcp.call_tool("get_law_overview", {"law_id": "BOE-A-2026-23272"})
+
+    overview = LawOverview.model_validate(result.structured_content)
+    assert overview.first_published is not None
+    assert (overview.first_published.gazette, overview.first_published.number) == ("BOPA", "206")

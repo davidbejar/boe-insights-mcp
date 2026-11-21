@@ -42,6 +42,7 @@ from boe_insights_mcp.schemas import (
     AmendmentSummary,
     CodeMatch,
     FindCodesResult,
+    FirstPublication,
     LawBrief,
     LawOverview,
     LawStatus,
@@ -52,6 +53,7 @@ from boe_insights_mcp.schemas import (
     SearchLegislationResult,
     YearCount,
 )
+from boe_insights_mcp.structure import parse_publication_note
 from boe_insights_mcp.versions import repeal_date, repeal_note, repeal_version_date
 
 __all__ = [
@@ -59,12 +61,15 @@ __all__ = [
     "CodeKind",
     "RankFilter",
     "ScopeFilter",
+    "brief",
     "derive_status",
     "find_codes",
     "get_amendment_history",
     "get_law_overview",
+    "rank_code",
     "relation_group",
     "resolve_reference",
+    "scope_code",
     "search_legislation",
 ]
 
@@ -104,6 +109,7 @@ _RANK_CODES: dict[RankFilter, str] = {
 }
 _SCOPE_CODES: dict[ScopeFilter, str | None] = {"state": "1", "regional": "2", "any": None}
 _STATE_SCOPE_CODE = "1"
+_REGIONAL_SCOPE_CODE = "2"
 
 MAX_LIMIT = 50
 _MAX_CANDIDATES = 10
@@ -147,6 +153,20 @@ def _brief(law: LawSummary) -> LawBrief:
         validity_exhausted=law.validity_exhausted,
         url=law.html_url,
     )
+
+
+# The compact record is public because the trend tools return the same one (``trends``).
+brief = _brief
+
+
+def rank_code(rank: RankFilter) -> str:
+    """The BOE rank code of a ``RankFilter`` value, for filtering hits locally."""
+    return _RANK_CODES[rank]
+
+
+def scope_code(scope: ScopeFilter) -> str | None:
+    """The BOE scope code of a ``ScopeFilter`` value; ``None`` for ``any``."""
+    return _SCOPE_CODES[scope]
 
 
 def _newest_update(laws: Iterable[LawSummary]) -> datetime | None:
@@ -692,6 +712,35 @@ async def _fetch_law(client: BoeClient, law_id: str) -> _LawData:
     return _LawData(metadata.result(), analysis.result(), *note.result())
 
 
+def _first_publication(metadata: LawMetadata, analysis: LawAnalysis) -> FirstPublication | None:
+    """Where a regional law was first published, or ``None`` (state laws and unknown cases)."""
+    # Two cases, both from api-notes, third probe, "Regional laws and publication dates". A law
+    # with a regional-gazette identifier (``DOGC-f-``, ``BOJA-b-``...) *is* the regional
+    # publication: its metadata already names that gazette and carries its date, and there is no
+    # BOE reprint. A regional law reprinted in the BOE (``BOE-A-`` with scope code 2) has the BOE
+    # reprint date in the metadata, which can be decades after the regional one, and only a note
+    # in the analysis says where it first appeared. That date matters because it, not the
+    # reprint, governs entry into force. State laws have no earlier publication.
+    if not metadata.identifier.startswith("BOE-"):
+        if metadata.gazette is None or metadata.published_on is None:
+            return None
+        # The abbreviation is the identifier's own prefix (``BOJA-b-2021-90434`` is the BOJA);
+        # the metadata only carries the full name.
+        return FirstPublication(
+            gazette=metadata.identifier.partition("-")[0],
+            gazette_name=metadata.gazette,
+            number=metadata.gazette_number,
+            date=metadata.published_on,
+        )
+    if metadata.identifier.startswith("BOE-A-") and (
+        metadata.scope is not None and metadata.scope.code == _REGIONAL_SCOPE_CODE
+    ):
+        note = parse_publication_note(analysis.notes)
+        if note is not None:
+            return FirstPublication(gazette=note.gazette, number=note.number, date=note.date)
+    return None
+
+
 async def get_law_overview(
     client: BoeClient,
     law_id: str,
@@ -740,6 +789,7 @@ async def get_law_overview(
         scope=brief.scope,
         enacted_on=metadata.enacted_on,
         published_on=metadata.published_on,
+        first_published=_first_publication(metadata, analysis),
         effective_from=metadata.effective_from,
         status=status,
         status_note=note,

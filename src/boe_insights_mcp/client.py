@@ -24,7 +24,7 @@ import re
 import time
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from types import TracebackType
 from typing import Literal, Self, TypeVar, get_args
 from urllib.parse import quote
@@ -52,7 +52,7 @@ from boe_insights_mcp.models import (
     as_list,
 )
 from boe_insights_mcp.ratelimit import RateLimiter
-from boe_insights_mcp.textparse import parse_block
+from boe_insights_mcp.textparse import parse_block, parse_full_text
 
 __all__ = [
     "ANALYSIS_TTL",
@@ -60,6 +60,7 @@ __all__ = [
     "BASE_URL",
     "DEFAULT_MAX_RESPONSE_BYTES",
     "DEFAULT_USER_AGENT",
+    "FULL_TEXT_TTL",
     "INITIAL_NOTE_TTL",
     "METADATA_TTL",
     "SEARCH_TTL",
@@ -90,6 +91,10 @@ TEXT_BLOCK_TTL = 6 * 3600.0
 # is part of the cache key, so a block fetched with it can be kept for a long time.
 TEXT_BLOCK_VERSIONED_TTL = 30 * 24 * 3600.0
 INITIAL_NOTE_TTL = 6 * 3600.0
+# The whole-law text (up to 3 MB for the Código Civil) is what the table of contents is built
+# from. Like the other per-law data it can change when the law is amended, so it gets the same
+# six hours; there is no per-block revision date to key it on.
+FULL_TEXT_TTL = 6 * 3600.0
 # The largest response body accepted. The biggest real one seen is the 763 KB Código Civil index
 # (api-notes 6.1); a whole-law ``/texto`` can reach several MB, so the limit is generous. It
 # exists so that a hostile or broken server cannot make us hold an unbounded body in memory.
@@ -108,6 +113,8 @@ AuxiliaryTable = Literal[
 _JSON = "application/json"
 # The block endpoint answers HTTP 400 to a JSON ``Accept`` (api-notes 6).
 _XML = "application/xml"
+# Key of the one entry that is not a response body: when the catalogue pages were downloaded.
+_CATALOGUE_STAMP_KEY = "boe-insights-mcp:catalogue-downloaded-at"
 # Real block ids contain dots (``a51ter.``, ``arts.1863bisa1873bis.``; api-notes 6.1) so dots are
 # allowed, but only these characters: nothing that could end the path segment, start a query or
 # fragment, or be decoded into something else. ``.`` and ``..`` alone are refused separately
@@ -122,7 +129,10 @@ _NO_NOTE = b"boe-insights-mcp: no initial note"
 # still cut it short.
 _MAX_RETRY_AFTER = 60.0
 _JITTER_FRACTION = 0.25
-_MAX_LIMIT = 1000
+# The largest page ``search_laws`` accepts. The API honours up to 10 000 (api-notes, third probe,
+# "Bulk download"), but a 5000-record page is 6.7 MB, a quarter of the response cap, which keeps
+# the catalogue crawl well inside it.
+_MAX_LIMIT = 5000
 _RETRY_AFTER_SECONDS = re.compile(r"[0-9]+")
 # Only the shape ``<status>...<text>MESSAGE</text>`` is read from error bodies (api-notes 2, 9).
 _ERROR_TEXT = re.compile(r"<status>.*?<text>([^<]*)</text>", re.DOTALL)
@@ -348,9 +358,18 @@ class BoeClient:
         self._cache_hits = 0
 
     async def search_laws(
-        self, query: str | None = None, *, offset: int = 0, limit: int = 50
+        self,
+        query: str | None = None,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        ttl: float | None = None,
     ) -> list[LawSummary]:
-        """Search consolidated legislation; ``query`` comes from ``build_search_query``."""
+        """Search consolidated legislation; ``query`` comes from ``build_search_query``.
+
+        ``ttl`` overrides how long the response stays cached (default ``SEARCH_TTL``); the
+        catalogue download uses it to keep its large pages for a day.
+        """
         if not 1 <= limit <= _MAX_LIMIT:
             raise ValueError(f"limit must be between 1 and {_MAX_LIMIT}")
         if offset < 0:
@@ -359,7 +378,10 @@ class BoeClient:
         if query is not None:
             params["query"] = query
         return await self._get(
-            "legislacion-consolidada", params, SEARCH_TTL, _from_envelope(_build_summaries)
+            "legislacion-consolidada",
+            params,
+            SEARCH_TTL if ttl is None else ttl,
+            _from_envelope(_build_summaries),
         )
 
     async def get_law_metadata(self, law_id: str) -> LawMetadata:
@@ -371,6 +393,35 @@ class BoeClient:
         """Return the subjects and amendment references of one law."""
         path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/analisis"
         return await self._get(path, None, ANALYSIS_TTL, _from_envelope(_build_analysis))
+
+    async def read_catalogue_stamp(self) -> datetime | None:
+        """When the cached catalogue pages were downloaded, or ``None`` when no stamp is cached.
+
+        The catalogue store writes the stamp with :meth:`write_catalogue_stamp` after a
+        download, so that a restarted process can tell cached pages from fresh ones.
+        """
+        raw = await self._cache.get(_CATALOGUE_STAMP_KEY)
+        if raw is None:
+            return None
+        try:
+            stamp = datetime.fromisoformat(raw.decode("ascii"))
+        except (UnicodeDecodeError, ValueError):
+            return None  # a damaged entry is the same as no entry
+        return stamp if stamp.tzinfo is not None else None
+
+    async def write_catalogue_stamp(self, when: datetime, ttl: float) -> None:
+        """Cache the time of a catalogue download for ``ttl`` seconds."""
+        await self._cache.set(_CATALOGUE_STAMP_KEY, when.isoformat().encode("ascii"), ttl)
+
+    async def has_cached_analysis(self, law_id: str) -> bool:
+        """Whether the analysis of ``law_id`` is in the cache right now; sends no request.
+
+        ``most_amended_laws`` uses it to let already-cached analyses through for free.
+        """
+        # Only presence is checked, not that the body still parses: if a stale body is found
+        # later, ``get_law_analysis`` drops it and refetches, which is a rare, harmless miss.
+        path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/analisis"
+        return await self._cache.get(self._cache_key(path, None, _JSON, None)) is not None
 
     async def get_text_index(self, law_id: str) -> list[IndexEntry]:
         """Return the block index of one law's text, in document order."""
@@ -394,6 +445,16 @@ class BoeClient:
             accept=_XML,
             revision=updated_on,
         )
+
+    async def get_full_text(self, law_id: str) -> list[Block]:
+        """Return every block of a law's text with all its versions, in document order.
+
+        One request for the whole law (``/texto``), which is the only place that carries the
+        heading texts (api-notes, third probe, "Text structure"). The response can be several
+        MB, so it counts against the response size cap like every other call.
+        """
+        path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/texto"
+        return await self._get(path, None, FULL_TEXT_TTL, parse_full_text, accept=_XML)
 
     async def get_initial_note(self, law_id: str) -> Block | None:
         """Return the law's initial note (block ``no``), or ``None`` when it has none.

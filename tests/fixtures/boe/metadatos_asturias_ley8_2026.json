@@ -1,0 +1,40 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "fecha_actualizacion": "20261106T104119Z",
+            "identificador": "BOE-A-2026-23272",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8150",
+                "texto": "Comunidad Aut\u00f3noma del Principado de Asturias"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20261015",
+            "numero_oficial": "8\/2026",
+            "titulo": "Ley del Principado de Asturias 8\/2026, de 15 de octubre, de Infancia y Adolescencia.",
+            "diario": "Bolet\u00edn Oficial del Estado",
+            "fecha_publicacion": "20261106",
+            "diario_numero": "277",
+            "fecha_vigencia": "20261123",
+            "estatus_derogacion": "N",
+            "estatus_anulacion": "N",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_eli": "https:\/\/www.boe.es\/eli\/es-as\/l\/2026\/10\/15\/8",
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=BOE-A-2026-23272"
+        }
+    ]
+}

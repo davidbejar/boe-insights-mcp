@@ -1,7 +1,7 @@
 """Contract tests for the text endpoints of ``boe_insights_mcp.client``.
 
-Covers ``get_text_index``, ``get_text_block`` and ``get_initial_note`` (spec increment 2,
-sections 3 and 7). Everything runs against recorded fixtures through respx; no real sleeping.
+Covers ``get_text_index``, ``get_text_block`` and ``get_initial_note``.
+Everything runs against recorded fixtures through respx; no real sleeping.
 """
 
 from __future__ import annotations
