@@ -1,0 +1,822 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "bloque": [
+                {
+                    "id": "preambulo",
+                    "titulo": "",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/preambulo"
+                },
+                {
+                    "id": "fi",
+                    "titulo": "",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/fi"
+                },
+                {
+                    "id": "codigocivil",
+                    "titulo": "CÓDIGO CIVIL",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/codigocivil"
+                },
+                {
+                    "id": "tpreliminar",
+                    "titulo": "TÍTULO PRELIMINAR",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tpreliminar"
+                },
+                {
+                    "id": "ci",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/ci"
+                },
+                {
+                    "id": "a1",
+                    "titulo": "Art 1",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/a1"
+                },
+                {
+                    "id": "art2",
+                    "titulo": "Art 2",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art2"
+                },
+                {
+                    "id": "cii",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cii"
+                },
+                {
+                    "id": "art3",
+                    "titulo": "Art 3",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art3"
+                },
+                {
+                    "id": "art4",
+                    "titulo": "Art 4",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art4"
+                },
+                {
+                    "id": "art5",
+                    "titulo": "Art 5",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art5"
+                },
+                {
+                    "id": "ciii",
+                    "titulo": "CAPÍTULO III",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/ciii"
+                },
+                {
+                    "id": "art6",
+                    "titulo": "Art 6",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art6"
+                },
+                {
+                    "id": "art7",
+                    "titulo": "Art 7",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art7"
+                },
+                {
+                    "id": "civ",
+                    "titulo": "CAPÍTULO IV",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/civ"
+                },
+                {
+                    "id": "art8",
+                    "titulo": "Art 8",
+                    "fecha_actualizacion": "20000108",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art8"
+                },
+                {
+                    "id": "art9",
+                    "titulo": "Art 9",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art9"
+                },
+                {
+                    "id": "art10",
+                    "titulo": "Art 10",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art10"
+                },
+                {
+                    "id": "art11",
+                    "titulo": "Art 11",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art11"
+                },
+                {
+                    "id": "art12",
+                    "titulo": "Art 12",
+                    "fecha_actualizacion": "20000108",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art12"
+                },
+                {
+                    "id": "cv",
+                    "titulo": "CAPÍTULO V",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cv"
+                },
+                {
+                    "id": "art13",
+                    "titulo": "Art 13",
+                    "fecha_actualizacion": "19740709",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art13"
+                },
+                {
+                    "id": "art14",
+                    "titulo": "Art 14",
+                    "fecha_actualizacion": "19901018",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art14"
+                },
+                {
+                    "id": "art15",
+                    "titulo": "Art 15",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art15"
+                },
+                {
+                    "id": "art16",
+                    "titulo": "Art 16",
+                    "fecha_actualizacion": "19901018",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art16"
+                },
+                {
+                    "id": "lprimero",
+                    "titulo": "LIBRO PRIMERO",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/lprimero"
+                },
+                {
+                    "id": "tprimero",
+                    "titulo": "TÍTULO PRIMERO",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tprimero"
+                },
+                {
+                    "id": "art17",
+                    "titulo": "Art 17",
+                    "fecha_actualizacion": "19901218",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art17"
+                },
+                {
+                    "id": "art18",
+                    "titulo": "Art 18",
+                    "fecha_actualizacion": "19901218",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art18"
+                },
+                {
+                    "id": "art19",
+                    "titulo": "Art 19",
+                    "fecha_actualizacion": "20150729",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art19"
+                },
+                {
+                    "id": "art20",
+                    "titulo": "Art 20",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art20"
+                },
+                {
+                    "id": "art21",
+                    "titulo": "Art 21",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art21"
+                },
+                {
+                    "id": "art22",
+                    "titulo": "Art 22",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art22"
+                },
+                {
+                    "id": "art23",
+                    "titulo": "Art 23",
+                    "fecha_actualizacion": "20150625",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art23"
+                },
+                {
+                    "id": "art24",
+                    "titulo": "Art 24",
+                    "fecha_actualizacion": "20220406",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art24"
+                },
+                {
+                    "id": "art25",
+                    "titulo": "Art 25",
+                    "fecha_actualizacion": "20021009",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art25"
+                },
+                {
+                    "id": "art26",
+                    "titulo": "Art 26",
+                    "fecha_actualizacion": "20220406",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art26"
+                },
+                {
+                    "id": "art27",
+                    "titulo": "Art 27",
+                    "fecha_actualizacion": "19540716",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art27"
+                },
+                {
+                    "id": "art28",
+                    "titulo": "Art 28",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art28"
+                },
+                {
+                    "id": "tii",
+                    "titulo": "TÍTULO II",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tii"
+                },
+                {
+                    "id": "cprimero-2",
+                    "titulo": "CAPÍTULO PRIMERO",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cprimero-2"
+                },
+                {
+                    "id": "art29",
+                    "titulo": "Art 29",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art29"
+                },
+                {
+                    "id": "art30",
+                    "titulo": "Art 30",
+                    "fecha_actualizacion": "20110722",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art30"
+                },
+                {
+                    "id": "art31",
+                    "titulo": "Art 31",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art31"
+                },
+                {
+                    "id": "art32",
+                    "titulo": "Art 32",
+                    "fecha_actualizacion": "19831026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art32"
+                },
+                {
+                    "id": "art33",
+                    "titulo": "Art 33",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art33"
+                },
+                {
+                    "id": "art34",
+                    "titulo": "Art 34",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art34"
+                },
+                {
+                    "id": "cii-2",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cii-2"
+                },
+                {
+                    "id": "art35",
+                    "titulo": "Art 35",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art35"
+                },
+                {
+                    "id": "art36",
+                    "titulo": "Art 36",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art36"
+                },
+                {
+                    "id": "art37",
+                    "titulo": "Art 37",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art37"
+                },
+                {
+                    "id": "art38",
+                    "titulo": "Art 38",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art38"
+                },
+                {
+                    "id": "art39",
+                    "titulo": "Art 39",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art39"
+                },
+                {
+                    "id": "tiii",
+                    "titulo": "TÍTULO III",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tiii"
+                },
+                {
+                    "id": "art40",
+                    "titulo": "Art 40",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art40"
+                },
+                {
+                    "id": "art41",
+                    "titulo": "Art 41",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art41"
+                },
+                {
+                    "id": "tiv",
+                    "titulo": "TÍTULO IV",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tiv"
+                },
+                {
+                    "id": "cprimero-3",
+                    "titulo": "CAPÍTULO PRIMERO",
+                    "fecha_actualizacion": "19810720",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cprimero-3"
+                },
+                {
+                    "id": "sprimera",
+                    "titulo": "Sección primera",
+                    "fecha_actualizacion": "19580425",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/sprimera"
+                },
+                {
+                    "id": "art42",
+                    "titulo": "Art 42",
+                    "fecha_actualizacion": "19810720",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art42"
+                },
+                {
+                    "id": "ssegunda",
+                    "titulo": "Sección segunda",
+                    "fecha_actualizacion": "19580425",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/ssegunda"
+                },
+                {
+                    "id": "stercera",
+                    "titulo": "Sección tercera",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/stercera"
+                },
+                {
+                    "id": "scuarta",
+                    "titulo": "Sección cuarta",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/scuarta"
+                },
+                {
+                    "id": "squinta",
+                    "titulo": "Sección quinta",
+                    "fecha_actualizacion": "19580425",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/squinta"
+                },
+                {
+                    "id": "cvi",
+                    "titulo": "CAPÍTULO VI",
+                    "fecha_actualizacion": "19810720",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cvi"
+                },
+                {
+                    "id": "cvii",
+                    "titulo": "CAPÍTULO VII",
+                    "fecha_actualizacion": "19810720",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cvii"
+                },
+                {
+                    "id": "cviii",
+                    "titulo": "CAPÍTULO VIII",
+                    "fecha_actualizacion": "19810720",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cviii"
+                },
+                {
+                    "id": "cix",
+                    "titulo": "CAPÍTULO IX",
+                    "fecha_actualizacion": "19810720",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cix"
+                },
+                {
+                    "id": "a9",
+                    "titulo": "Art 94 bis",
+                    "fecha_actualizacion": "20211216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/a9"
+                },
+                {
+                    "id": "cx",
+                    "titulo": "CAPÍTULO X",
+                    "fecha_actualizacion": "19810720",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cx"
+                },
+                {
+                    "id": "cxi",
+                    "titulo": "CAPÍTULO XI",
+                    "fecha_actualizacion": "20030930",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cxi"
+                },
+                {
+                    "id": "tv",
+                    "titulo": "TÍTULO V",
+                    "fecha_actualizacion": "19810519",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tv"
+                },
+                {
+                    "id": "as127a130",
+                    "titulo": "Arts 127 a 130",
+                    "fecha_actualizacion": "20000108",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/as127a130"
+                },
+                {
+                    "id": "tvi",
+                    "titulo": "TÍTULO VI",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tvi"
+                },
+                {
+                    "id": "tvii",
+                    "titulo": "TÍTULO VII",
+                    "fecha_actualizacion": "19810519",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tvii"
+                },
+                {
+                    "id": "a172ter",
+                    "titulo": "Art 172 ter",
+                    "fecha_actualizacion": "20150729",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/a172ter"
+                },
+                {
+                    "id": "tviii",
+                    "titulo": "TÍTULO VIII",
+                    "fecha_actualizacion": "19391019",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tviii"
+                },
+                {
+                    "id": "csegundo",
+                    "titulo": "CAPÍTULO SEGUNDO",
+                    "fecha_actualizacion": "19391019",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/csegundo"
+                },
+                {
+                    "id": "ctercero",
+                    "titulo": "CAPÍTULO TERCERO",
+                    "fecha_actualizacion": "20150703",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/ctercero"
+                },
+                {
+                    "id": "tix",
+                    "titulo": "TÍTULO IX",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tix"
+                },
+                {
+                    "id": "s1",
+                    "titulo": "Sección 1ª",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/s1"
+                },
+                {
+                    "id": "tx",
+                    "titulo": "TÍTULO X",
+                    "fecha_actualizacion": "19831026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tx"
+                },
+                {
+                    "id": "tx-5",
+                    "titulo": "TÍTULO XI",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tx-5"
+                },
+                {
+                    "id": "s1-4",
+                    "titulo": "Subsección 1ª",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/s1-4"
+                },
+                {
+                    "id": "tx-6",
+                    "titulo": "TÍTULO XII",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tx-6"
+                },
+                {
+                    "id": "arts307al313",
+                    "titulo": "Arts 307 al 313",
+                    "fecha_actualizacion": "19831026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/arts307al313"
+                },
+                {
+                    "id": "lsegundo",
+                    "titulo": "LIBRO SEGUNDO",
+                    "fecha_actualizacion": "20211216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/lsegundo"
+                },
+                {
+                    "id": "disposicionpreliminar",
+                    "titulo": "Disposición preliminar",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/disposicionpreliminar"
+                },
+                {
+                    "id": "dp",
+                    "titulo": "Disposiciones preliminares",
+                    "fecha_actualizacion": "20211216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/dp"
+                },
+                {
+                    "id": "disposiciones",
+                    "titulo": "Disposiciones comunes a los tres capítulos anteriores",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/disposiciones"
+                },
+                {
+                    "id": "disposiciongeneral",
+                    "titulo": "Disposición general",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/disposiciongeneral"
+                },
+                {
+                    "id": "ssexta",
+                    "titulo": "Sección sexta",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/ssexta"
+                },
+                {
+                    "id": "sseptima",
+                    "titulo": "Sección séptima",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/sseptima"
+                },
+                {
+                    "id": "cunico",
+                    "titulo": "CAPÍTULO ÚNICO",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cunico"
+                },
+                {
+                    "id": "liii",
+                    "titulo": "LIBRO III",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/liii"
+                },
+                {
+                    "id": "soctava",
+                    "titulo": "Sección octava",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/soctava"
+                },
+                {
+                    "id": "snovena",
+                    "titulo": "Sección novena",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/snovena"
+                },
+                {
+                    "id": "sdecima",
+                    "titulo": "Sección décima",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/sdecima"
+                },
+                {
+                    "id": "sundecima",
+                    "titulo": "Sección undécima",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/sundecima"
+                },
+                {
+                    "id": "a",
+                    "titulo": "Art. 958 bis",
+                    "fecha_actualizacion": "20230301",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/a"
+                },
+                {
+                    "id": "liv",
+                    "titulo": "LIBRO IV",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/liv"
+                },
+                {
+                    "id": "delaimputaciondepagos",
+                    "titulo": "De la imputación de pagos",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/delaimputaciondepagos"
+                },
+                {
+                    "id": "delpagoporcesiondebienes",
+                    "titulo": "Del pago por cesión de bienes",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/delpagoporcesiondebienes"
+                },
+                {
+                    "id": "delofrecimientodelpagoydelaconsignacion",
+                    "titulo": "Del ofrecimiento del pago y de la consignación",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/delofrecimientodelpagoydelaconsignacion"
+                },
+                {
+                    "id": "disposicionesgenerales",
+                    "titulo": "Disposiciones generales",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/disposicionesgenerales"
+                },
+                {
+                    "id": "delosdocumentosprivados",
+                    "titulo": "De los documentos privados",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/delosdocumentosprivados"
+                },
+                {
+                    "id": "art.1231a1253",
+                    "titulo": "Art. 1231 A 1253",
+                    "fecha_actualizacion": "20000108",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/art.1231a1253"
+                },
+                {
+                    "id": "S1",
+                    "titulo": "§ 1",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/S1"
+                },
+                {
+                    "id": "txiii",
+                    "titulo": "TÍTULO XIII",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/txiii"
+                },
+                {
+                    "id": "txiv",
+                    "titulo": "TÍTULO XIV",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/txiv"
+                },
+                {
+                    "id": "txv",
+                    "titulo": "TÍTULO XV",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/txv"
+                },
+                {
+                    "id": "arts.1863bisa1873bis.",
+                    "titulo": "Arts. 1863 bis a 1873 bis.",
+                    "fecha_actualizacion": "19541218",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/arts.1863bisa1873bis."
+                },
+                {
+                    "id": "txvi",
+                    "titulo": "TÍTULO XVI",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/txvi"
+                },
+                {
+                    "id": "txvii",
+                    "titulo": "TÍTULO XVII",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/txvii"
+                },
+                {
+                    "id": "txviii",
+                    "titulo": "TÍTULO XVIII",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/txviii"
+                },
+                {
+                    "id": "df",
+                    "titulo": "DISPOSICIÓN FINAL",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/df"
+                },
+                {
+                    "id": "dt",
+                    "titulo": "DISPOSICIONES TRANSITORIAS",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/dt"
+                },
+                {
+                    "id": "primera",
+                    "titulo": "Primera",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/primera"
+                },
+                {
+                    "id": "segunda",
+                    "titulo": "Segunda",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/segunda"
+                },
+                {
+                    "id": "tercera",
+                    "titulo": "Tercera",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tercera"
+                },
+                {
+                    "id": "cuarta",
+                    "titulo": "Cuarta",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cuarta"
+                },
+                {
+                    "id": "quinta",
+                    "titulo": "Quinta",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/quinta"
+                },
+                {
+                    "id": "sexta",
+                    "titulo": "Sexta",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/sexta"
+                },
+                {
+                    "id": "septima",
+                    "titulo": "Séptima",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/septima"
+                },
+                {
+                    "id": "octava",
+                    "titulo": "Octava",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/octava"
+                },
+                {
+                    "id": "novena",
+                    "titulo": "Novena",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/novena"
+                },
+                {
+                    "id": "decima",
+                    "titulo": "Décima",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/decima"
+                },
+                {
+                    "id": "undecima",
+                    "titulo": "Undécima",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/undecima"
+                },
+                {
+                    "id": "duodecima",
+                    "titulo": "Duodécima",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/duodecima"
+                },
+                {
+                    "id": "decimotercera",
+                    "titulo": "Décimotercera",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/decimotercera"
+                },
+                {
+                    "id": "da",
+                    "titulo": "DISPOSICIONES ADICIONALES",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/da"
+                },
+                {
+                    "id": "primera-2",
+                    "titulo": "Primera",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/primera-2"
+                },
+                {
+                    "id": "segunda-2",
+                    "titulo": "Segunda",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/segunda-2"
+                },
+                {
+                    "id": "tercera-2",
+                    "titulo": "Tercera",
+                    "fecha_actualizacion": "18890725",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/tercera-2"
+                },
+                {
+                    "id": "cuarta-2",
+                    "titulo": "Cuarta",
+                    "fecha_actualizacion": "20210603",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1889-4763/texto/bloque/cuarta-2"
+                }
+            ]
+        }
+    ]
+}

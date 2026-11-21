@@ -1,0 +1,228 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "bloque": [
+                {
+                    "id": "preambulo",
+                    "titulo": "",
+                    "fecha_actualizacion": "19600723",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/preambulo"
+                },
+                {
+                    "id": "ci",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "19600723",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/ci"
+                },
+                {
+                    "id": "aprimero",
+                    "titulo": "Artículo primero",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aprimero"
+                },
+                {
+                    "id": "asegundo",
+                    "titulo": "Artículo segundo",
+                    "fecha_actualizacion": "20130627",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/asegundo"
+                },
+                {
+                    "id": "cii",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/cii"
+                },
+                {
+                    "id": "atercero",
+                    "titulo": "Artículo tercero",
+                    "fecha_actualizacion": "20130627",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/atercero"
+                },
+                {
+                    "id": "acuarto",
+                    "titulo": "Artículo cuarto",
+                    "fecha_actualizacion": "19600723",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/acuarto"
+                },
+                {
+                    "id": "aquinto",
+                    "titulo": "Artículo quinto",
+                    "fecha_actualizacion": "19600723",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aquinto"
+                },
+                {
+                    "id": "asexto",
+                    "titulo": "Artículo sexto",
+                    "fecha_actualizacion": "19600723",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/asexto"
+                },
+                {
+                    "id": "aseptimo",
+                    "titulo": "Artículo séptimo",
+                    "fecha_actualizacion": "20250103",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aseptimo"
+                },
+                {
+                    "id": "aoctavo",
+                    "titulo": "Artículo octavo",
+                    "fecha_actualizacion": "20130627",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aoctavo"
+                },
+                {
+                    "id": "anoveno",
+                    "titulo": "Artículo noveno",
+                    "fecha_actualizacion": "20220615",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/anoveno"
+                },
+                {
+                    "id": "adiez",
+                    "titulo": "Artículo diez",
+                    "fecha_actualizacion": "20261003",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/adiez"
+                },
+                {
+                    "id": "aonce",
+                    "titulo": "Artículo once",
+                    "fecha_actualizacion": "20130627",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aonce"
+                },
+                {
+                    "id": "adoce",
+                    "titulo": "Artículo doce",
+                    "fecha_actualizacion": "20130627",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/adoce"
+                },
+                {
+                    "id": "atrece",
+                    "titulo": "Artículo trece",
+                    "fecha_actualizacion": "20151006",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/atrece"
+                },
+                {
+                    "id": "acatorce",
+                    "titulo": "Artículo catorce",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/acatorce"
+                },
+                {
+                    "id": "aquince",
+                    "titulo": "Artículo quince",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aquince"
+                },
+                {
+                    "id": "adieciseis",
+                    "titulo": "Artículo dieciséis",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/adieciseis"
+                },
+                {
+                    "id": "adiecisiete",
+                    "titulo": "Artículo diecisiete",
+                    "fecha_actualizacion": "20260321",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/adiecisiete"
+                },
+                {
+                    "id": "adieciocho",
+                    "titulo": "Artículo dieciocho",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/adieciocho"
+                },
+                {
+                    "id": "adiecinueve",
+                    "titulo": "Artículo diecinueve",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/adiecinueve"
+                },
+                {
+                    "id": "aveinte",
+                    "titulo": "Artículo veinte",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aveinte"
+                },
+                {
+                    "id": "aveintiuno",
+                    "titulo": "Artículo veintiuno",
+                    "fecha_actualizacion": "20220615",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aveintiuno"
+                },
+                {
+                    "id": "aveintidos",
+                    "titulo": "Artículo veintidós",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aveintidos"
+                },
+                {
+                    "id": "aveintitres",
+                    "titulo": "Artículo veintitrés",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aveintitres"
+                },
+                {
+                    "id": "ciii",
+                    "titulo": "CAPITULO III",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/ciii"
+                },
+                {
+                    "id": "aveinticuatro",
+                    "titulo": "Artículo veinticuatro",
+                    "fecha_actualizacion": "19990408",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/aveinticuatro"
+                },
+                {
+                    "id": "da",
+                    "titulo": "Dispoosición adicional ",
+                    "fecha_actualizacion": "20130627",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/da"
+                },
+                {
+                    "id": "da-2",
+                    "titulo": "Disposición adicional primera",
+                    "fecha_actualizacion": "20250103",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/da-2"
+                },
+                {
+                    "id": "da-3",
+                    "titulo": "Disposición adicional segunda",
+                    "fecha_actualizacion": "20250103",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/da-3"
+                },
+                {
+                    "id": "da-4",
+                    "titulo": "Disposición adicional tercera",
+                    "fecha_actualizacion": "20261003",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/da-4"
+                },
+                {
+                    "id": "primera",
+                    "titulo": "Disposición transitoria primera",
+                    "fecha_actualizacion": "19600723",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/primera"
+                },
+                {
+                    "id": "segunda",
+                    "titulo": "Disposición transitoria segunda",
+                    "fecha_actualizacion": "19600723",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/segunda"
+                },
+                {
+                    "id": "df",
+                    "titulo": "Disposición final",
+                    "fecha_actualizacion": "19600723",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/df"
+                },
+                {
+                    "id": "firma",
+                    "titulo": "",
+                    "fecha_actualizacion": "19600723",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1960-10906/texto/bloque/firma"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="no" tipo="nota_inicial">
+      <version id_norma="BOE-A-2015-10565" fecha_publicacion="20151002" fecha_vigencia="20161002">
+        <p class="siempreSeVe">Norma derogada, con efectos de 2 de octubre de 2016, por la disposición derogatoria única.2.b) de la Ley 39/2015, de 1 de octubre. <a class="refPost">Ref. BOE-A-2015-10565#ddunica</a>.</p>
+        <p class="siempreSeVe">Téngase en cuenta que la disposición final 7 de la citada ley establece un plazo de dos años desde su entrada en vigor para que produzcan efectos las previsiones relativas al registro electrónico de apoderamientos, registro electrónico, punto de acceso general electrónico de la Administración y archivo único electrónico, y por tanto, hasta ese momento, se mantendrán en vigor los artículos de la presente ley que traten sobre las materias citadas.</p>
+      </version>
+      <version id_norma="BOE-A-2018-12131" fecha_publicacion="20180904" fecha_vigencia="20180904">
+        <p class="siempreSeVe">Norma derogada, con efectos de 2 de octubre de 2016, por la disposición derogatoria única.2.b) de la Ley 39/2015, de 1 de octubre. <a class="refPost">Ref. BOE-A-2015-10565#ddunica</a>.</p>
+        <p class="siempreSeVe">No obstante, hasta que, de acuerdo con lo dispuesto en la disposición final séptima, en la redacción dada por la disposición final 9 del Real Decreto-ley 28/2020, de 22 de septiembre, <a class="refPost">Ref. BOE-A-2020-11043#df-9</a>, produzcan efectos las previsiones relativas al registro electrónico de apoderamientos, registro electrónico, punto de acceso general electrónico de la Administración y archivo único electrónico, que será a partir del día 2 de abril de 2021, se mantendrán en vigor los artículos relativos a las materias mencionadas.</p>
+      </version>
+    </bloque>
+  </data>
+</response>

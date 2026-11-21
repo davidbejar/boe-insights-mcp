@@ -1,0 +1,1182 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "bloque": [
+                {
+                    "id": "preambulo",
+                    "titulo": "",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/preambulo"
+                },
+                {
+                    "id": "tpreliminar",
+                    "titulo": "TÍTULO PRELIMINAR",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/tpreliminar"
+                },
+                {
+                    "id": "a1",
+                    "titulo": "Artículo 1",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a1"
+                },
+                {
+                    "id": "a2",
+                    "titulo": "Artículo 2",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a2"
+                },
+                {
+                    "id": "ti",
+                    "titulo": "TÍTULO I",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/ti"
+                },
+                {
+                    "id": "ci",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/ci"
+                },
+                {
+                    "id": "a3",
+                    "titulo": "Artículo 3",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a3"
+                },
+                {
+                    "id": "a4",
+                    "titulo": "Artículo 4",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a4"
+                },
+                {
+                    "id": "a5",
+                    "titulo": "Artículo 5",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a5"
+                },
+                {
+                    "id": "a6",
+                    "titulo": "Artículo 6",
+                    "fecha_actualizacion": "20180622",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a6"
+                },
+                {
+                    "id": "a7",
+                    "titulo": "Artículo 7",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a7"
+                },
+                {
+                    "id": "a8",
+                    "titulo": "Artículo 8",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a8"
+                },
+                {
+                    "id": "cii",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/cii"
+                },
+                {
+                    "id": "a9",
+                    "titulo": "Artículo 9",
+                    "fecha_actualizacion": "20220629",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a9"
+                },
+                {
+                    "id": "a10",
+                    "titulo": "Artículo 10",
+                    "fecha_actualizacion": "20220629",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a10"
+                },
+                {
+                    "id": "a11",
+                    "titulo": "Artículo 11",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a11"
+                },
+                {
+                    "id": "a12",
+                    "titulo": "Artículo 12",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a12"
+                },
+                {
+                    "id": "tii",
+                    "titulo": "TÍTULO II",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/tii"
+                },
+                {
+                    "id": "ci-2",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/ci-2"
+                },
+                {
+                    "id": "a13",
+                    "titulo": "Artículo 13",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a13"
+                },
+                {
+                    "id": "a14",
+                    "titulo": "Artículo 14",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a14"
+                },
+                {
+                    "id": "a15",
+                    "titulo": "Artículo 15",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a15"
+                },
+                {
+                    "id": "a16",
+                    "titulo": "Artículo 16",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a16"
+                },
+                {
+                    "id": "a17",
+                    "titulo": "Artículo 17",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a17"
+                },
+                {
+                    "id": "a18",
+                    "titulo": "Artículo 18",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a18"
+                },
+                {
+                    "id": "a19",
+                    "titulo": "Artículo 19",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a19"
+                },
+                {
+                    "id": "a20",
+                    "titulo": "Artículo 20",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a20"
+                },
+                {
+                    "id": "a21",
+                    "titulo": "Artículo 21",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a21"
+                },
+                {
+                    "id": "a22",
+                    "titulo": "Artículo 22",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a22"
+                },
+                {
+                    "id": "a23",
+                    "titulo": "Artículo 23",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a23"
+                },
+                {
+                    "id": "a24",
+                    "titulo": "Artículo 24",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a24"
+                },
+                {
+                    "id": "a25",
+                    "titulo": "Artículo 25",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a25"
+                },
+                {
+                    "id": "a26",
+                    "titulo": "Artículo 26",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a26"
+                },
+                {
+                    "id": "a27",
+                    "titulo": "Artículo 27",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a27"
+                },
+                {
+                    "id": "a28",
+                    "titulo": "Artículo 28",
+                    "fecha_actualizacion": "20181206",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a28"
+                },
+                {
+                    "id": "cii-2",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/cii-2"
+                },
+                {
+                    "id": "a29",
+                    "titulo": "Artículo 29",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a29"
+                },
+                {
+                    "id": "a30",
+                    "titulo": "Artículo 30",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a30"
+                },
+                {
+                    "id": "a31",
+                    "titulo": "Artículo 31",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a31"
+                },
+                {
+                    "id": "a32",
+                    "titulo": "Artículo 32",
+                    "fecha_actualizacion": "20220330",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a32"
+                },
+                {
+                    "id": "a33",
+                    "titulo": "Artículo 33",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a33"
+                },
+                {
+                    "id": "tiii",
+                    "titulo": "TÍTULO III",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/tiii"
+                },
+                {
+                    "id": "ci-3",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/ci-3"
+                },
+                {
+                    "id": "a34",
+                    "titulo": "Artículo 34",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a34"
+                },
+                {
+                    "id": "a35",
+                    "titulo": "Artículo 35",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a35"
+                },
+                {
+                    "id": "a36",
+                    "titulo": "Artículo 36",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a36"
+                },
+                {
+                    "id": "cii-3",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/cii-3"
+                },
+                {
+                    "id": "a37",
+                    "titulo": "Artículo 37",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a37"
+                },
+                {
+                    "id": "a38",
+                    "titulo": "Artículo 38",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a38"
+                },
+                {
+                    "id": "a39",
+                    "titulo": "Artículo 39",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a39"
+                },
+                {
+                    "id": "a40",
+                    "titulo": "Artículo 40",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a40"
+                },
+                {
+                    "id": "a41",
+                    "titulo": "Artículo 41",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a41"
+                },
+                {
+                    "id": "a42",
+                    "titulo": "Artículo 42",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a42"
+                },
+                {
+                    "id": "a43",
+                    "titulo": "Artículo 43",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a43"
+                },
+                {
+                    "id": "a44",
+                    "titulo": "Artículo 44",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a44"
+                },
+                {
+                    "id": "a45",
+                    "titulo": "Artículo 45",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a45"
+                },
+                {
+                    "id": "a46",
+                    "titulo": "Artículo 46",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a46"
+                },
+                {
+                    "id": "ciii",
+                    "titulo": "CAPÍTULO III",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/ciii"
+                },
+                {
+                    "id": "a47",
+                    "titulo": "Artículo 47",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a47"
+                },
+                {
+                    "id": "a48",
+                    "titulo": "Artículo 48",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a48"
+                },
+                {
+                    "id": "a49",
+                    "titulo": "Artículo 49",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a49"
+                },
+                {
+                    "id": "a50",
+                    "titulo": "Artículo 50",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a50"
+                },
+                {
+                    "id": "a51",
+                    "titulo": "Artículo 51",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a51"
+                },
+                {
+                    "id": "a52",
+                    "titulo": "Artículo 52",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a52"
+                },
+                {
+                    "id": "tiv",
+                    "titulo": "TÍTULO IV",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/tiv"
+                },
+                {
+                    "id": "ci-4",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/ci-4"
+                },
+                {
+                    "id": "a53",
+                    "titulo": "Artículo 53",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a53"
+                },
+                {
+                    "id": "cii-4",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/cii-4"
+                },
+                {
+                    "id": "s1",
+                    "titulo": "Sección 1",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s1"
+                },
+                {
+                    "id": "a54",
+                    "titulo": "Artículo 54",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a54"
+                },
+                {
+                    "id": "a55",
+                    "titulo": "Artículo 55",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a55"
+                },
+                {
+                    "id": "a56",
+                    "titulo": "Artículo 56",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a56"
+                },
+                {
+                    "id": "a57",
+                    "titulo": "Artículo 57",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a57"
+                },
+                {
+                    "id": "s2",
+                    "titulo": "Sección 2",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s2"
+                },
+                {
+                    "id": "a58",
+                    "titulo": "Artículo 58",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a58"
+                },
+                {
+                    "id": "a59",
+                    "titulo": "Artículo 59",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a59"
+                },
+                {
+                    "id": "a60",
+                    "titulo": "Artículo 60",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a60"
+                },
+                {
+                    "id": "a61",
+                    "titulo": "Artículo 61",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a61"
+                },
+                {
+                    "id": "a62",
+                    "titulo": "Artículo 62",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a62"
+                },
+                {
+                    "id": "a63",
+                    "titulo": "Artículo 63",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a63"
+                },
+                {
+                    "id": "a64",
+                    "titulo": "Artículo 64",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a64"
+                },
+                {
+                    "id": "a65",
+                    "titulo": "Artículo 65",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a65"
+                },
+                {
+                    "id": "s3",
+                    "titulo": "Sección 3",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s3"
+                },
+                {
+                    "id": "a66",
+                    "titulo": "Artículo 66",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a66"
+                },
+                {
+                    "id": "a67",
+                    "titulo": "Artículo 67",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a67"
+                },
+                {
+                    "id": "a68",
+                    "titulo": "Artículo 68",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a68"
+                },
+                {
+                    "id": "a69",
+                    "titulo": "Artículo 69",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a69"
+                },
+                {
+                    "id": "ciii-2",
+                    "titulo": "CAPÍTULO III",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/ciii-2"
+                },
+                {
+                    "id": "a70",
+                    "titulo": "Artículo 70",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a70"
+                },
+                {
+                    "id": "a71",
+                    "titulo": "Artículo 71",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a71"
+                },
+                {
+                    "id": "a72",
+                    "titulo": "Artículo 72",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a72"
+                },
+                {
+                    "id": "a73",
+                    "titulo": "Artículo 73",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a73"
+                },
+                {
+                    "id": "a74",
+                    "titulo": "Artículo 74",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a74"
+                },
+                {
+                    "id": "civ",
+                    "titulo": "CAPÍTULO IV",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/civ"
+                },
+                {
+                    "id": "s1-2",
+                    "titulo": "Sección 1",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s1-2"
+                },
+                {
+                    "id": "a75",
+                    "titulo": "Artículo 75",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a75"
+                },
+                {
+                    "id": "a76",
+                    "titulo": "Artículo 76",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a76"
+                },
+                {
+                    "id": "s2-2",
+                    "titulo": "Sección 2",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s2-2"
+                },
+                {
+                    "id": "a77",
+                    "titulo": "Artículo 77",
+                    "fecha_actualizacion": "20220713",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a77"
+                },
+                {
+                    "id": "a78",
+                    "titulo": "Artículo 78",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a78"
+                },
+                {
+                    "id": "s3-2",
+                    "titulo": "Sección 3",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s3-2"
+                },
+                {
+                    "id": "a79",
+                    "titulo": "Artículo 79",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a79"
+                },
+                {
+                    "id": "a80",
+                    "titulo": "Artículo 80",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a80"
+                },
+                {
+                    "id": "a81",
+                    "titulo": "Artículo 81",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a81"
+                },
+                {
+                    "id": "s4",
+                    "titulo": "Sección 4",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s4"
+                },
+                {
+                    "id": "a82",
+                    "titulo": "Artículo 82",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a82"
+                },
+                {
+                    "id": "a83",
+                    "titulo": "Artículo 83",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a83"
+                },
+                {
+                    "id": "cv",
+                    "titulo": "CAPÍTULO V",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/cv"
+                },
+                {
+                    "id": "s1-3",
+                    "titulo": "Sección 1",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s1-3"
+                },
+                {
+                    "id": "a84",
+                    "titulo": "Artículo 84",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a84"
+                },
+                {
+                    "id": "a85",
+                    "titulo": "Artículo 85",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a85"
+                },
+                {
+                    "id": "a86",
+                    "titulo": "Artículo 86",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a86"
+                },
+                {
+                    "id": "s2-3",
+                    "titulo": "Sección 2",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s2-3"
+                },
+                {
+                    "id": "a87",
+                    "titulo": "Artículo 87",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a87"
+                },
+                {
+                    "id": "a88",
+                    "titulo": "Artículo 88",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a88"
+                },
+                {
+                    "id": "a89",
+                    "titulo": "Artículo 89",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a89"
+                },
+                {
+                    "id": "a90",
+                    "titulo": "Artículo 90",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a90"
+                },
+                {
+                    "id": "a91",
+                    "titulo": "Artículo 91",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a91"
+                },
+                {
+                    "id": "a92",
+                    "titulo": "Artículo 92",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a92"
+                },
+                {
+                    "id": "s3-3",
+                    "titulo": "Sección 3",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s3-3"
+                },
+                {
+                    "id": "a93",
+                    "titulo": "Artículo 93",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a93"
+                },
+                {
+                    "id": "a94",
+                    "titulo": "Artículo 94",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a94"
+                },
+                {
+                    "id": "s4-2",
+                    "titulo": "Sección 4",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s4-2"
+                },
+                {
+                    "id": "a95",
+                    "titulo": "Artículo 95",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a95"
+                },
+                {
+                    "id": "cvi",
+                    "titulo": "CAPÍTULO VI",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/cvi"
+                },
+                {
+                    "id": "a96",
+                    "titulo": "Artículo 96",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a96"
+                },
+                {
+                    "id": "cvii",
+                    "titulo": "CAPÍTULO VII",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/cvii"
+                },
+                {
+                    "id": "a97",
+                    "titulo": "Artículo 97",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a97"
+                },
+                {
+                    "id": "a98",
+                    "titulo": "Artículo 98",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a98"
+                },
+                {
+                    "id": "a99",
+                    "titulo": "Artículo 99",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a99"
+                },
+                {
+                    "id": "a100",
+                    "titulo": "Artículo 100",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a100"
+                },
+                {
+                    "id": "a101",
+                    "titulo": "Artículo 101",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a101"
+                },
+                {
+                    "id": "a102",
+                    "titulo": "Artículo 102",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a102"
+                },
+                {
+                    "id": "a103",
+                    "titulo": "Artículo 103",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a103"
+                },
+                {
+                    "id": "a104",
+                    "titulo": "Artículo 104",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a104"
+                },
+                {
+                    "id": "a105",
+                    "titulo": "Artículo 105",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a105"
+                },
+                {
+                    "id": "tv",
+                    "titulo": "TÍTULO V",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/tv"
+                },
+                {
+                    "id": "ci-5",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/ci-5"
+                },
+                {
+                    "id": "a106",
+                    "titulo": "Artículo 106",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a106"
+                },
+                {
+                    "id": "a107",
+                    "titulo": "Artículo 107",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a107"
+                },
+                {
+                    "id": "a108",
+                    "titulo": "Artículo 108",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a108"
+                },
+                {
+                    "id": "a109",
+                    "titulo": "Artículo 109",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a109"
+                },
+                {
+                    "id": "a110",
+                    "titulo": "Artículo 110",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a110"
+                },
+                {
+                    "id": "a111",
+                    "titulo": "Artículo 111",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a111"
+                },
+                {
+                    "id": "cii-5",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/cii-5"
+                },
+                {
+                    "id": "s1-4",
+                    "titulo": "Sección 1",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s1-4"
+                },
+                {
+                    "id": "a112",
+                    "titulo": "Artículo 112",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a112"
+                },
+                {
+                    "id": "a113",
+                    "titulo": "Artículo 113",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a113"
+                },
+                {
+                    "id": "a114",
+                    "titulo": "Artículo 114",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a114"
+                },
+                {
+                    "id": "a115",
+                    "titulo": "Artículo 115",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a115"
+                },
+                {
+                    "id": "a116",
+                    "titulo": "Artículo 116",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a116"
+                },
+                {
+                    "id": "a117",
+                    "titulo": "Artículo 117",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a117"
+                },
+                {
+                    "id": "a118",
+                    "titulo": "Artículo 118",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a118"
+                },
+                {
+                    "id": "a119",
+                    "titulo": "Artículo 119",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a119"
+                },
+                {
+                    "id": "a120",
+                    "titulo": "Artículo 120",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a120"
+                },
+                {
+                    "id": "s2-4",
+                    "titulo": "Sección 2",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s2-4"
+                },
+                {
+                    "id": "a121",
+                    "titulo": "Artículo 121",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a121"
+                },
+                {
+                    "id": "a122",
+                    "titulo": "Artículo 122",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a122"
+                },
+                {
+                    "id": "s3-4",
+                    "titulo": "Sección 3",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s3-4"
+                },
+                {
+                    "id": "a123",
+                    "titulo": "Artículo 123",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a123"
+                },
+                {
+                    "id": "a124",
+                    "titulo": "Artículo 124",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a124"
+                },
+                {
+                    "id": "s4-3",
+                    "titulo": "Sección 4",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/s4-3"
+                },
+                {
+                    "id": "a125",
+                    "titulo": "Artículo 125",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a125"
+                },
+                {
+                    "id": "a126",
+                    "titulo": "Artículo 126",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a126"
+                },
+                {
+                    "id": "tvi",
+                    "titulo": "TÍTULO VI",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/tvi"
+                },
+                {
+                    "id": "a127",
+                    "titulo": "Artículo 127",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a127"
+                },
+                {
+                    "id": "a128",
+                    "titulo": "Artículo 128",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a128"
+                },
+                {
+                    "id": "a129",
+                    "titulo": "Artículo 129",
+                    "fecha_actualizacion": "20180622",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a129"
+                },
+                {
+                    "id": "a130",
+                    "titulo": "Artículo 130",
+                    "fecha_actualizacion": "20180622",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a130"
+                },
+                {
+                    "id": "a131",
+                    "titulo": "Artículo 131",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a131"
+                },
+                {
+                    "id": "a132",
+                    "titulo": "Artículo 132",
+                    "fecha_actualizacion": "20180622",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a132"
+                },
+                {
+                    "id": "a133",
+                    "titulo": "Artículo 133",
+                    "fecha_actualizacion": "20180622",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/a133"
+                },
+                {
+                    "id": "daprimera",
+                    "titulo": "Disposición adicional primera",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/daprimera"
+                },
+                {
+                    "id": "dasegunda",
+                    "titulo": "Disposición adicional segunda",
+                    "fecha_actualizacion": "20180622",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dasegunda"
+                },
+                {
+                    "id": "datercera",
+                    "titulo": "Disposición adicional tercera",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/datercera"
+                },
+                {
+                    "id": "dacuaa",
+                    "titulo": "Disposición adicional cuarta",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dacuaa"
+                },
+                {
+                    "id": "daquinta",
+                    "titulo": "Disposición adicional quinta",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/daquinta"
+                },
+                {
+                    "id": "da",
+                    "titulo": "Disposición adicional sexta",
+                    "fecha_actualizacion": "20191105",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/da"
+                },
+                {
+                    "id": "da-2",
+                    "titulo": "Disposición adicional séptima",
+                    "fecha_actualizacion": "20220629",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/da-2"
+                },
+                {
+                    "id": "da-3",
+                    "titulo": "Disposición adicional octava",
+                    "fecha_actualizacion": "20221019",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/da-3"
+                },
+                {
+                    "id": "da-4",
+                    "titulo": "Disposición adicional novena",
+                    "fecha_actualizacion": "20241106",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/da-4"
+                },
+                {
+                    "id": "dtprimera",
+                    "titulo": "Disposición transitoria primera",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dtprimera"
+                },
+                {
+                    "id": "dtsegunda",
+                    "titulo": "Disposición transitoria segunda",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dtsegunda"
+                },
+                {
+                    "id": "dttercera",
+                    "titulo": "Disposición transitoria tercera",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dttercera"
+                },
+                {
+                    "id": "dtcuaa",
+                    "titulo": "Disposición transitoria cuarta",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dtcuaa"
+                },
+                {
+                    "id": "dtquinta",
+                    "titulo": "Disposición transitoria quinta",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dtquinta"
+                },
+                {
+                    "id": "ddunica",
+                    "titulo": "Disposición derogatoria única",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/ddunica"
+                },
+                {
+                    "id": "dfprimera",
+                    "titulo": "Disposición final primera",
+                    "fecha_actualizacion": "20180622",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dfprimera"
+                },
+                {
+                    "id": "dfsegunda",
+                    "titulo": "Disposición final segunda",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dfsegunda"
+                },
+                {
+                    "id": "dftercera",
+                    "titulo": "Disposición final tercera",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dftercera"
+                },
+                {
+                    "id": "dfcuaa",
+                    "titulo": "Disposición final cuarta",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dfcuaa"
+                },
+                {
+                    "id": "dfquinta",
+                    "titulo": "Disposición final quinta",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dfquinta"
+                },
+                {
+                    "id": "dfsexta",
+                    "titulo": "Disposición final sexta",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dfsexta"
+                },
+                {
+                    "id": "dfseptima",
+                    "titulo": "Disposición final séptima",
+                    "fecha_actualizacion": "20210710",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/dfseptima"
+                },
+                {
+                    "id": "firma",
+                    "titulo": "",
+                    "fecha_actualizacion": "20151002",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2015-10565/texto/bloque/firma"
+                }
+            ]
+        }
+    ]
+}

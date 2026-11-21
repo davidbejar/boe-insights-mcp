@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="no" tipo="nota_inicial">
+      <version id_norma="BOE-A-2022-11311" fecha_publicacion="20220708" fecha_vigencia="20220709">
+        <p class="siempreSeVe">Norma derogada, con efectos de 9 de julio de 2022, por la disposición derogatoria única 1.b) de la Ley 13/2022, de 7 de julio. <a class="refPost">Ref. BOE-A-2022-11311#dd</a></p>
+        <p class="siempreSeVe">En tanto no entren en vigor determinadas previsiones de la Ley 13/2022, de 7 de julio, conforme a su disposición final novena, se aplicará lo establecido en sus disposiciones transitorias cuarta, quinta y séptima, en cuanto a la vigencia de lo indicado de la presente Ley. <a class="refPost">Ref. BOE-A-2022-11311#dt-4</a></p>
+      </version>
+    </bloque>
+  </data>
+</response>

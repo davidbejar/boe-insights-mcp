@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="no" tipo="nota_inicial">
+      <version id_norma="BOE-A-1992-28925" fecha_publicacion="19921231" fecha_vigencia="19930101">
+        <p class="textoCompleto">Incluye la corrección de errores publicada en BOE núm. 33, de 8 de febrero de 1993. <a class="refPost">Ref. BOE-A-1993-3300 </a></p>
+        <p> </p>
+        <p> </p>
+      </version>
+    </bloque>
+  </data>
+</response>

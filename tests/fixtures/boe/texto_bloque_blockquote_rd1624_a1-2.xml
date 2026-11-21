@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="a1-2" tipo="precepto" titulo="Artículo 1">
+      <version id_norma="BOE-A-1992-28925" fecha_publicacion="19921231" fecha_vigencia="19930101">
+        <p class="articulo">Artículo 1. Actividades de los Entes públicos.</p>
+        <p class="parrafo">1. Las disposiciones relativas a la no sujeción de las operaciones efectuadas por los Entes públicos se aplicarán con independencia respecto de cada una de las actividades económicas distintas que, en su caso, realicen los mismos.</p>
+        <p class="parrafo">2. Los ingresos de cada actividad económica de los Entes públicos comprenderán la totalidad de los obtenidos en la misma, con exclusión de los derivados de operaciones financieras.</p>
+      </version>
+      <version id_norma="BOE-A-1998-4774" fecha_publicacion="19980228" fecha_vigencia="19980228">
+        <p class="articulo">Artículo 1. Actividades de los Entes públicos.</p>
+        <p class="parrafo">
+          <strong>(Derogado)</strong>
+        </p>
+        <blockquote>
+          <p class="nota_pie">Se deroga por el art. 1.1 del Real Decreto 296/1998, de 27 de febrero. <a class="refPost">Ref. BOE-A-1998-4774</a></p>
+        </blockquote>
+      </version>
+      <version id_norma="BOE-A-2021-10026" fecha_publicacion="20210616" fecha_vigencia="20210701">
+        <p class="articulo">Artículo 1. Intervención de manera indirecta por el vendedor en la expedición o el transporte.</p>
+        <p class="parrafo">A efectos de lo previsto en el artículo 8.Tres de la Ley del Impuesto se considerará que los bienes han sido expedidos o transportados por el vendedor, o por su cuenta, de manera indirecta. En particular, se apreciará que concurre dicha circunstancia en los casos regulados en el artículo 5 bis del Reglamento de Ejecución (UE) n.º 282/2011 del Consejo, de 15 de marzo de 2011, por el que se establecen disposiciones de aplicación de la Directiva 2006/112/CE relativa al sistema común del impuesto sobre el valor añadido.</p>
+        <blockquote>
+          <p class="nota_pie">Se añade por el art. 1.1 del Real Decreto 424/2021, de 15 de junio. <a class="refPost">Ref. BOE-A-2021-10026#ap</a></p>
+          <p class="nota_pie">Se deroga por el art. 1.1 del Real Decreto 296/1998, de 27 de febrero. <a class="refPost">Ref. BOE-A-1998-4774</a></p>
+        </blockquote>
+      </version>
+    </bloque>
+  </data>
+</response>

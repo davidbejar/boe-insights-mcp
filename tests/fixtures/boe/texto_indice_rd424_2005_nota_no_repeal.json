@@ -1,0 +1,1098 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "bloque": [
+                {
+                    "id": "no",
+                    "titulo": "",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/no"
+                },
+                {
+                    "id": "preambulo",
+                    "titulo": "",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/preambulo"
+                },
+                {
+                    "id": "aunico",
+                    "titulo": "Artículo único",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/aunico"
+                },
+                {
+                    "id": "daunica",
+                    "titulo": "Disposición adicional única",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/daunica"
+                },
+                {
+                    "id": "dtprimera",
+                    "titulo": "Disposición transitoria primera",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtprimera"
+                },
+                {
+                    "id": "dtsegunda",
+                    "titulo": "Disposición transitoria segunda",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtsegunda"
+                },
+                {
+                    "id": "dttercera",
+                    "titulo": "Disposición transitoria tercera",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dttercera"
+                },
+                {
+                    "id": "ddunica",
+                    "titulo": "Disposición derogatoria única",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/ddunica"
+                },
+                {
+                    "id": "dfprimera",
+                    "titulo": "Disposición final primera",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dfprimera"
+                },
+                {
+                    "id": "dfsegunda",
+                    "titulo": "Disposición final segunda",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dfsegunda"
+                },
+                {
+                    "id": "dftercera",
+                    "titulo": "Disposición final tercera",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dftercera"
+                },
+                {
+                    "id": "dfcuarta",
+                    "titulo": "Disposición final cuarta",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dfcuarta"
+                },
+                {
+                    "id": "dfquinta",
+                    "titulo": "Disposición final quinta",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dfquinta"
+                },
+                {
+                    "id": "dfsexta",
+                    "titulo": "Disposición final sexta",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dfsexta"
+                },
+                {
+                    "id": "dfseptima",
+                    "titulo": "Disposición final séptima",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dfseptima"
+                },
+                {
+                    "id": "firma",
+                    "titulo": "",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/firma"
+                },
+                {
+                    "id": "reglamento",
+                    "titulo": "REGLAMENTO",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/reglamento"
+                },
+                {
+                    "id": "ti",
+                    "titulo": "TÍTULO I",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/ti"
+                },
+                {
+                    "id": "a1",
+                    "titulo": "Artículo 1",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a1"
+                },
+                {
+                    "id": "a2",
+                    "titulo": "Artículo 2",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a2"
+                },
+                {
+                    "id": "a3",
+                    "titulo": "Artículo 3",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a3"
+                },
+                {
+                    "id": "tii",
+                    "titulo": "TÍTULO II",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/tii"
+                },
+                {
+                    "id": "ci",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/ci"
+                },
+                {
+                    "id": "a4",
+                    "titulo": "Artículo 4",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a4"
+                },
+                {
+                    "id": "a5",
+                    "titulo": "Artículo 5",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a5"
+                },
+                {
+                    "id": "a6",
+                    "titulo": "Artículo 6",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a6"
+                },
+                {
+                    "id": "cii",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/cii"
+                },
+                {
+                    "id": "a7",
+                    "titulo": "Artículo 7",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a7"
+                },
+                {
+                    "id": "a8",
+                    "titulo": "Artículo 8",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a8"
+                },
+                {
+                    "id": "a9",
+                    "titulo": "Artículo 9",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a9"
+                },
+                {
+                    "id": "a10",
+                    "titulo": "Artículo 10",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a10"
+                },
+                {
+                    "id": "a11",
+                    "titulo": "Artículo 11",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a11"
+                },
+                {
+                    "id": "a12",
+                    "titulo": "Artículo 12",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a12"
+                },
+                {
+                    "id": "a13",
+                    "titulo": "Artículo 13",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a13"
+                },
+                {
+                    "id": "a14",
+                    "titulo": "Artículo 14",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a14"
+                },
+                {
+                    "id": "ciii",
+                    "titulo": "CAPÍTULO III",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/ciii"
+                },
+                {
+                    "id": "a15",
+                    "titulo": "Artículo 15",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a15"
+                },
+                {
+                    "id": "a16",
+                    "titulo": "Artículo 16",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a16"
+                },
+                {
+                    "id": "a17",
+                    "titulo": "Artículo 17",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a17"
+                },
+                {
+                    "id": "a18",
+                    "titulo": "Artículo 18",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a18"
+                },
+                {
+                    "id": "a19",
+                    "titulo": "Artículo 19",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a19"
+                },
+                {
+                    "id": "a20",
+                    "titulo": "Artículo 20",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a20"
+                },
+                {
+                    "id": "a21",
+                    "titulo": "Artículo 21",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a21"
+                },
+                {
+                    "id": "a22",
+                    "titulo": "Artículo 22",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a22"
+                },
+                {
+                    "id": "tiii",
+                    "titulo": "TÍTULO III",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/tiii"
+                },
+                {
+                    "id": "ci-2",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/ci-2"
+                },
+                {
+                    "id": "a23",
+                    "titulo": "Artículo 23",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a23"
+                },
+                {
+                    "id": "a24",
+                    "titulo": "Artículo 24",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a24"
+                },
+                {
+                    "id": "a25",
+                    "titulo": "Artículo 25",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a25"
+                },
+                {
+                    "id": "a26",
+                    "titulo": "Artículo 26",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a26"
+                },
+                {
+                    "id": "cii-2",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/cii-2"
+                },
+                {
+                    "id": "s1",
+                    "titulo": "Sección 1",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s1"
+                },
+                {
+                    "id": "a27",
+                    "titulo": "Artículo 27",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a27"
+                },
+                {
+                    "id": "a28",
+                    "titulo": "Artículo 28",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a28"
+                },
+                {
+                    "id": "a29",
+                    "titulo": "Artículo 29",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a29"
+                },
+                {
+                    "id": "a30",
+                    "titulo": "Artículo 30",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a30"
+                },
+                {
+                    "id": "a31",
+                    "titulo": "Artículo 31",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a31"
+                },
+                {
+                    "id": "a32",
+                    "titulo": "Artículo 32",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a32"
+                },
+                {
+                    "id": "a33",
+                    "titulo": "Artículo 33",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a33"
+                },
+                {
+                    "id": "a34",
+                    "titulo": "Artículo 34",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a34"
+                },
+                {
+                    "id": "s2",
+                    "titulo": "Sección 2",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s2"
+                },
+                {
+                    "id": "a35",
+                    "titulo": "Artículo 35",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a35"
+                },
+                {
+                    "id": "s3",
+                    "titulo": "Sección 3",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s3"
+                },
+                {
+                    "id": "a36",
+                    "titulo": "Artículo 36",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a36"
+                },
+                {
+                    "id": "a37",
+                    "titulo": "Artículo 37",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a37"
+                },
+                {
+                    "id": "a38",
+                    "titulo": "Artículo 38",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a38"
+                },
+                {
+                    "id": "s4",
+                    "titulo": "Sección 4",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s4"
+                },
+                {
+                    "id": "a39",
+                    "titulo": "Artículo 39",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a39"
+                },
+                {
+                    "id": "a40",
+                    "titulo": "Artículo 40",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a40"
+                },
+                {
+                    "id": "a41",
+                    "titulo": "Artículo 41",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a41"
+                },
+                {
+                    "id": "a42",
+                    "titulo": "Artículo 42",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a42"
+                },
+                {
+                    "id": "a43",
+                    "titulo": "Artículo 43",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a43"
+                },
+                {
+                    "id": "a44",
+                    "titulo": "Artículo 44",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a44"
+                },
+                {
+                    "id": "a45",
+                    "titulo": "Artículo 45",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a45"
+                },
+                {
+                    "id": "a46",
+                    "titulo": "Artículo 46",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a46"
+                },
+                {
+                    "id": "s5",
+                    "titulo": "Sección 5",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s5"
+                },
+                {
+                    "id": "a47",
+                    "titulo": "Artículo 47",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a47"
+                },
+                {
+                    "id": "a48",
+                    "titulo": "Artículo 48",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a48"
+                },
+                {
+                    "id": "a49",
+                    "titulo": "Artículo 49",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a49"
+                },
+                {
+                    "id": "a50",
+                    "titulo": "Artículo 50",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a50"
+                },
+                {
+                    "id": "a51",
+                    "titulo": "Artículo 51",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a51"
+                },
+                {
+                    "id": "a52",
+                    "titulo": "Artículo 52",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a52"
+                },
+                {
+                    "id": "ciii-2",
+                    "titulo": "CAPÍTULO III",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/ciii-2"
+                },
+                {
+                    "id": "a53",
+                    "titulo": "Artículo 53",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a53"
+                },
+                {
+                    "id": "a54",
+                    "titulo": "Artículo 54",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a54"
+                },
+                {
+                    "id": "a55",
+                    "titulo": "Artículo 55",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a55"
+                },
+                {
+                    "id": "a56",
+                    "titulo": "Artículo 56",
+                    "fecha_actualizacion": "20261119",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a56"
+                },
+                {
+                    "id": "tiv",
+                    "titulo": "TÍTULO IV",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/tiv"
+                },
+                {
+                    "id": "a57",
+                    "titulo": "Artículo 57",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a57"
+                },
+                {
+                    "id": "a58",
+                    "titulo": "Artículo 58",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a58"
+                },
+                {
+                    "id": "a59",
+                    "titulo": "Artículo 59",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a59"
+                },
+                {
+                    "id": "a60",
+                    "titulo": "Artículo 60",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a60"
+                },
+                {
+                    "id": "tv",
+                    "titulo": "TÍTULO V",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/tv"
+                },
+                {
+                    "id": "ci-3",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/ci-3"
+                },
+                {
+                    "id": "s1-2",
+                    "titulo": "Sección 1",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s1-2"
+                },
+                {
+                    "id": "a61",
+                    "titulo": "Artículo 61",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a61"
+                },
+                {
+                    "id": "a62",
+                    "titulo": "Artículo 62",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a62"
+                },
+                {
+                    "id": "a63",
+                    "titulo": "Artículo 63",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a63"
+                },
+                {
+                    "id": "a64",
+                    "titulo": "Artículo 64",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a64"
+                },
+                {
+                    "id": "s2-2",
+                    "titulo": "Sección 2",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s2-2"
+                },
+                {
+                    "id": "a65",
+                    "titulo": "Artículo 65",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a65"
+                },
+                {
+                    "id": "a66",
+                    "titulo": "Artículo 66",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a66"
+                },
+                {
+                    "id": "a67",
+                    "titulo": "Artículo 67",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a67"
+                },
+                {
+                    "id": "a68",
+                    "titulo": "Artículo 68",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a68"
+                },
+                {
+                    "id": "a69",
+                    "titulo": "Artículo 69",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a69"
+                },
+                {
+                    "id": "a70",
+                    "titulo": "Artículo 70",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a70"
+                },
+                {
+                    "id": "s3-2",
+                    "titulo": "Sección 3",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s3-2"
+                },
+                {
+                    "id": "a71",
+                    "titulo": "Artículo 71",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a71"
+                },
+                {
+                    "id": "a72",
+                    "titulo": "Artículo 72",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a72"
+                },
+                {
+                    "id": "a73",
+                    "titulo": "Artículo 73",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a73"
+                },
+                {
+                    "id": "a74",
+                    "titulo": "Artículo 74",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a74"
+                },
+                {
+                    "id": "a75",
+                    "titulo": "Artículo 75",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a75"
+                },
+                {
+                    "id": "a76",
+                    "titulo": "Artículo 76",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a76"
+                },
+                {
+                    "id": "a77",
+                    "titulo": "Artículo 77",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a77"
+                },
+                {
+                    "id": "a78",
+                    "titulo": "Artículo 78",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a78"
+                },
+                {
+                    "id": "a79",
+                    "titulo": "Artículo 79",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a79"
+                },
+                {
+                    "id": "a80",
+                    "titulo": "Artículo 80",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a80"
+                },
+                {
+                    "id": "a81",
+                    "titulo": "Artículo 81",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a81"
+                },
+                {
+                    "id": "a82",
+                    "titulo": "Artículo 82",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a82"
+                },
+                {
+                    "id": "cii-3",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/cii-3"
+                },
+                {
+                    "id": "s1-3",
+                    "titulo": "Sección 1",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s1-3"
+                },
+                {
+                    "id": "a83",
+                    "titulo": "Artículo 83",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a83"
+                },
+                {
+                    "id": "a84",
+                    "titulo": "Artículo 84",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a84"
+                },
+                {
+                    "id": "a85",
+                    "titulo": "Artículo 85",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a85"
+                },
+                {
+                    "id": "a86",
+                    "titulo": "Artículo 86",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a86"
+                },
+                {
+                    "id": "a87",
+                    "titulo": "Artículo 87",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a87"
+                },
+                {
+                    "id": "a88",
+                    "titulo": "Artículo 88",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a88"
+                },
+                {
+                    "id": "s2-3",
+                    "titulo": "Sección 2",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/s2-3"
+                },
+                {
+                    "id": "a89",
+                    "titulo": "Artículo 89",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a89"
+                },
+                {
+                    "id": "a90",
+                    "titulo": "Artículo 90",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a90"
+                },
+                {
+                    "id": "a91",
+                    "titulo": "Artículo 91",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a91"
+                },
+                {
+                    "id": "a92",
+                    "titulo": "Artículo 92",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a92"
+                },
+                {
+                    "id": "a93",
+                    "titulo": "Artículo 93",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a93"
+                },
+                {
+                    "id": "a94",
+                    "titulo": "Artículo 94",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a94"
+                },
+                {
+                    "id": "a95",
+                    "titulo": "Artículo 95",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a95"
+                },
+                {
+                    "id": "a96",
+                    "titulo": "Artículo 96",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a96"
+                },
+                {
+                    "id": "a97",
+                    "titulo": "Artículo 97",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a97"
+                },
+                {
+                    "id": "a98",
+                    "titulo": "Artículo 98",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a98"
+                },
+                {
+                    "id": "a99",
+                    "titulo": "Artículo 99",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a99"
+                },
+                {
+                    "id": "a100",
+                    "titulo": "Artículo 100",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a100"
+                },
+                {
+                    "id": "a101",
+                    "titulo": "Artículo 101",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a101"
+                },
+                {
+                    "id": "tvi",
+                    "titulo": "TÍTULO VI",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/tvi"
+                },
+                {
+                    "id": "ci-4",
+                    "titulo": "CAPÍTULO I",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/ci-4"
+                },
+                {
+                    "id": "as102a104",
+                    "titulo": "Arts. 102 a 104",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/as102a104"
+                },
+                {
+                    "id": "a102",
+                    "titulo": "Artículo 102",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a102"
+                },
+                {
+                    "id": "a103",
+                    "titulo": "Artículo 103",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a103"
+                },
+                {
+                    "id": "a104",
+                    "titulo": "Artículo 104",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a104"
+                },
+                {
+                    "id": "cii-4",
+                    "titulo": "CAPÍTULO II",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/cii-4"
+                },
+                {
+                    "id": "as105a108",
+                    "titulo": "Arts. 105 a 108",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/as105a108"
+                },
+                {
+                    "id": "a105",
+                    "titulo": "Artículo 105",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a105"
+                },
+                {
+                    "id": "a106",
+                    "titulo": "Artículo 106",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a106"
+                },
+                {
+                    "id": "a107",
+                    "titulo": "Artículo 107",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a107"
+                },
+                {
+                    "id": "a108",
+                    "titulo": "Artículo 108",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a108"
+                },
+                {
+                    "id": "ciii-3",
+                    "titulo": "CAPÍTULO III",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/ciii-3"
+                },
+                {
+                    "id": "as109a111",
+                    "titulo": "Arts. 109 a 111",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/as109a111"
+                },
+                {
+                    "id": "a109",
+                    "titulo": "Artículo 109",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a109"
+                },
+                {
+                    "id": "a110",
+                    "titulo": "Artículo 110",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a110"
+                },
+                {
+                    "id": "a111",
+                    "titulo": "Artículo 111",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a111"
+                },
+                {
+                    "id": "civ",
+                    "titulo": "CAPÍTULO IV",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/civ"
+                },
+                {
+                    "id": "as112a119",
+                    "titulo": "Arts. 112 a 119",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/as112a119"
+                },
+                {
+                    "id": "a112",
+                    "titulo": "Artículo 112",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a112"
+                },
+                {
+                    "id": "a113",
+                    "titulo": "Artículo 113",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a113"
+                },
+                {
+                    "id": "a114",
+                    "titulo": "Artículo 114",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a114"
+                },
+                {
+                    "id": "a115",
+                    "titulo": "Artículo 115",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a115"
+                },
+                {
+                    "id": "a116",
+                    "titulo": "Artículo 116",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a116"
+                },
+                {
+                    "id": "a117",
+                    "titulo": "Artículo 117",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a117"
+                },
+                {
+                    "id": "a118",
+                    "titulo": "Artículo 118",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a118"
+                },
+                {
+                    "id": "a119",
+                    "titulo": "Artículo 119",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a119"
+                },
+                {
+                    "id": "cv",
+                    "titulo": "CAPÍTULO V",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/cv"
+                },
+                {
+                    "id": "a120",
+                    "titulo": "Artículo 120",
+                    "fecha_actualizacion": "20090530",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/a120"
+                },
+                {
+                    "id": "daunica-2",
+                    "titulo": "Disposición adicional única",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/daunica-2"
+                },
+                {
+                    "id": "dtprimera-2",
+                    "titulo": "Disposición transitoria primera",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtprimera-2"
+                },
+                {
+                    "id": "dtsegunda-2",
+                    "titulo": "Disposición transitoria segunda",
+                    "fecha_actualizacion": "20110524",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtsegunda-2"
+                },
+                {
+                    "id": "dttercera-2",
+                    "titulo": "Disposición transitoria tercera",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dttercera-2"
+                },
+                {
+                    "id": "dtcuarta",
+                    "titulo": "Disposición transitoria cuarta",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtcuarta"
+                },
+                {
+                    "id": "dtquinta",
+                    "titulo": "Disposición transitoria quinta",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtquinta"
+                },
+                {
+                    "id": "dtsexta",
+                    "titulo": "Disposición transitoria sexta",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtsexta"
+                },
+                {
+                    "id": "dtseptima",
+                    "titulo": "Disposición transitoria séptima",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtseptima"
+                },
+                {
+                    "id": "dtoctava",
+                    "titulo": "Disposición transitoria octava",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtoctava"
+                },
+                {
+                    "id": "dtnovena",
+                    "titulo": "Disposición transitoria novena",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dtnovena"
+                },
+                {
+                    "id": "dfunica",
+                    "titulo": "Disposición final única",
+                    "fecha_actualizacion": "20050429",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-2005-6970/texto/bloque/dfunica"
+                }
+            ]
+        }
+    ]
+}

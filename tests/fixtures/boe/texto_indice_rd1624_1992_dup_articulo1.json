@@ -1,0 +1,1134 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "bloque": [
+                {
+                    "id": "no",
+                    "titulo": "",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/no"
+                },
+                {
+                    "id": "preambulo",
+                    "titulo": "",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/preambulo"
+                },
+                {
+                    "id": "a1",
+                    "titulo": "Artículo 1",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a1"
+                },
+                {
+                    "id": "a2",
+                    "titulo": "Artículo 2",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a2"
+                },
+                {
+                    "id": "a3",
+                    "titulo": "Artículo 3",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a3"
+                },
+                {
+                    "id": "a4",
+                    "titulo": "Artículo 4",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a4"
+                },
+                {
+                    "id": "a5",
+                    "titulo": "Artículo 5",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a5"
+                },
+                {
+                    "id": "a6",
+                    "titulo": "Artículo 6",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a6"
+                },
+                {
+                    "id": "ddunica",
+                    "titulo": "Disposición derogatoria única",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ddunica"
+                },
+                {
+                    "id": "dfunica",
+                    "titulo": "Disposición final única",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dfunica"
+                },
+                {
+                    "id": "firma",
+                    "titulo": "",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/firma"
+                },
+                {
+                    "id": "an",
+                    "titulo": "ANEXO",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/an"
+                },
+                {
+                    "id": "ti",
+                    "titulo": "Título I",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ti"
+                },
+                {
+                    "id": "ci",
+                    "titulo": "Capítulo I",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ci"
+                },
+                {
+                    "id": "a1-2",
+                    "titulo": "Artículo 1",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a1-2"
+                },
+                {
+                    "id": "a1-3",
+                    "titulo": "Artículo 1 bis",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a1-3"
+                },
+                {
+                    "id": "cii",
+                    "titulo": "Capítulo II",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cii"
+                },
+                {
+                    "id": "a2-2",
+                    "titulo": "Artículo 2",
+                    "fecha_actualizacion": "19950301",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a2-2"
+                },
+                {
+                    "id": "a3-2",
+                    "titulo": "Artículo 3",
+                    "fecha_actualizacion": "20031129",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a3-2"
+                },
+                {
+                    "id": "tii",
+                    "titulo": "Título II",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tii"
+                },
+                {
+                    "id": "ci-2",
+                    "titulo": "Capítulo I",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ci-2"
+                },
+                {
+                    "id": "a4-2",
+                    "titulo": "Artículo 4",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a4-2"
+                },
+                {
+                    "id": "a5-2",
+                    "titulo": "Artículo 5",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a5-2"
+                },
+                {
+                    "id": "a6-2",
+                    "titulo": "Artículo 6",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a6-2"
+                },
+                {
+                    "id": "a7",
+                    "titulo": "Artículo 7",
+                    "fecha_actualizacion": "19980228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a7"
+                },
+                {
+                    "id": "a8",
+                    "titulo": "Artículo 8",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a8"
+                },
+                {
+                    "id": "a8bis",
+                    "titulo": "Artículo 8 bis",
+                    "fecha_actualizacion": "20050201",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a8bis"
+                },
+                {
+                    "id": "cii-2",
+                    "titulo": "Capítulo II",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cii-2"
+                },
+                {
+                    "id": "a9",
+                    "titulo": "Artículo 9",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a9"
+                },
+                {
+                    "id": "a10",
+                    "titulo": "Artículo 10",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a10"
+                },
+                {
+                    "id": "ciii",
+                    "titulo": "Capítulo III",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ciii"
+                },
+                {
+                    "id": "a11",
+                    "titulo": "Artículo 11",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a11"
+                },
+                {
+                    "id": "a12",
+                    "titulo": "Artículo 12",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a12"
+                },
+                {
+                    "id": "civ",
+                    "titulo": "Capítulo IV",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/civ"
+                },
+                {
+                    "id": "a13",
+                    "titulo": "Artículo 13",
+                    "fecha_actualizacion": "20200205",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a13"
+                },
+                {
+                    "id": "cv",
+                    "titulo": "Capítulo V",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cv"
+                },
+                {
+                    "id": "a14",
+                    "titulo": "Artículo 14",
+                    "fecha_actualizacion": "20101231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a14"
+                },
+                {
+                    "id": "a15",
+                    "titulo": "Artículo 15",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a15"
+                },
+                {
+                    "id": "a16",
+                    "titulo": "Artículo 16",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a16"
+                },
+                {
+                    "id": "a17",
+                    "titulo": "Artículo 17",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a17"
+                },
+                {
+                    "id": "a18",
+                    "titulo": "Artículo 18",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a18"
+                },
+                {
+                    "id": "a19",
+                    "titulo": "Artículo 19",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a19"
+                },
+                {
+                    "id": "a20",
+                    "titulo": "Artículo 20",
+                    "fecha_actualizacion": "19970531",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a20"
+                },
+                {
+                    "id": "a21",
+                    "titulo": "Artículo 21",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a21"
+                },
+                {
+                    "id": "tiii",
+                    "titulo": "Título III",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tiii"
+                },
+                {
+                    "id": "a22",
+                    "titulo": "Artículo 22",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a22"
+                },
+                {
+                    "id": "a23",
+                    "titulo": "Artículo 23",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a23"
+                },
+                {
+                    "id": "ti-2",
+                    "titulo": "TÍTULO III BIS",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ti-2"
+                },
+                {
+                    "id": "a2-3",
+                    "titulo": "Artículo 23 bis",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a2-3"
+                },
+                {
+                    "id": "tiv",
+                    "titulo": "Título IV",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tiv"
+                },
+                {
+                    "id": "a24",
+                    "titulo": "Artículo 24",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a24"
+                },
+                {
+                    "id": "tivbis",
+                    "titulo": "Título IV bis",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tivbis"
+                },
+                {
+                    "id": "a24bis",
+                    "titulo": "Artículo 24 bis",
+                    "fecha_actualizacion": "20031129",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a24bis"
+                },
+                {
+                    "id": "a24ter",
+                    "titulo": "Artículo 24 ter",
+                    "fecha_actualizacion": "20031129",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a24ter"
+                },
+                {
+                    "id": "a24quater",
+                    "titulo": "Artículo 24 quater",
+                    "fecha_actualizacion": "20181229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a24quater"
+                },
+                {
+                    "id": "a24quinquies",
+                    "titulo": "Artículo 24 quinquies",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a24quinquies"
+                },
+                {
+                    "id": "tv",
+                    "titulo": "Título V",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tv"
+                },
+                {
+                    "id": "a25",
+                    "titulo": "Artículo 25",
+                    "fecha_actualizacion": "19940906",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a25"
+                },
+                {
+                    "id": "tvi",
+                    "titulo": "Título VI",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tvi"
+                },
+                {
+                    "id": "a26",
+                    "titulo": "Artículo 26",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a26"
+                },
+                {
+                    "id": "a26bis",
+                    "titulo": "Artículo 26 bis",
+                    "fecha_actualizacion": "20181229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a26bis"
+                },
+                {
+                    "id": "tvii",
+                    "titulo": "Título VII",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tvii"
+                },
+                {
+                    "id": "ci-3",
+                    "titulo": "Capítulo I",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ci-3"
+                },
+                {
+                    "id": "a27",
+                    "titulo": "Artículo 27",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a27"
+                },
+                {
+                    "id": "a28",
+                    "titulo": "Artículo 28",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a28"
+                },
+                {
+                    "id": "cii-3",
+                    "titulo": "Capítulo II",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cii-3"
+                },
+                {
+                    "id": "a29",
+                    "titulo": "Artículo 29",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a29"
+                },
+                {
+                    "id": "a30",
+                    "titulo": "Artículo 30",
+                    "fecha_actualizacion": "20161206",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a30"
+                },
+                {
+                    "id": "a30bis",
+                    "titulo": "Artículo 30 bis",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a30bis"
+                },
+                {
+                    "id": "a30ter",
+                    "titulo": "Artículo 30 ter",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a30ter"
+                },
+                {
+                    "id": "a31",
+                    "titulo": "Artículo 31",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a31"
+                },
+                {
+                    "id": "a31bis",
+                    "titulo": "Artículo 31 bis",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a31bis"
+                },
+                {
+                    "id": "a32",
+                    "titulo": "Artículo 32",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a32"
+                },
+                {
+                    "id": "tviii",
+                    "titulo": "Título VIII",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tviii"
+                },
+                {
+                    "id": "ci-4",
+                    "titulo": "Capítulo I",
+                    "fecha_actualizacion": "19980117",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ci-4"
+                },
+                {
+                    "id": "a33",
+                    "titulo": "Artículo 33",
+                    "fecha_actualizacion": "20260228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a33"
+                },
+                {
+                    "id": "cii-4",
+                    "titulo": "Capítulo II",
+                    "fecha_actualizacion": "19980117",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cii-4"
+                },
+                {
+                    "id": "a34",
+                    "titulo": "Artículo 34",
+                    "fecha_actualizacion": "19980117",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a34"
+                },
+                {
+                    "id": "a35",
+                    "titulo": "Artículo 35",
+                    "fecha_actualizacion": "19980117",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a35"
+                },
+                {
+                    "id": "a36",
+                    "titulo": "Artículo 36",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a36"
+                },
+                {
+                    "id": "a37",
+                    "titulo": "Artículo 37",
+                    "fecha_actualizacion": "19980117",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a37"
+                },
+                {
+                    "id": "a38",
+                    "titulo": "Artículo 38",
+                    "fecha_actualizacion": "20071120",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a38"
+                },
+                {
+                    "id": "a39",
+                    "titulo": "Artículo 39",
+                    "fecha_actualizacion": "20031129",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a39"
+                },
+                {
+                    "id": "a40",
+                    "titulo": "Artículo 40",
+                    "fecha_actualizacion": "20031129",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a40"
+                },
+                {
+                    "id": "a41",
+                    "titulo": "Artículo 41",
+                    "fecha_actualizacion": "19980117",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a41"
+                },
+                {
+                    "id": "a42",
+                    "titulo": "Artículo 42",
+                    "fecha_actualizacion": "19980117",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a42"
+                },
+                {
+                    "id": "ciii-2",
+                    "titulo": "Capítulo III",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ciii-2"
+                },
+                {
+                    "id": "a43",
+                    "titulo": "Artículo 43",
+                    "fecha_actualizacion": "20181229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a43"
+                },
+                {
+                    "id": "a44",
+                    "titulo": "Artículo 44",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a44"
+                },
+                {
+                    "id": "a45",
+                    "titulo": "Artículo 45",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a45"
+                },
+                {
+                    "id": "a46",
+                    "titulo": "Artículo 46",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a46"
+                },
+                {
+                    "id": "a47",
+                    "titulo": "Artículo 47",
+                    "fecha_actualizacion": "19980117",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a47"
+                },
+                {
+                    "id": "a48",
+                    "titulo": "Artículo 48",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a48"
+                },
+                {
+                    "id": "a49",
+                    "titulo": "Artículo 49",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a49"
+                },
+                {
+                    "id": "a49bis",
+                    "titulo": "Artículo 49 bis",
+                    "fecha_actualizacion": "20031129",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a49bis"
+                },
+                {
+                    "id": "civ-2",
+                    "titulo": "Capítulo IV",
+                    "fecha_actualizacion": "19970531",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/civ-2"
+                },
+                {
+                    "id": "a50",
+                    "titulo": "Artículo 50",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a50"
+                },
+                {
+                    "id": "a51",
+                    "titulo": "Artículo 51",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a51"
+                },
+                {
+                    "id": "civbis",
+                    "titulo": "Capítulo IV bis",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/civbis"
+                },
+                {
+                    "id": "a51bis",
+                    "titulo": "Artículo 51 bis",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a51bis"
+                },
+                {
+                    "id": "a51ter.",
+                    "titulo": "Artículo 51 ter.",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a51ter."
+                },
+                {
+                    "id": "a51quater.",
+                    "titulo": "Artículo 51 quater.",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a51quater."
+                },
+                {
+                    "id": "cv-2",
+                    "titulo": "Capítulo V",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cv-2"
+                },
+                {
+                    "id": "a52",
+                    "titulo": "Artículo 52",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a52"
+                },
+                {
+                    "id": "a53",
+                    "titulo": "Artículo 53",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a53"
+                },
+                {
+                    "id": "cvi",
+                    "titulo": "Capítulo VI",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cvi"
+                },
+                {
+                    "id": "s1",
+                    "titulo": "Sección 1",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/s1"
+                },
+                {
+                    "id": "a54",
+                    "titulo": "Artículo 54",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a54"
+                },
+                {
+                    "id": "a55",
+                    "titulo": "Artículo 55",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a55"
+                },
+                {
+                    "id": "s2",
+                    "titulo": "Sección 2",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/s2"
+                },
+                {
+                    "id": "a56",
+                    "titulo": "Artículo 56",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a56"
+                },
+                {
+                    "id": "a57",
+                    "titulo": "Artículo 57",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a57"
+                },
+                {
+                    "id": "a58",
+                    "titulo": "Artículo 58",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a58"
+                },
+                {
+                    "id": "s3",
+                    "titulo": "Sección 3",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/s3"
+                },
+                {
+                    "id": "a59",
+                    "titulo": "Artículo 59",
+                    "fecha_actualizacion": "20001216",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a59"
+                },
+                {
+                    "id": "a60",
+                    "titulo": "Artículo 60",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a60"
+                },
+                {
+                    "id": "a61",
+                    "titulo": "Artículo 61",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61"
+                },
+                {
+                    "id": "cvii",
+                    "titulo": "Capítulo VII",
+                    "fecha_actualizacion": "20071120",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cvii"
+                },
+                {
+                    "id": "a61bis",
+                    "titulo": "Artículo 61 bis",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61bis"
+                },
+                {
+                    "id": "a61ter",
+                    "titulo": "Artículo 61 ter",
+                    "fecha_actualizacion": "20161206",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61ter"
+                },
+                {
+                    "id": "a61quater",
+                    "titulo": "Artículo 61 quáter",
+                    "fecha_actualizacion": "20181229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61quater"
+                },
+                {
+                    "id": "a61quinquies",
+                    "titulo": "Artículo 61 quinquies",
+                    "fecha_actualizacion": "20181229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61quinquies"
+                },
+                {
+                    "id": "a61sexies",
+                    "titulo": "Artículo 61 sexies",
+                    "fecha_actualizacion": "20171230",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61sexies"
+                },
+                {
+                    "id": "cviii",
+                    "titulo": "Capítulo VIII",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cviii"
+                },
+                {
+                    "id": "a61septies",
+                    "titulo": "Artículo 61 septies",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61septies"
+                },
+                {
+                    "id": "a61octies",
+                    "titulo": "Artículo 61 octies",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61octies"
+                },
+                {
+                    "id": "a61nonies",
+                    "titulo": "Artículo 61 nonies",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61nonies"
+                },
+                {
+                    "id": "a61decies",
+                    "titulo": "Artículo 61 decies",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61decies"
+                },
+                {
+                    "id": "a61undecies",
+                    "titulo": "Artículo 61 undecies",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61undecies"
+                },
+                {
+                    "id": "cix",
+                    "titulo": "Capítulo IX",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cix"
+                },
+                {
+                    "id": "a61duodecies",
+                    "titulo": "Artículo 61 duodecies",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61duodecies"
+                },
+                {
+                    "id": "a61terdecies",
+                    "titulo": "Artículo 61 terdecies",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61terdecies"
+                },
+                {
+                    "id": "a61quaterdecies",
+                    "titulo": "Artículo 61 quaterdecies",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61quaterdecies"
+                },
+                {
+                    "id": "a61quinquiesdecies",
+                    "titulo": "Artículo 61 quinquiesdecies",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a61quinquiesdecies"
+                },
+                {
+                    "id": "a6-4",
+                    "titulo": "Artículo 61 sexiesdecies",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a6-4"
+                },
+                {
+                    "id": "a6-5",
+                    "titulo": "Artículo 61 septiesdecies",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a6-5"
+                },
+                {
+                    "id": "tix",
+                    "titulo": "Título IX",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tix"
+                },
+                {
+                    "id": "a62",
+                    "titulo": "Artículo 62",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a62"
+                },
+                {
+                    "id": "a6-6",
+                    "titulo": "Artículo 62 bis",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a6-6"
+                },
+                {
+                    "id": "a6-7",
+                    "titulo": "Artículo 62 ter",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a6-7"
+                },
+                {
+                    "id": "a63",
+                    "titulo": "Artículo 63",
+                    "fecha_actualizacion": "20230405",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a63"
+                },
+                {
+                    "id": "a64",
+                    "titulo": "Artículo 64",
+                    "fecha_actualizacion": "20171230",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a64"
+                },
+                {
+                    "id": "a65",
+                    "titulo": "Artículo 65",
+                    "fecha_actualizacion": "20161206",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a65"
+                },
+                {
+                    "id": "a66",
+                    "titulo": "Artículo 66",
+                    "fecha_actualizacion": "20210526",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a66"
+                },
+                {
+                    "id": "a67",
+                    "titulo": "Artículo 67",
+                    "fecha_actualizacion": "20161206",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a67"
+                },
+                {
+                    "id": "a68",
+                    "titulo": "Artículo 68",
+                    "fecha_actualizacion": "20161206",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a68"
+                },
+                {
+                    "id": "a68bis",
+                    "titulo": "Artículo 68 bis",
+                    "fecha_actualizacion": "20181229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a68bis"
+                },
+                {
+                    "id": "a6-3",
+                    "titulo": "Artículo 68 ter",
+                    "fecha_actualizacion": "20181229",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a6-3"
+                },
+                {
+                    "id": "a69",
+                    "titulo": "Artículo 69",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a69"
+                },
+                {
+                    "id": "a69bis",
+                    "titulo": "Artículo 69 bis",
+                    "fecha_actualizacion": "20230405",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a69bis"
+                },
+                {
+                    "id": "a70",
+                    "titulo": "Artículo 70",
+                    "fecha_actualizacion": "20171230",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a70"
+                },
+                {
+                    "id": "tx",
+                    "titulo": "Título X",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/tx"
+                },
+                {
+                    "id": "ci-5",
+                    "titulo": "Capítulo I",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ci-5"
+                },
+                {
+                    "id": "a71",
+                    "titulo": "Artículo 71",
+                    "fecha_actualizacion": "20241221",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a71"
+                },
+                {
+                    "id": "a72",
+                    "titulo": "Artículo 72",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a72"
+                },
+                {
+                    "id": "a73",
+                    "titulo": "Artículo 73",
+                    "fecha_actualizacion": "20050201",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a73"
+                },
+                {
+                    "id": "a74",
+                    "titulo": "Artículo 74",
+                    "fecha_actualizacion": "20210616",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a74"
+                },
+                {
+                    "id": "a7-2",
+                    "titulo": "Artículo 74 bis",
+                    "fecha_actualizacion": "20240131",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a7-2"
+                },
+                {
+                    "id": "cii-5",
+                    "titulo": "Capítulo II",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cii-5"
+                },
+                {
+                    "id": "a75",
+                    "titulo": "Artículo 75",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a75"
+                },
+                {
+                    "id": "a76",
+                    "titulo": "Artículo 76",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a76"
+                },
+                {
+                    "id": "a77",
+                    "titulo": "Artículo 77",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a77"
+                },
+                {
+                    "id": "ciii-3",
+                    "titulo": "Capítulo III",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ciii-3"
+                },
+                {
+                    "id": "a78",
+                    "titulo": "Artículo 78",
+                    "fecha_actualizacion": "20100302",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a78"
+                },
+                {
+                    "id": "a79",
+                    "titulo": "Artículo 79",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a79"
+                },
+                {
+                    "id": "a80",
+                    "titulo": "Artículo 80",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a80"
+                },
+                {
+                    "id": "a81",
+                    "titulo": "Artículo 81",
+                    "fecha_actualizacion": "20200205",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a81"
+                },
+                {
+                    "id": "ci-6",
+                    "titulo": "Capítulo III bis",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/ci-6"
+                },
+                {
+                    "id": "a8-2",
+                    "titulo": "Artículo 81 bis",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a8-2"
+                },
+                {
+                    "id": "civ-3",
+                    "titulo": "Capítulo IV",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/civ-3"
+                },
+                {
+                    "id": "a82",
+                    "titulo": "Artículo 82",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a82"
+                },
+                {
+                    "id": "cv-3",
+                    "titulo": "Capítulo V",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/cv-3"
+                },
+                {
+                    "id": "a83",
+                    "titulo": "Artículo 83",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a83"
+                },
+                {
+                    "id": "daprimera",
+                    "titulo": "Disposición adicional primera",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/daprimera"
+                },
+                {
+                    "id": "dasegunda",
+                    "titulo": "Disposición adicional segunda",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dasegunda"
+                },
+                {
+                    "id": "datercera",
+                    "titulo": "Disposición adicional tercera",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/datercera"
+                },
+                {
+                    "id": "dacuarta",
+                    "titulo": "Disposición adicional cuarta",
+                    "fecha_actualizacion": "20231228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dacuarta"
+                },
+                {
+                    "id": "daquinta",
+                    "titulo": "Disposición adicional quinta",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/daquinta"
+                },
+                {
+                    "id": "dasexta",
+                    "titulo": "Disposición adicional sexta",
+                    "fecha_actualizacion": "20131026",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dasexta"
+                },
+                {
+                    "id": "daseptima",
+                    "titulo": "Disposición adicional séptima",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/daseptima"
+                },
+                {
+                    "id": "daoctava",
+                    "titulo": "Disposición adicional octava",
+                    "fecha_actualizacion": "20141220",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/daoctava"
+                },
+                {
+                    "id": "dtprimera",
+                    "titulo": "Disposición transitoria primera",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dtprimera"
+                },
+                {
+                    "id": "dtsegunda",
+                    "titulo": "Disposición transitoria segunda",
+                    "fecha_actualizacion": "19921231",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dtsegunda"
+                },
+                {
+                    "id": "dttercera",
+                    "titulo": "Disposición transitoria tercera",
+                    "fecha_actualizacion": "20161206",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dttercera"
+                },
+                {
+                    "id": "dt",
+                    "titulo": "Disposición transitoria cuarta",
+                    "fecha_actualizacion": "20260228",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dt"
+                },
+                {
+                    "id": "dt-2",
+                    "titulo": "Disposición transitoria quinta",
+                    "fecha_actualizacion": "20190925",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dt-2"
+                },
+                {
+                    "id": "dt-3",
+                    "titulo": "Disposición transitoria sexta",
+                    "fecha_actualizacion": "20171230",
+                    "url": "https://www.boe.es/datosabiertos/api/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/dt-3"
+                }
+            ]
+        }
+    ]
+}

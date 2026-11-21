@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="no" tipo="nota_inicial">
+      <version id_norma="BOE-A-2022-5809" fecha_publicacion="20220409" fecha_vigencia="20220410">
+        <p class="siempreSeVe">Norma derogada, con efectos de 10 de abril de 2022, por la disposición derogatoria primera.1 de la Ley 7/2022, de 8 de abril. <a class="refPost">Ref. BOE-A-2022-5809#dd</a></p>
+      </version>
+    </bloque>
+  </data>
+</response>

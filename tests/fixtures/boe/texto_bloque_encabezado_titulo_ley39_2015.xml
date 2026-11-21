@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <bloque id="ti" tipo="encabezado" titulo="TÍTULO I">
+      <version id_norma="BOE-A-2015-10565" fecha_publicacion="20151002" fecha_vigencia="20161002">
+        <p class="titulo_num">TÍTULO I</p>
+        <p class="titulo_tit">De los interesados en el procedimiento</p>
+      </version>
+    </bloque>
+  </data>
+</response>

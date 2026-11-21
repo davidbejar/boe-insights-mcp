@@ -72,3 +72,36 @@ NOT captured (request budget of 120 was exhausted): a 404 body for an unknown id
 | `error_404_unknown_id.xml` | `GET legislacion-consolidada/id/BOE-A-1900-99999/metadatos`, `Accept: application/json` | HTTP 404, XML body despite JSON `Accept` |
 | `error_400_missing_accept.xml` | `GET legislacion-consolidada?limit=1` with no `Accept` header | HTTP 400, XML body |
 | `error_404_sumario_sunday_20261115.xml` | `GET boe/sumario/20261115` (a Sunday), `Accept: application/json` | HTTP 404, same body as an unknown id |
+
+## Text probe 2 (retrieved 2026-11-21; see `docs/api-notes.md` section 6.1)
+Index files were re-serialised with `json.dumps(indent=4, ensure_ascii=False)` (values unchanged). XML files are raw bytes unless "trimmed". "Trimmed" XML means whole `<version>` elements were removed from the raw response (kept ones are byte-identical). Base `B` = `https://www.boe.es/datosabiertos/api`.
+
+| File | Request (`Accept: application/json` for `/texto/indice`, `application/xml` for blocks) | Trim |
+|---|---|---|
+| `texto_indice_constitucion_1978.json` | `GET B/legislacion-consolidada/id/BOE-A-1978-31229/texto/indice` | none (210 blocks) |
+| `texto_indice_codigo_civil_trimmed.json` | `.../id/BOE-A-1889-4763/texto/indice` (763 KB, 2 444 blocks, 2.0 s) | first 60 blocks, plus the first block of each distinct non-plain title pattern (`Art. N bis`, `Arts N a N`, `§ N`, etc.), plus last 6; 135 blocks in original order |
+| `texto_indice_ley39_2015.json` | `.../id/BOE-A-2015-10565/texto/indice` | none (195 blocks) |
+| `texto_indice_rd1624_1992_dup_articulo1.json` | `.../id/BOE-A-1992-28925/texto/indice` (RD 1624/1992 Reglamento IVA: two blocks titled `Artículo 1`, ids `a1` and `a1-2`; has `no` and `an`) | none (187 blocks) |
+| `texto_indice_rd424_2005_nota_no_repeal.json` | `.../id/BOE-A-2005-6970/texto/indice` (has `no`, not a repeal; duplicate `Disposición adicional única`) | none (181 blocks) |
+| `texto_indice_ley49_1960_ordinals.json` | `.../id/BOE-A-1960-10906/texto/indice` (`Artículo primero`; typo title `Dispoosición adicional `) | none (36 blocks) |
+| `texto_indice_rd784_2021_bracket_titles.json` | `.../id/BOE-A-2021-16031/texto/indice` (`[preambulo]`, `[firma]`, `Artículo único`) | none (39 blocks) |
+| `texto_indice_iva_1992_trimmed.json` | `.../id/BOE-A-1992-28740/texto/indice` (annex `an` = `ANEXO`, `[Información relacionada]`) | first 30, last 8 and one example of each other title pattern; 114 of 307 blocks |
+| `texto_indice_lopd1999_repealed_with_no.json` | `.../id/BOE-A-1999-23750/texto/indice` (first block `no`) | none (75 blocks) |
+| `texto_indice_ley30_1992_repealed_trimmed.json` | `.../id/BOE-A-1992-26318/texto/indice` (first block `no`) | first 40 and last 5 of 226 blocks |
+| `texto_bloque_no_lopd1999_repealed.xml` | `.../id/BOE-A-1999-23750/texto/bloque/no` | none |
+| `texto_bloque_no_ley30_1992_two_versions_empty_vigencia.xml` | `.../id/BOE-A-1992-26318/texto/bloque/no` (first version has `fecha_vigencia=""` and is listed before the 1992 one) | none |
+| `texto_bloque_no_ley11_2007_repealed_with_tengase.xml` | `.../id/BOE-A-2007-12352/texto/bloque/no` | none |
+| `texto_bloque_no_ley22_2011_repealed.xml` | `.../id/BOE-A-2011-13046/texto/bloque/no` | none |
+| `texto_bloque_no_ley7_2010_repealed_transitional.xml` | `.../id/BOE-A-2010-5292/texto/bloque/no` | none |
+| `texto_bloque_no_rd424_2005_rename_not_repeal.xml` | `.../id/BOE-A-2005-6970/texto/bloque/no` (in-force law; note about a future rename; version has `fpub=""`) | none |
+| `texto_bloque_no_rd1624_1992_correction_not_repeal.xml` | `.../id/BOE-A-1992-28925/texto/bloque/no` (correction note, empty `<p> </p>` paragraphs) | none |
+| `error_404_bloque_no_in_force_law.xml` | `.../id/BOE-A-2015-10566/texto/bloque/no` (Ley 40/2015; same 404 for Ley 39/2015, Ley 30/2007, Ley 7/2007, RDLeg 1/2008) | none |
+| `error_404_unknown_block_zzz.xml` | `.../id/BOE-A-2015-10565/texto/bloque/zzz` | none |
+| `metadatos_repealed_ley30_2007_no_initial_note.json` | `.../id/BOE-A-2007-18874/metadatos` (`estatus_derogacion` S but no `no` block) | none (re-serialised) |
+| `texto_bloque_table_ley29_1987_a21_trimmed.xml` | `.../id/BOE-A-1987-28141/texto/bloque/a21` (132 KB, 13 versions; `<table class="tabla">` with `th`) | kept versions 1 and 13 |
+| `texto_bloque_anexo_iva_1992_thead_noDesde_trimmed.xml` | `.../id/BOE-A-1992-28740/texto/bloque/an` (517 KB, 20 versions) | kept versions 1, 11 (`<blockquote class="noDesde20160101">`, "Téngase en cuenta"), 12 (`fecha_vigencia` 19950101, out of order after 2015) and 15 (`<thead>` table); in original order |
+| `texto_bloque_blockquote_rd1624_a1-2.xml` | `.../id/BOE-A-1992-28925/texto/bloque/a1-2` (3 versions, `nota_pie` in blockquote) | none |
+| `texto_bloque_preambulo_ley39_2015.xml` | `.../id/BOE-A-2015-10565/texto/bloque/preambulo` | none (33 KB) |
+| `texto_bloque_encabezado_titulo_ley39_2015.xml` | `.../id/BOE-A-2015-10565/texto/bloque/ti` (`tipo="encabezado"`, `titulo_num`/`titulo_tit`) | none |
+| `texto_bloque_disposicion_multiversion_rd1624_dt.xml` | `.../id/BOE-A-1992-28925/texto/bloque/dt` (Disposición transitoria cuarta, 6 versions, last with `fecha_vigencia=""`) | none |
+
