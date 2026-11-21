@@ -55,6 +55,7 @@ from boe_insights_mcp.ratelimit import RateLimiter
 from boe_insights_mcp.textparse import parse_block, parse_full_text
 
 __all__ = [
+    "ANALYSIS_FAILURE_TTL",
     "ANALYSIS_TTL",
     "AUXILIARY_TTL",
     "BASE_URL",
@@ -85,6 +86,11 @@ AUXILIARY_TTL = 7 * 24 * 3600.0
 SEARCH_TTL = 30 * 60.0
 METADATA_TTL = 6 * 3600.0
 ANALYSIS_TTL = 6 * 3600.0
+# How long a permanently failing analysis (unknown law, unreadable body) is remembered. Shorter
+# than ``ANALYSIS_TTL`` on purpose: a success is known good, whereas a failure may be an API
+# problem that the BOE fixes within hours, so it is checked again sooner. An hour still saves
+# the repeated requests that matter, such as ``most_amended_laws`` re-trying the same bad laws.
+ANALYSIS_FAILURE_TTL = 3600.0
 TEXT_INDEX_TTL = 6 * 3600.0
 TEXT_BLOCK_TTL = 6 * 3600.0
 # A block cannot change without its ``fecha_actualizacion`` in the index changing, and that date
@@ -125,6 +131,11 @@ _NOTE_BLOCK_ID = "no"
 # Cached in place of a body to remember that a law has no initial note. It is not XML, so a
 # reader that mistook it for a block would fail to parse it and drop it (the stale-body path).
 _NO_NOTE = b"boe-insights-mcp: no initial note"
+# Cached in place of an analysis that failed permanently, one marker per kind of error so that
+# the same kind is raised again. Not JSON, so a reader that mistook one for an analysis would
+# fail to parse it and drop it.
+_ANALYSIS_NOT_FOUND = b"boe-insights-mcp: analysis not found"
+_ANALYSIS_UNREADABLE = b"boe-insights-mcp: analysis unreadable"
 # Retry-After is honoured but capped; the total time budget of one call (``total_timeout``) can
 # still cut it short.
 _MAX_RETRY_AFTER = 60.0
@@ -390,9 +401,43 @@ class BoeClient:
         return await self._get(path, None, METADATA_TTL, _from_envelope(_build_metadata))
 
     async def get_law_analysis(self, law_id: str) -> LawAnalysis:
-        """Return the subjects and amendment references of one law."""
+        """Return the subjects and amendment references of one law.
+
+        A permanent failure (``BoeNotFoundError``, ``BoeResponseError``) is remembered for
+        ``ANALYSIS_FAILURE_TTL`` and raised again without a request.
+        """
         path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/analisis"
-        return await self._get(path, None, ANALYSIS_TTL, _from_envelope(_build_analysis))
+        key = self._cache_key(path, None, _JSON, None)
+        cached = await self._cache.get(key)
+        # The marker lives under the key the analysis itself would use, like ``_NO_NOTE``.
+        if cached == _ANALYSIS_NOT_FOUND:
+            self._cache_hits += 1
+            raise BoeNotFoundError("The law has no analysis (remembered from an earlier request)")
+        if cached == _ANALYSIS_UNREADABLE:
+            self._cache_hits += 1
+            raise BoeResponseError(
+                "The analysis could not be read (remembered from an earlier request)"
+            )
+        try:
+            return await self._resolve(
+                cached,
+                key,
+                f"{self._base_url}{path}",
+                None,
+                ANALYSIS_TTL,
+                _from_envelope(_build_analysis),
+                _JSON,
+            )
+        except (BoeNotFoundError, BoeResponseError) as error:
+            # Only permanent failures: they would come out the same on the next call, so asking
+            # again just spends the request budget (``most_amended_laws`` would retry every bad
+            # law on every call). A retryable failure (``BoeUnavailableError``) says nothing
+            # about the law and must be tried again at once, so it is not stored.
+            marker = (
+                _ANALYSIS_NOT_FOUND if isinstance(error, BoeNotFoundError) else _ANALYSIS_UNREADABLE
+            )
+            await self._cache.set(key, marker, ANALYSIS_FAILURE_TTL)
+            raise
 
     async def read_catalogue_stamp(self) -> datetime | None:
         """When the cached catalogue pages were downloaded, or ``None`` when no stamp is cached.
@@ -416,7 +461,8 @@ class BoeClient:
     async def has_cached_analysis(self, law_id: str) -> bool:
         """Whether the analysis of ``law_id`` is in the cache right now; sends no request.
 
-        ``most_amended_laws`` uses it to let already-cached analyses through for free.
+        ``most_amended_laws`` uses it to let already-cached analyses through for free. A
+        remembered permanent failure counts as cached: the answer is known without a request.
         """
         # Only presence is checked, not that the body still parses: if a stale body is found
         # later, ``get_law_analysis`` drops it and refetches, which is a rare, harmless miss.

@@ -310,10 +310,11 @@ async def test_provenance_carries_the_catalogue_update_stamp_and_the_assembly_ti
 
 async def test_caveats_are_selected_by_what_applies() -> None:
     inside_2020 = {"from_date": date(2020, 1, 1), "to_date": date(2020, 12, 31)}
+    regional_2020 = [law("R", date(2020, 3, 1), scope=REGIONAL)]
 
-    plain = await over_time([], **inside_2020)
-    state = await over_time([], filters=TrendFilters(scope="state"), **inside_2020)
-    enacted = await over_time([], date_basis="enacted", **inside_2020)
+    plain = await over_time(regional_2020, **inside_2020)
+    state = await over_time(regional_2020, filters=TrendFilters(scope="state"), **inside_2020)
+    enacted = await over_time(regional_2020, date_basis="enacted", **inside_2020)
     to_today = await over_time([], from_date=date(2020, 1, 1))
 
     assert [c[:40] for c in plain.caveats] == [CAVEAT_BASE[:40], CAVEAT_REPRINT[:40]]
@@ -467,7 +468,8 @@ async def test_spikes_ignore_the_settling_periods_under_enacted() -> None:
 
 
 async def test_the_regional_caveat_points_to_enacted_and_its_incomplete_tail() -> None:
-    result = await over_time([], **{"from_date": date(2020, 1, 1), "to_date": date(2020, 12, 31)})
+    regional = [law("R", date(2020, 3, 1), scope=REGIONAL)]
+    result = await over_time(regional, from_date=date(2020, 1, 1), to_date=date(2020, 12, 31))
 
     assert (
         "use date_basis='enacted' to avoid this; its last three months are incomplete."
@@ -727,7 +729,7 @@ async def test_top_departments_ranks_by_count_inside_the_range() -> None:
 
 
 async def test_top_departments_default_range_and_caveats() -> None:
-    store, _ = store_over([law("A", date(2020, 1, 1))])
+    store, _ = store_over([law("A", date(2020, 1, 1), scope=REGIONAL)])
 
     result = await trends.top_departments(store, TrendFilters(), now=NOW, today=TODAY)
 
@@ -1080,6 +1082,8 @@ class FakeAnalyses:
             self.now += self.seconds_each
         outcome = self.analyses[law_id]
         if isinstance(outcome, Exception):
+            if isinstance(outcome, BoeNotFoundError | BoeResponseError):
+                self.cached.add(law_id)  # the real client remembers a permanent failure
             raise outcome
         self.cached.add(law_id)
         return outcome
@@ -1104,6 +1108,25 @@ async def most_amended(laws: list[LawSummary], fake: FakeAnalyses, **kwargs: obj
     options.update(kwargs)
     filters = options.pop("filters")
     return await trends.most_amended_laws(store, fake, filters, **options)  # type: ignore[arg-type]
+
+
+async def test_a_remembered_failure_counts_as_failed_without_spending_the_budget() -> None:
+    fake = FakeAnalyses(
+        {
+            "D00": BoeNotFoundError("no analysis"),
+            "D01": analysis(modifica=1),
+            "D02": analysis(modifica=1),
+        }
+    )
+    options = {"from_date": date(2001, 1, 1), "to_date": date(2010, 12, 31), "max_laws": 1}
+
+    first = await most_amended(lopd_laws(3), fake, **options)
+    assert (first.examined, first.failed, fake.requested) == (0, 1, ["D00"])
+    fake.requested.clear()
+    second = await most_amended(lopd_laws(3), fake, **options)
+
+    # D00 is failed again for free, so the one request of the budget goes to D01.
+    assert (second.examined, second.failed, fake.requested) == (1, 1, ["D01"])
 
 
 async def test_a_filter_other_than_scope_is_required() -> None:
@@ -1371,7 +1394,8 @@ async def test_the_time_budget_starts_before_the_catalogue_download() -> None:
 
     class SlowSearch(FakeSearch):
         async def search_laws(self, *args: object, **kwargs: object) -> list[LawSummary]:
-            fake.now += 30.0  # the download takes 30 of the 40 seconds
+            if kwargs.get("limit") != 1:  # the one-record confirmation is not the download
+                fake.now += 30.0  # the download takes 30 of the 40 seconds
             return await super().search_laws(*args, **kwargs)  # type: ignore[arg-type]
 
     store = CatalogueStore(SlowSearch(laws, {}), clock=lambda: NOW)
@@ -1418,10 +1442,13 @@ async def test_progress_counts_up_after_the_catalogue_download() -> None:
 
 
 async def test_most_amended_caveats_and_provenance() -> None:
-    fake = FakeAnalyses({"D00": analysis(modifica=1)})
+    fake = FakeAnalyses({"D00": analysis(modifica=1), "X-newest": analysis()})
 
     result = await most_amended(
-        [*lopd_laws(1), law("X-newest", date(2002, 1, 1))],
+        [
+            *lopd_laws(1),
+            law("X-newest", date(2002, 1, 1), title="Ley de protección de datos", scope=REGIONAL),
+        ],
         fake,
         from_date=date(2001, 1, 1),
         to_date=date(2010, 12, 31),
@@ -1473,3 +1500,21 @@ async def test_a_dimension_that_varies_only_in_the_baseline_is_still_reported() 
     result = await explain(laws, period_key="2020", baseline_periods=5)
 
     assert {c.dimension for c in result.contributions} == {"scope"}
+
+
+async def test_the_reprint_caveat_needs_a_regional_law_in_the_counted_laws() -> None:
+    in_2020 = {"from_date": date(2020, 1, 1), "to_date": date(2020, 12, 31)}
+    state_only = [law("S", date(2020, 3, 1), scope=STATE)]
+    regional_other_year = [law("R", date(2015, 3, 1), scope=REGIONAL)]
+    regional = [law("R", date(2020, 3, 1), scope=REGIONAL)]
+
+    # Ranks that exist only at state level: the scope filter is open but no regional law exists.
+    for laws in (state_only, regional_other_year, [], state_only + regional_other_year):
+        result = await over_time(laws, **in_2020)
+        assert result.caveats == [CAVEAT_BASE], laws
+    store, _ = store_over(state_only)
+    departments = await trends.top_departments(store, TrendFilters(), now=NOW, today=TODAY)
+    assert departments.caveats == [CAVEAT_BASE, trends._CAVEAT_DEPARTMENTS]
+
+    result = await over_time(state_only + regional, **in_2020)
+    assert result.caveats[1].startswith(CAVEAT_REPRINT)

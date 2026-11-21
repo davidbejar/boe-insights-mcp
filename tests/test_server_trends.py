@@ -51,13 +51,16 @@ JsonResponse = Callable[..., httpx.Response]
 def catalogue_route(
     router: respx.MockRouter, json_response: JsonResponse, load_fixture: Loader
 ) -> respx.Route:
-    """Answer every search with the sample catalogue, except body-text searches (one law)."""
+    """Answer every search with the sample catalogue, except body-text searches (one law) and
+    the one-record confirmation after the last page (nothing)."""
     sample = json.loads(load_fixture("search_bulk_sample_selected.json"))
     one_law = {**sample, "data": [sample["data"][1]]}
 
     def handler(request: httpx.Request) -> httpx.Response:
         query = request.url.params.get("query", "")
         body = one_law if "texto:" in query else sample
+        if request.url.params.get("limit") == "1":
+            body = {**sample, "data": []}
         return json_response(json.dumps(body).encode())
 
     return router.get(SEARCH_URL).mock(side_effect=handler)
@@ -249,7 +252,7 @@ async def test_the_catalogue_is_downloaded_once_for_all_the_tools(
     await call(mcp, "top_departments", **PAST)
     await call(mcp, "explain_spike", period_key="2025")
 
-    assert catalogue_route.call_count == 1
+    assert catalogue_route.call_count == 2  # one page and its end-of-catalogue confirmation
 
 
 async def test_progress_is_reported_while_the_catalogue_downloads(

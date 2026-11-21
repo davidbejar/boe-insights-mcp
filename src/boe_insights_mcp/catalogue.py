@@ -31,6 +31,7 @@ from boe_insights_mcp.query import build_search_query
 __all__ = [
     "CATALOGUE_PAGE_SIZE",
     "CATALOGUE_TTL",
+    "CONFIRMATION_TTL",
     "MAX_CATALOGUE_PAGES",
     "Catalogue",
     "CatalogueStore",
@@ -45,6 +46,10 @@ CATALOGUE_TTL = 24 * 3600.0
 # first and so expire first; without the margin a stamp could outlive its pages and make a fresh
 # download look old.
 _STAMP_MARGIN = 120.0
+# How long the confirming request after a download may be cached. It must never be served stale,
+# or it would confirm an old answer instead of checking the API now; a minute only covers an
+# immediate repeat.
+CONFIRMATION_TTL = 60.0
 # A safety stop, not an expectation: 40 000 records is three times today's collection. Without
 # it a misbehaving API that never returns a short page would make us download forever.
 MAX_CATALOGUE_PAGES = 8
@@ -123,6 +128,17 @@ class _Listener:
     def of(callback: ProgressCallback) -> _Listener:
         """A listener for ``callback`` that runs in a copy of the current context."""
         return _Listener(callback, contextvars.copy_context())
+
+
+def _unique(page: Sequence[LawSummary]) -> list[LawSummary]:
+    """The laws of ``page`` without repeated identifiers, keeping the first copy of each."""
+    seen: set[str] = set()
+    laws: list[LawSummary] = []
+    for law in page:
+        if law.identifier not in seen:
+            seen.add(law.identifier)
+            laws.append(law)
+    return laws
 
 
 async def _call(callback: ProgressCallback, done: int, message: str) -> None:
@@ -212,15 +228,30 @@ class CatalogueStore:
 
         Search hits carry no body text and no subjects, so these two filters cannot be applied
         to the snapshot. With neither argument this is the whole catalogue. Raises
-        ``ValueError`` for a malformed subject code.
+        ``ValueError`` for a malformed subject code and when the criterion matches
+        ``CATALOGUE_PAGE_SIZE`` laws or more.
         """
         if text is None and subject_code is None:
             return list((await self.get(progress=progress)).laws)
         query = build_search_query(text=text, subject_code=subject_code, sort_by="published_on")
-        callbacks = [] if progress is None else [_Listener.of(progress)]
+        # One page only. A "topic" is a selective set of laws; a criterion that fills a page
+        # (a common word such as "ley" matches most of the collection) is not one, and paging
+        # through it would cost several 6 MB requests per topic for a result that says nothing.
+        # A full page cannot tell "exactly this many" from "more", and a set that large is too
+        # broad either way, so a full page is rejected without a second request.
         # ``ttl=None``: a selection is specific to this request, so the normal 30-minute search
         # lifetime applies rather than the catalogue's day.
-        return await self._crawl(query, None, callbacks, "Searching")
+        page = await self._client.search_laws(query, offset=0, limit=CATALOGUE_PAGE_SIZE, ttl=None)
+        if len(page) >= CATALOGUE_PAGE_SIZE:
+            criterion = " + ".join(part for part in (text, subject_code) if part is not None)
+            raise ValueError(
+                f"'{criterion}' matches more than {CATALOGUE_PAGE_SIZE:,} laws, too many to be "
+                "a topic; use more specific words."
+            )
+        laws = _unique(page)
+        if progress is not None:
+            await _notify([_Listener.of(progress)], len(laws), f"Searching: {len(laws)} laws")
+        return laws
 
     def _is_fresh(self, snapshot: Catalogue) -> bool:
         """Whether ``snapshot`` is younger than ``CATALOGUE_TTL``."""
@@ -270,18 +301,21 @@ class CatalogueStore:
     async def _crawl(
         self, query: str | None, ttl: float | None, listeners: list[_Listener], label: str
     ) -> list[LawSummary]:
-        """Page through ``query`` until a short page; return the laws without duplicates.
+        """Page through ``query`` until a short page, confirm the end, and return the laws.
 
-        Raises ``BoeResponseError`` when ``MAX_CATALOGUE_PAGES`` full pages come back.
+        Raises ``BoeResponseError`` when ``MAX_CATALOGUE_PAGES`` full pages come back or when
+        the confirming request finds a record after the last page.
         """
         laws: list[LawSummary] = []
         seen: set[str] = set()
+        received = 0
         for page_number in range(MAX_CATALOGUE_PAGES):
             # The offset counts raw API positions, duplicates included, so that no record is
             # skipped when an earlier one was added or removed during the crawl.
             page = await self._client.search_laws(
                 query, offset=page_number * CATALOGUE_PAGE_SIZE, limit=CATALOGUE_PAGE_SIZE, ttl=ttl
             )
+            received += len(page)
             for law in page:
                 # A record added mid-crawl shifts everything after it by one, so the last
                 # record of one page reappears at the start of the next: keep the first copy.
@@ -290,7 +324,24 @@ class CatalogueStore:
                     laws.append(law)
             await _notify(listeners, len(laws), f"{label}: {len(laws)} laws so far")
             if len(page) < CATALOGUE_PAGE_SIZE:
+                await self._confirm_end(query, received)
                 return laws
         raise BoeResponseError(
             f"BOE returned more than {MAX_CATALOGUE_PAGES * CATALOGUE_PAGE_SIZE} records"
         )
+
+    async def _confirm_end(self, query: str | None, received: int) -> None:
+        """Check that no record follows the ``received`` ones; raise ``BoeResponseError`` if so."""
+        # A short page is the only signal that the crawl is over, so one wrongly short page
+        # would silently cut the catalogue, and the snapshot would then be kept for a day. Asking
+        # for the record at the position just past the end costs one tiny request and turns that
+        # silent truncation into an error, which makes the store fall back to the previous
+        # snapshot. The short lifetime keeps this answer from ever being served stale.
+        extra = await self._client.search_laws(
+            query, offset=received, limit=1, ttl=CONFIRMATION_TTL
+        )
+        if extra:
+            raise BoeResponseError(
+                f"BOE paging was inconsistent: a page was short after {received} records, "
+                "but more records follow"
+            )

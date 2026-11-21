@@ -98,13 +98,83 @@ def store_for(fake: FakeSearch, clock: Clock) -> CatalogueStore:
 # --- get: paging and de-duplication ------------------------------------------------------------
 
 
+class ShortPageSearch(FakeSearch):
+    """Serves a page one record short at ``short_offset``, as a glitching API might."""
+
+    short_offset = 3
+    glitch = True
+
+    async def search_laws(
+        self,
+        query: str | None = None,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        ttl: float | None = None,
+    ) -> list[LawSummary]:
+        page = await super().search_laws(query, offset=offset, limit=limit, ttl=ttl)
+        if self.glitch and limit == 3 and offset == self.short_offset:
+            return page[:-1]
+        return page
+
+
+async def test_the_final_page_is_confirmed_by_a_one_record_request_with_a_short_lifetime(
+    clock: Clock,
+) -> None:
+    fake = FakeSearch(laws_numbered(7))
+
+    await store_for(fake, clock).get()
+
+    assert [(c["offset"], c["limit"]) for c in fake.calls] == [(0, 3), (3, 3), (6, 3), (7, 1)]
+    confirm = fake.calls[-1]
+    assert confirm["ttl"] == catalogue.CONFIRMATION_TTL == 60
+    assert confirm["query"] == fake.calls[0]["query"]  # same query, or it would prove nothing
+
+
+async def test_the_confirmation_follows_an_empty_final_page_too(clock: Clock) -> None:
+    fake = FakeSearch(laws_numbered(6))
+
+    await store_for(fake, clock).get()
+
+    assert [(c["offset"], c["limit"]) for c in fake.calls] == [(0, 3), (3, 3), (6, 3), (6, 1)]
+
+
+async def test_a_wrongly_short_page_is_a_response_error_and_leaves_no_snapshot(
+    clock: Clock,
+) -> None:
+    fake = ShortPageSearch(laws_numbered(8))
+    store = store_for(fake, clock)
+
+    with pytest.raises(BoeResponseError, match="inconsistent"):
+        await store.get()
+
+    # Raw positions: 3 + 2 records received, so the confirmation asks for offset 5.
+    assert (fake.calls[-1]["offset"], fake.calls[-1]["limit"]) == (5, 1)
+    fake.glitch = False
+    assert len((await store.get()).laws) == 8  # nothing was kept: the next call is a full retry
+
+
+async def test_a_wrongly_short_page_in_a_refresh_serves_the_previous_snapshot(
+    clock: Clock,
+) -> None:
+    fake = ShortPageSearch(laws_numbered(8))
+    fake.glitch = False
+    store = store_for(fake, clock)
+    first = await store.get()
+
+    fake.glitch = True
+    clock.now = START + timedelta(seconds=CATALOGUE_TTL + 5)
+
+    assert await store.get() is first
+
+
 async def test_get_pages_until_a_short_page_and_returns_every_law_in_order(clock: Clock) -> None:
     fake = FakeSearch(laws_numbered(7))
 
     result = await store_for(fake, clock).get()
 
     assert [law.identifier for law in result.laws] == [law.identifier for law in fake.laws]
-    assert [(c["offset"], c["limit"]) for c in fake.calls] == [(0, 3), (3, 3), (6, 3)]
+    assert [(c["offset"], c["limit"]) for c in fake.calls][:3] == [(0, 3), (3, 3), (6, 3)]
 
 
 async def test_get_asks_for_publication_order_with_the_day_long_lifetime(clock: Clock) -> None:
@@ -123,7 +193,7 @@ async def test_an_exact_multiple_of_the_page_size_ends_on_an_empty_page(clock: C
     result = await store_for(fake, clock).get()
 
     assert len(result.laws) == 6
-    assert [c["offset"] for c in fake.calls] == [0, 3, 6]
+    assert [c["offset"] for c in fake.calls] == [0, 3, 6, 6]  # the last is the confirmation
 
 
 async def test_an_empty_catalogue_is_a_valid_empty_snapshot(clock: Clock) -> None:
@@ -151,7 +221,7 @@ async def test_offsets_follow_raw_positions_not_unique_counts(clock: Clock) -> N
 
     await store_for(fake, clock).get()
 
-    assert [c["offset"] for c in fake.calls] == [0, 3]
+    assert [c["offset"] for c in fake.calls] == [0, 3, 4]  # 4 raw records, then the confirmation
 
 
 async def test_too_many_pages_is_a_response_error_and_leaves_no_snapshot(clock: Clock) -> None:
@@ -216,13 +286,13 @@ async def test_a_young_snapshot_is_reused_and_an_old_one_is_refreshed(clock: Clo
     clock.now = START + timedelta(seconds=CATALOGUE_TTL - 1)
     second = await store.get()
     assert second is first
-    assert len(fake.calls) == 1
+    assert len(fake.calls) == 2  # one page and its confirmation
 
     clock.now = START + timedelta(seconds=CATALOGUE_TTL)
     third = await store.get()
     assert third is not first
     assert third.fetched_at == clock.now
-    assert len(fake.calls) == 2
+    assert len(fake.calls) == 4  # two downloads, a page and its confirmation each
 
 
 # --- get: single flight, failure and cancellation ----------------------------------------------
@@ -239,7 +309,7 @@ async def test_concurrent_callers_share_one_download(clock: Clock) -> None:
     results = await asyncio.gather(*callers)
 
     assert results[0] is results[1] is results[2]
-    assert len(fake.calls) == 2  # two pages, once
+    assert len(fake.calls) == 3  # two pages and the confirmation, once
 
 
 async def test_every_concurrent_caller_gets_progress(clock: Clock) -> None:
@@ -316,7 +386,7 @@ async def test_cancelling_one_of_two_callers_leaves_the_download_to_the_other(cl
 
     assert len(result.laws) == 5
     assert fake.cancelled == 0
-    assert len(fake.calls) == 2
+    assert len(fake.calls) == 3
 
 
 async def test_a_caller_joining_a_download_that_lost_all_its_callers_starts_a_fresh_one(
@@ -482,19 +552,19 @@ async def test_select_with_neither_argument_returns_the_catalogue(clock: Clock) 
     selected = await store.select()
 
     assert selected == list((await store.get()).laws)
-    assert len(fake.calls) == 2  # one crawl only: the second get() was a snapshot hit
+    assert len(fake.calls) == 3  # one crawl only: the second get() was a snapshot hit
 
 
-async def test_select_by_text_queries_the_body_and_pages_with_the_normal_lifetime(
+async def test_select_by_text_queries_the_body_once_with_the_normal_lifetime(
     clock: Clock,
 ) -> None:
-    fake = FakeSearch(laws_numbered(5))
+    fake = FakeSearch(laws_numbered(2))
     store = store_for(fake, clock)
 
     selected = await store.select(text="teletrabajo")
 
-    assert len(selected) == 5
-    assert [c["offset"] for c in fake.calls] == [0, 3]
+    assert len(selected) == 2
+    assert [(c["offset"], c["limit"]) for c in fake.calls] == [(0, 3)]
     assert all(c["ttl"] is None for c in fake.calls)  # None means the client's SEARCH_TTL
     document = json.loads(str(fake.calls[0]["query"]))
     assert document["query"]["query_string"]["query"] == "texto:teletrabajo"
@@ -510,7 +580,10 @@ async def test_select_by_subject_code_and_text_combines_them(clock: Clock) -> No
     assert document["query"]["query_string"]["query"] == "texto:datos AND materia@codigo:3685"
 
 
-async def test_select_drops_duplicates_and_does_not_replace_the_snapshot(clock: Clock) -> None:
+async def test_select_drops_duplicates_and_does_not_replace_the_snapshot(
+    clock: Clock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(catalogue, "CATALOGUE_PAGE_SIZE", 4)  # room for a repeat in one page
     fake = FakeSearch([make_law("A"), make_law("B"), make_law("A")])
     store = store_for(fake, clock)
 
@@ -522,11 +595,31 @@ async def test_select_drops_duplicates_and_does_not_replace_the_snapshot(clock: 
     assert fake.calls[0]["ttl"] == CATALOGUE_TTL  # get() downloaded: select had stored nothing
 
 
-async def test_select_stops_at_the_page_limit(clock: Clock) -> None:
+async def test_select_by_text_that_fills_a_page_is_rejected_as_too_broad(clock: Clock) -> None:
     fake = FakeSearch(laws_numbered(100))
 
-    with pytest.raises(BoeResponseError):
-        await store_for(fake, clock).select(subject_code="1")
+    with pytest.raises(ValueError) as error:
+        await store_for(fake, clock).select(text="ley")
+
+    assert str(error.value) == (
+        "'ley' matches more than 3 laws, too many to be a topic; use more specific words."
+    )
+    assert len(fake.calls) == 1  # one page was enough to know; no second request
+
+
+async def test_select_by_subject_that_fills_a_page_is_rejected_naming_the_code(
+    clock: Clock,
+) -> None:
+    fake = FakeSearch(laws_numbered(100))
+
+    with pytest.raises(ValueError, match="'3685' matches more than 3 laws"):
+        await store_for(fake, clock).select(subject_code="3685")
+
+
+async def test_select_with_one_page_less_than_full_is_accepted(clock: Clock) -> None:
+    selected = await store_for(FakeSearch(laws_numbered(2)), clock).select(text="x")
+
+    assert len(selected) == 2
 
 
 async def test_select_rejects_a_malformed_subject_code_without_a_request(clock: Clock) -> None:
@@ -544,9 +637,9 @@ async def test_select_reports_progress(clock: Clock) -> None:
     async def progress(done: int, total: int | None, message: str) -> None:
         reports.append(done)
 
-    await store_for(FakeSearch(laws_numbered(5)), clock).select(text="x", progress=progress)
+    await store_for(FakeSearch(laws_numbered(2)), clock).select(text="x", progress=progress)
 
-    assert reports == [3, 5]
+    assert reports == [2]
 
 
 # --- with the real client and a recorded body --------------------------------------------------
@@ -562,9 +655,14 @@ async def test_with_the_real_client_the_recorded_page_is_cached_for_a_day(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(catalogue, "CATALOGUE_PAGE_SIZE", 5000)
-    route = router.get(f"{BASE_URL}legislacion-consolidada").mock(
-        return_value=json_response(load_fixture("search_bulk_sample_selected.json"))
-    )
+    page = load_fixture("search_bulk_sample_selected.json")
+    nothing = load_fixture("search_empty.json")
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        # The page itself, then nothing for the one-record confirmation past the end.
+        return json_response(nothing if request.url.params["limit"] == "1" else page)
+
+    route = router.get(f"{BASE_URL}legislacion-consolidada").mock(side_effect=answer)
     client = BoeClient(cache=cache, limiter=limiter, http=http, max_retries=0)
 
     result = await CatalogueStore(client).get()
@@ -572,13 +670,19 @@ async def test_with_the_real_client_the_recorded_page_is_cached_for_a_day(
     # The fixture has 9 hits, one of them twice (BOE-A-2026-23892).
     assert len(result.laws) == 8
     assert len({law.identifier for law in result.laws}) == 8
-    assert route.call_count == 1
-    assert route.calls.last.request.url.params["limit"] == "5000"
+    assert route.call_count == 2
+    assert route.calls[0].request.url.params["limit"] == "5000"
+    # The confirmation asks for the record after the 9 received, and is cached only briefly.
+    confirmation = route.calls.last.request.url.params
+    assert (confirmation["limit"], confirmation["offset"]) == ("1", "9")
     assert [ttl for _, ttl in cache.sets].count(CATALOGUE_TTL) == 1
+    assert [ttl for _, ttl in cache.sets].count(catalogue.CONFIRMATION_TTL) == 1
     assert CATALOGUE_TTL != SEARCH_TTL
     assert result.newest_update is not None
     # The stamp is a second, small entry: the pages (a day) and the stamp (a little less).
-    stamp_ttls = [ttl for key, ttl in cache.sets if ttl != CATALOGUE_TTL]
+    stamp_ttls = [
+        ttl for key, ttl in cache.sets if ttl not in (CATALOGUE_TTL, catalogue.CONFIRMATION_TTL)
+    ]
     assert len(stamp_ttls) == 1 and stamp_ttls[0] is not None
     assert 0 < stamp_ttls[0] < CATALOGUE_TTL
     assert await client.read_catalogue_stamp() == result.fetched_at

@@ -368,3 +368,25 @@ def published_on_descriptions(schema: Any) -> list[str]:
         for item in schema:
             found.extend(published_on_descriptions(item))
     return found
+
+
+async def test_structure_state_description_is_in_the_output_schema(mcp: Client[Any]) -> None:
+    tool: Tool = next(t for t in await mcp.list_tools() if t.name == "get_law_structure")
+    schema = tool.output_schema
+    assert schema is not None
+    assert state_descriptions(schema) == ["Present only when the entry is not in force on as_of."]
+
+
+def state_descriptions(schema: Any) -> list[str]:
+    """Every description given to a ``state`` property anywhere in an output schema."""
+    found: list[str] = []
+    if isinstance(schema, dict):
+        properties = schema.get("properties")
+        if isinstance(properties, dict) and isinstance(properties.get("state"), dict):
+            found.append(properties["state"].get("description", ""))
+        for value in schema.values():
+            found.extend(state_descriptions(value))
+    elif isinstance(schema, list):
+        for value in schema:
+            found.extend(state_descriptions(value))
+    return found

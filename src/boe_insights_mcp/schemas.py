@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
+from pydantic import BaseModel, ConfigDict, Field
 
 from boe_insights_mcp.structure import EntryKind
 from boe_insights_mcp.versions import ArticleState
@@ -486,17 +486,14 @@ class StructureItem(_Output):
     level: int = Field(description="Nesting depth; 1 is the top level.")
     label: str = Field(description="Designation, e.g. 'TÍTULO I', 'Artículo 27'.")
     heading: str = Field(description="Subject line after the designation; empty when none.")
+    # ``exclude_if`` leaves ``state`` out when it is ``None`` (in force, the usual case, or blanked
+    # by the use case), to save space; a custom serializer would do the same but would hide the
+    # field's description from the output schema.
     state: Literal["repealed", "not_yet_in_force"] | None = Field(
-        default=None, description="Present only when the entry is not in force on as_of."
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Present only when the entry is not in force on as_of.",
     )
-
-    @model_serializer(mode="wrap")
-    def _omit_state_in_force(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
-        """Leave ``state`` out when it is ``None`` (in force, the usual case), to save space."""
-        data: dict[str, object] = handler(self)
-        if data.get("state") is None:
-            data.pop("state", None)
-        return data
 
 
 class LawStructureResult(_Output):

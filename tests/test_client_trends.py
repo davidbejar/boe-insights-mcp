@@ -1,7 +1,8 @@
 """Tests of the two client additions that the trend tools rely on.
 
 ``search_laws`` takes a cache lifetime (``ttl``) and pages of up to 5000 records, and
-``has_cached_analysis`` answers from the cache without sending a request.
+``has_cached_analysis`` answers from the cache without sending a request, and a permanently
+failing analysis is remembered for a short time instead of being requested again.
 """
 
 from __future__ import annotations
@@ -12,7 +13,19 @@ import httpx
 import pytest
 import respx
 
-from boe_insights_mcp.client import ANALYSIS_TTL, BASE_URL, SEARCH_TTL, BoeClient
+from boe_insights_mcp.client import (
+    ANALYSIS_FAILURE_TTL,
+    ANALYSIS_TTL,
+    BASE_URL,
+    SEARCH_TTL,
+    BoeClient,
+)
+from boe_insights_mcp.errors import (
+    BoeError,
+    BoeNotFoundError,
+    BoeResponseError,
+    BoeUnavailableError,
+)
 from boe_insights_mcp.ratelimit import RateLimiter
 from tests.conftest import RecordingCache
 
@@ -120,3 +133,60 @@ async def test_the_analysis_lifetime_is_unchanged(
     await client.get_law_analysis(LAW_ID)
 
     assert cache.sets[0][1] == ANALYSIS_TTL
+
+
+# --- a permanently failing analysis is remembered ----------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("make_response", "error"),
+    [
+        (lambda xml, load: xml(load("error_404_unknown_id.xml"), 404), BoeNotFoundError),
+        (lambda xml, load: httpx.Response(200, json={"unexpected": True}), BoeResponseError),
+    ],
+    ids=["not_found", "unreadable"],
+)
+async def test_a_permanent_failure_is_remembered_and_costs_no_second_request(
+    router: respx.MockRouter,
+    client: BoeClient,
+    cache: RecordingCache,
+    load_fixture: Callable[[str], bytes],
+    xml_response: Callable[..., httpx.Response],
+    make_response: Callable[..., httpx.Response],
+    error: type[BoeError],
+) -> None:
+    route = router.get(ANALYSIS_URL).mock(return_value=make_response(xml_response, load_fixture))
+
+    with pytest.raises(error):
+        await client.get_law_analysis(LAW_ID)
+    assert await client.has_cached_analysis(LAW_ID) is True  # the answer is known, no request
+    with pytest.raises(error):
+        await client.get_law_analysis(LAW_ID)
+
+    assert route.call_count == 1
+    assert client.stats.cache_hits == 1  # the second call was served from the marker
+    assert [ttl for _, ttl in cache.sets] == [ANALYSIS_FAILURE_TTL]
+    assert ANALYSIS_FAILURE_TTL == 3600 < ANALYSIS_TTL
+
+
+async def test_a_retryable_failure_is_never_remembered(
+    router: respx.MockRouter,
+    client: BoeClient,
+    cache: RecordingCache,
+    load_fixture: Callable[[str], bytes],
+    json_response: Callable[..., httpx.Response],
+) -> None:
+    route = router.get(ANALYSIS_URL).mock(
+        side_effect=[
+            httpx.Response(503, content=b"<status/>"),
+            json_response(load_fixture("analisis_ley40_2015.json")),
+        ]
+    )
+
+    with pytest.raises(BoeUnavailableError):
+        await client.get_law_analysis(LAW_ID)
+    assert cache.sets == []
+    assert await client.has_cached_analysis(LAW_ID) is False
+    await client.get_law_analysis(LAW_ID)  # tried again, and this time it works
+
+    assert route.call_count == 2
