@@ -7,9 +7,11 @@ inline XML documents built with the helpers below.
 from __future__ import annotations
 
 import time
+from collections import Counter
 from collections.abc import Callable
 from datetime import date
 from typing import Any
+from xml.etree import ElementTree
 
 import pytest
 from pydantic import ValidationError
@@ -26,6 +28,13 @@ FUTURE = "texto_bloque_future_fecha_vigencia.xml"
 REPEALED = "texto_bloque_a40_repealed_article_DERIVED.xml"
 LAW_REPEALED = "texto_bloque_a1_repealed_law_no_marker.xml"
 ALL_FIXTURES = [A48, REPEALED]
+DT_RD1624 = "texto_bloque_disposicion_multiversion_rd1624_dt.xml"
+NOTE_LEY30 = "texto_bloque_no_ley30_1992_two_versions_empty_vigencia.xml"
+ANEXO_IVA = "texto_bloque_anexo_iva_1992_thead_noDesde_trimmed.xml"
+TABLE_LEY29 = "texto_bloque_table_ley29_1987_a21_trimmed.xml"
+BLOCKQUOTE_A1_2 = "texto_bloque_blockquote_rd1624_a1-2.xml"
+PREAMBULO = "texto_bloque_preambulo_ley39_2015.xml"
+TITULO_TI = "texto_bloque_encabezado_titulo_ley39_2015.xml"
 
 
 # --- helpers ---------------------------------------------------------------------------------
@@ -545,19 +554,19 @@ def test_versions_with_equal_dates_keep_document_order() -> None:
     assert source_ids(parse_block(xml)) == ["first", "second", "third", "late"]
 
 
-def test_version_without_effective_date_sorts_first() -> None:
+def test_version_without_any_date_sorts_first() -> None:
     xml = doc(
         version_xml(law="dated", effective="20200101"),
-        version_xml(law="undated", effective=None),
+        version_xml(law="undated", effective=None, published=None),
     )
     assert source_ids(parse_block(xml)) == ["undated", "dated"]
 
 
-def test_versions_with_blank_or_missing_dates_keep_document_order_among_themselves() -> None:
+def test_versions_with_no_dates_at_all_keep_document_order_among_themselves() -> None:
     xml = doc(
         version_xml(law="dated", effective="20190101"),
-        version_xml(law="blank", effective=""),
-        version_xml(law="missing", effective=None),
+        version_xml(law="blank", effective="", published=None),
+        version_xml(law="missing", effective=None, published=None),
     )
     assert source_ids(parse_block(xml)) == ["blank", "missing", "dated"]
 
@@ -752,3 +761,492 @@ def test_models_are_frozen(make: Callable[[], Any], attribute: str, value: str) 
     model = make()
     with pytest.raises(ValidationError):
         setattr(model, attribute, value)
+
+
+# === Version ordering by start date: effective_from, else published_on (spec section 8) ==========
+
+
+def test_version_with_an_empty_effective_date_is_ordered_by_its_publication_date() -> None:
+    xml = doc(
+        version_xml(law="last", effective="", published="20260228"),
+        version_xml(law="middle", effective="20260205", published="20260204"),
+        version_xml(law="first", effective="20170528", published="20170527"),
+    )
+    assert source_ids(parse_block(xml)) == ["first", "middle", "last"]
+
+
+def test_version_with_a_missing_effective_date_is_ordered_by_its_publication_date() -> None:
+    xml = doc(
+        version_xml(law="later", effective=None, published="20220601"),
+        version_xml(law="earlier", effective="20200101", published="20191201"),
+    )
+    assert source_ids(parse_block(xml)) == ["earlier", "later"]
+
+
+def test_version_without_effective_date_published_before_a_dated_one_sorts_before_it() -> None:
+    xml = doc(
+        version_xml(law="dated", effective="20200101", published="20191201"),
+        version_xml(law="undated", effective="", published="20151002"),
+    )
+    assert source_ids(parse_block(xml)) == ["undated", "dated"]
+
+
+def test_versions_sharing_a_start_date_keep_document_order_across_both_sources() -> None:
+    xml = doc(
+        version_xml(law="from-publication", effective="", published="20200101"),
+        version_xml(law="from-effect", effective="20200101", published="20190101"),
+    )
+    assert source_ids(parse_block(xml)) == ["from-publication", "from-effect"]
+
+
+def test_version_without_any_date_still_sorts_before_dated_versions_whatever_their_order() -> None:
+    xml = doc(
+        version_xml(law="dated", effective="20200101", published="20191201"),
+        version_xml(law="nodate", effective=None, published=None),
+    )
+    assert source_ids(parse_block(xml)) == ["nodate", "dated"]
+
+
+def test_parsed_versions_keep_their_own_dates_after_reordering() -> None:
+    xml = doc(
+        version_xml(law="last", effective="", published="20260228"),
+        version_xml(law="first", effective="20170528", published="20170527"),
+    )
+    last = parse_block(xml).versions[1]
+    assert (last.effective_from, last.published_on) == (None, date(2026, 2, 28))
+    assert last.starts_on == date(2026, 2, 28)
+
+
+def test_fixture_with_an_empty_last_vigencia_parses_in_chronological_order(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture(DT_RD1624))
+    assert source_ids(block) == [
+        "BOE-A-2017-5857",
+        "BOE-A-2019-13563",
+        "BOE-A-2025-26458",
+        "BOE-A-2026-2024",
+        "BOE-A-2026-2547",
+        "BOE-A-2026-4667",
+    ]
+    assert (block.block_id, block.kind, block.title) == (
+        "dt",
+        "precepto",
+        "Disposición transitoria cuarta",
+    )
+    last = block.versions[-1]
+    assert (last.effective_from, last.published_on) == (None, date(2026, 2, 28))
+
+
+def test_fixture_with_the_repeal_note_listed_before_the_original_is_reordered(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture(NOTE_LEY30))
+    assert source_ids(block) == ["BOE-A-1992-2631", "BOE-A-2015-10565"]
+    assert [v.starts_on for v in block.versions] == [date(1993, 2, 27), date(2015, 10, 2)]
+
+
+def test_fixture_with_an_out_of_order_vigencia_is_sorted_ascending(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    assert source_ids(block) == [
+        "BOE-A-1992-28740",
+        "BOE-A-1994-28968",
+        "BOE-A-2014-12329",
+        "BOE-A-2022-22128",
+    ]
+    assert [v.effective_from for v in block.versions] == [
+        date(1993, 1, 1),
+        date(1995, 1, 1),
+        date(2015, 1, 1),
+        date(2023, 1, 1),
+    ]
+
+
+@pytest.mark.parametrize("fixture", [DT_RD1624, NOTE_LEY30, ANEXO_IVA, A68, A48])
+def test_every_parsed_fixture_has_versions_in_ascending_start_order(
+    load_fixture: Loader, fixture: str
+) -> None:
+    starts = [v.starts_on for v in parse_block(load_fixture(fixture)).versions]
+    assert all(start is not None for start in starts)
+    assert starts == sorted(starts)  # type: ignore[type-var]
+
+
+# === Tables in real fixtures ======================================================================
+
+TABLE_KINDS_NEVER_SEEN_AS_PARAGRAPHS = {
+    "table_row",
+    "tr",
+    "td",
+    "th",
+    "thead",
+    "tbody",
+    "colgroup",
+    "col",
+}
+
+
+def table_paragraphs(block: Block, law: str) -> list[Paragraph]:
+    """The ``table`` paragraphs of the version introduced by ``law``."""
+    (version,) = (v for v in block.versions if v.source_law_id == law)
+    return [p for p in version.paragraphs if p.kind == "table"]
+
+
+def xml_tables(fixture_bytes: bytes, law: str) -> list[ElementTree.Element]:
+    """The ``<table>`` elements of one version, read with the standard parser as an oracle."""
+    root = ElementTree.fromstring(fixture_bytes)
+    (version,) = (v for v in root.iter("version") if v.get("id_norma") == law)
+    return [child for child in version if child.tag == "table"]
+
+
+def oracle_lines(table: ElementTree.Element) -> list[str]:
+    """Expected table text: one line per ``<tr>`` in document order, cells joined by `` | ``."""
+    lines = []
+    for row in table.iter("tr"):
+        cells = [" ".join(" ".join(c.itertext()).replace(chr(0xA0), " ").split()) for c in row]
+        lines.append(" | ".join(cells))
+    return lines
+
+
+def test_ley29_table_with_th_headers_is_one_paragraph_with_one_line_per_row(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture(TABLE_LEY29))
+    (table,) = table_paragraphs(block, "BOE-A-1987-28141")
+    lines = table.text.split("\n")
+    assert len(lines) == 17
+    assert lines[0] == (
+        "Base liquidable hasta pesetas | Tipo medio - % | Cuota íntegra | "
+        "Resto base - Millones | Tipo marginal - %"
+    )
+    assert lines[1] == "- | - | - | 1 | 7,65"
+    assert lines[2] == "Un millón | 7,65 | 76,500 | 1 | 8,50"
+    assert lines[-1] == "Cien millones | 24,99 | 24.990.000 | Exceso | 34,00"
+
+
+def test_ley29_second_version_table_keeps_an_empty_cell_in_its_column(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(TABLE_LEY29))
+    (table,) = table_paragraphs(block, "BOE-A-2001-24962")
+    lines = table.text.split("\n")
+    assert len(lines) == 17
+    assert lines[0] == (
+        "Base liquidable - Hasta euros | Cuota íntegra – Euros | "  # noqa: RUF001
+        "Resto base liquidable – Hasta euros | Tipo aplicable – Porcentaje"  # noqa: RUF001
+    )
+    assert lines[1] == "0,00 |  | 7.993,46 | 7,65"
+    assert lines[2] == "7.993,46 | 611,50 | 7.987,45 | 8,50"
+    assert lines[-1] == "797.555,08 | 199.291,40 | en adelante | 34,00"
+
+
+def test_table_sits_between_its_neighbouring_paragraphs_in_the_real_article(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture(TABLE_LEY29))
+    second = next(v for v in block.versions if v.source_law_id == "BOE-A-2001-24962")
+    kinds = [p.kind for p in second.paragraphs]
+    assert kinds[:5] == ["articulo", "parrafo", "parrafo", "table", "parrafo"]
+    assert kinds[5:] == ["nota_pie"] * 4 + ["nota_pie_2"] + kinds[10:]
+    assert all(p.quoted for p in second.paragraphs[5:])
+    assert not second.paragraphs[3].quoted
+
+
+@pytest.mark.parametrize(
+    ("law", "tables"),
+    [
+        ("BOE-A-1992-28740", 0),
+        ("BOE-A-1994-28968", 0),
+        ("BOE-A-2014-12329", 4),
+        ("BOE-A-2022-22128", 4),
+    ],
+)
+def test_annex_yields_exactly_one_table_paragraph_per_table_element(
+    load_fixture: Loader, law: str, tables: int
+) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    assert len(table_paragraphs(block, law)) == tables
+    assert len(xml_tables(load_fixture(ANEXO_IVA), law)) == tables
+
+
+@pytest.mark.parametrize("law", ["BOE-A-2014-12329", "BOE-A-2022-22128"])
+def test_annex_table_cells_never_leak_out_as_paragraphs_of_their_own(
+    load_fixture: Loader, law: str
+) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    (version,) = (v for v in block.versions if v.source_law_id == law)
+    assert not {p.kind for p in version.paragraphs} & TABLE_KINDS_NEVER_SEEN_AS_PARAGRAPHS
+    assert not any(p.quoted for p in version.paragraphs if p.kind == "table")
+
+
+@pytest.mark.parametrize("fixture", [TABLE_LEY29, ANEXO_IVA])
+def test_every_table_matches_one_line_per_row_with_cells_joined_by_pipes(
+    load_fixture: Loader, fixture: str
+) -> None:
+    raw = load_fixture(fixture)
+    block = parse_block(raw)
+    for version in block.versions:
+        expected = [oracle_lines(t) for t in xml_tables(raw, version.source_law_id)]
+        parsed = [p.text.split("\n") for p in version.paragraphs if p.kind == "table"]
+        assert parsed == expected
+
+
+def test_th_header_row_in_tbody_is_included_as_the_first_line(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    tables = table_paragraphs(block, "BOE-A-2014-12329")
+    assert [t.text.split("\n")[0] for t in tables] == [
+        "Códi. NCE | Designación de la mercancía",
+        "Cód. NCE | Designación de la mercancía",
+        "12,5 | kilogramos.",  # a headerless table: its first row is data
+        "Cód. NCE | Designación de la mercancía",
+    ]
+    assert [len(t.text.split("\n")) for t in tables] == [2, 24, 21, 11]
+
+
+def test_thead_row_with_td_cells_is_included_before_the_body_rows(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    tables = table_paragraphs(block, "BOE-A-2022-22128")
+    first, second = tables[0], tables[1]
+    assert first.text.split("\n") == [
+        "Cód. NCE | Designación de la Mercancía",
+        "7204 | Desperdicios y desechos de fundición de hierro o acero (chatarra y lingotes).",
+    ]
+    lines = second.text.split("\n")
+    assert len(lines) == 27
+    assert lines[0] == "Cod. NCE | Designación de la mercancía"
+    assert lines[1] == "7402 | Cobre sin refinar; ánodos de cobre para refinado."
+    assert lines[2] == "7403 | Cobre refinado en forma de cátodos y secciones de cátodo."
+
+
+def test_colgroup_contributes_no_text_and_no_blank_lines(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    for table in table_paragraphs(block, "BOE-A-2022-22128"):
+        lines = table.text.split("\n")
+        assert all(line.strip() for line in lines)
+        assert "row_column" not in table.text
+
+
+def test_empty_cell_after_a_cell_wrapper_stays_a_blank_cell_not_a_dropped_one(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    second = table_paragraphs(block, "BOE-A-2022-22128")[1]
+    assert second.text.split("\n")[-1] == " | Baterías de plomo recuperadas."
+
+
+@pytest.mark.parametrize("fixture", [TABLE_LEY29, ANEXO_IVA])
+def test_table_text_has_no_stray_pipes_or_blank_lines(load_fixture: Loader, fixture: str) -> None:
+    block = parse_block(load_fixture(fixture))
+    for version in block.versions:
+        for paragraph in version.paragraphs:
+            if paragraph.kind != "table":
+                continue
+            lines = paragraph.text.split("\n")
+            widths = {len(line.split(" | ")) for line in lines}
+            assert len(widths) == 1, "rows of one table have the same number of cells"
+            assert all(line.strip(" |") for line in lines), "no row of only separators"
+            assert "||" not in paragraph.text
+            assert "  " not in paragraph.text.replace(" |  | ", " | | ")
+
+
+# === Blockquotes in real fixtures =================================================================
+
+
+def test_blockquote_paragraphs_keep_their_own_kind_and_are_quoted(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(BLOCKQUOTE_A1_2))
+    original, repeal, added = block.versions
+    assert [(p.kind, p.quoted) for p in original.paragraphs] == [
+        ("articulo", False),
+        ("parrafo", False),
+        ("parrafo", False),
+    ]
+    assert [(p.kind, p.quoted) for p in repeal.paragraphs] == [
+        ("articulo", False),
+        ("parrafo", False),
+        ("nota_pie", True),
+    ]
+    assert [(p.kind, p.quoted) for p in added.paragraphs] == [
+        ("articulo", False),
+        ("parrafo", False),
+        ("nota_pie", True),
+        ("nota_pie", True),
+    ]
+
+
+def test_blockquote_footnote_text_is_kept_and_exposed_as_a_note(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(BLOCKQUOTE_A1_2))
+    repeal = block.versions[1]
+    assert repeal.notes == (
+        "Se deroga por el art. 1.1 del Real Decreto 296/1998, de 27 de febrero. "
+        "Ref. BOE-A-1998-4774",
+    )
+    assert repeal.text == "Artículo 1. Actividades de los Entes públicos.\n\n(Derogado)"
+    added = block.versions[2]
+    assert len(added.notes) == 2
+    assert added.notes[0].startswith(
+        "Se añade por el art. 1.1 del Real Decreto 424/2021, de 15 de junio."
+    )
+
+
+def test_blockquote_creates_no_paragraph_of_its_own(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(BLOCKQUOTE_A1_2))
+    assert all(p.kind != "blockquote" for v in block.versions for p in v.paragraphs)
+
+
+def test_blockquote_with_a_class_is_handled_like_a_plain_one(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    (version,) = (v for v in block.versions if v.source_law_id == "BOE-A-2014-12329")
+    quoted_body = [p for p in version.paragraphs if p.quoted and not p.kind.startswith("nota_pie")]
+    assert [p.kind for p in quoted_body] == [
+        "parrafo",
+        "cita_con_pleca",
+        "parrafo",
+        "parrafo",
+        "parrafo_2",
+        "parrafo",
+        "parrafo",
+        "parrafo",
+        "parrafo",
+    ]
+    assert quoted_body[0].text.startswith("Téngase en cuenta que esta modificación del apartado 5")
+    assert quoted_body[1].text == "Redacción anterior:"
+    assert quoted_body[2].text.startswith("Quinto. Régimen de depósito distinto de los aduaneros:")
+
+
+def test_classed_blockquote_content_is_part_of_the_body_text_marked_as_quoted(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    (version,) = (v for v in block.versions if v.source_law_id == "BOE-A-2014-12329")
+    blocks = version.text.split("\n\n")
+    assert "> Redacción anterior:" in blocks
+    assert any(
+        b.startswith("> Téngase en cuenta que esta modificación del apartado 5") for b in blocks
+    )
+    assert not any(b.startswith("> Se añaden los apartados 8 y 10") for b in blocks), "footnotes"
+
+
+def test_plain_blockquote_footnotes_after_the_tables_are_notes(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    (version,) = (v for v in block.versions if v.source_law_id == "BOE-A-2014-12329")
+    assert len(version.notes) == 14
+    assert version.notes[0].startswith("Se añaden los apartados 8 y 10 y se modifica el 5")
+
+
+def test_paragraphs_outside_any_blockquote_are_not_quoted_in_the_annex(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    first = block.versions[0]
+    assert first.paragraphs[0].kind == "anexo"
+    assert first.paragraphs[0].text == "ANEXO"
+    assert not first.paragraphs[0].quoted
+    assert [p.quoted for p in first.paragraphs].count(True) == 1  # its single footnote
+
+
+# === Preamble, heading and initial-note blocks ====================================================
+
+
+def test_preamble_block_has_kind_preambulo_an_empty_title_and_one_version(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture(PREAMBULO))
+    assert (block.block_id, block.kind, block.title) == ("preambulo", "preambulo", "")
+    assert len(block.versions) == 1
+    version = block.versions[0]
+    assert (version.source_law_id, version.published_on, version.effective_from) == (
+        "BOE-A-2015-10565",
+        date(2015, 10, 2),
+        date(2016, 10, 2),
+    )
+
+
+def test_preamble_paragraph_kinds_are_the_classes_of_the_source(load_fixture: Loader) -> None:
+    (version,) = parse_block(load_fixture(PREAMBULO)).versions
+    counts = Counter(p.kind for p in version.paragraphs)
+    assert counts == {"parrafo": 44, "centro_redonda": 7, "parrafo_2": 6}
+    assert version.paragraphs[0].kind == "centro_redonda"
+    assert version.paragraphs[0].text == "FELIPE VI"
+    assert version.paragraphs[1].text == "REY DE ESPAÑA"
+
+
+def test_preamble_has_no_notes_and_no_quoted_paragraphs(load_fixture: Loader) -> None:
+    (version,) = parse_block(load_fixture(PREAMBULO)).versions
+    assert version.notes == ()
+    assert not any(p.quoted for p in version.paragraphs)
+    assert version.text.startswith("FELIPE VI\n\nREY DE ESPAÑA")
+
+
+def test_heading_block_has_kind_encabezado_and_its_title(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(TITULO_TI))
+    assert (block.block_id, block.kind, block.title) == ("ti", "encabezado", "TÍTULO I")
+    assert len(block.versions) == 1
+
+
+def test_heading_block_paragraphs_are_number_and_name(load_fixture: Loader) -> None:
+    (version,) = parse_block(load_fixture(TITULO_TI)).versions
+    assert [(p.kind, p.text) for p in version.paragraphs] == [
+        ("titulo_num", "TÍTULO I"),
+        ("titulo_tit", "De los interesados en el procedimiento"),
+    ]
+    assert version.text == "TÍTULO I\n\nDe los interesados en el procedimiento"
+    assert (version.published_on, version.effective_from) == (date(2015, 10, 2), date(2016, 10, 2))
+
+
+def test_annex_block_is_an_encabezado_with_anexo_paragraphs(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture(ANEXO_IVA))
+    assert (block.block_id, block.kind, block.title) == ("an", "encabezado", "ANEXO")
+    assert block.versions[0].paragraphs[0].kind == "anexo"
+
+
+def test_repeal_initial_note_is_an_untitled_nota_inicial_of_siempre_se_ve_paragraphs(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture("texto_bloque_no_lopd1999_repealed.xml"))
+    assert (block.block_id, block.kind, block.title) == ("no", "nota_inicial", "")
+    (version,) = block.versions
+    (note,) = version.paragraphs
+    assert note.kind == "siempreSeVe"
+    assert note.text.startswith("Norma derogada, con efectos de 7 de diciembre de 2018")
+    assert version.notes == ()
+
+
+def test_initial_note_with_two_versions_keeps_both_and_orders_them_by_date(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture("texto_bloque_no_ley11_2007_repealed_with_tengase.xml"))
+    assert [v.effective_from for v in block.versions] == [date(2016, 10, 2), date(2018, 9, 4)]
+    first, second = block.versions
+    assert [p.kind for p in first.paragraphs] == ["siempreSeVe", "siempreSeVe"]
+    assert first.paragraphs[0].text.startswith(
+        "Norma derogada, con efectos de 2 de octubre de 2016"
+    )
+    assert first.paragraphs[1].text.startswith("Téngase en cuenta que la disposición final 7")
+    assert second.paragraphs[1].text.startswith("No obstante, hasta que")
+
+
+def test_initial_note_blank_paragraphs_are_skipped(load_fixture: Loader) -> None:
+    block = parse_block(load_fixture("texto_bloque_no_rd1624_1992_correction_not_repeal.xml"))
+    (version,) = block.versions
+    (note,) = version.paragraphs
+    assert note.kind == "textoCompleto"
+    assert note.text.startswith("Incluye la corrección de errores publicada en BOE núm. 33")
+
+
+def test_initial_note_with_an_empty_vigencia_keeps_its_publication_date(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture(NOTE_LEY30))
+    original, repeal = block.versions
+    assert [(p.kind) for p in original.paragraphs] == ["textoCompleto"]
+    assert original.paragraphs[0].text.startswith("Incluye las correcciones de errores")
+    assert (repeal.effective_from, repeal.published_on) == (None, date(2015, 10, 2))
+    assert [p.kind for p in repeal.paragraphs] == ["siempreSeVe", "siempreSeVe"]
+
+
+def test_rename_note_is_a_future_dated_nota_inicial_and_ignores_the_odd_attribute(
+    load_fixture: Loader,
+) -> None:
+    block = parse_block(load_fixture("texto_bloque_no_rd424_2005_rename_not_repeal.xml"))
+    (version,) = block.versions
+    assert (version.published_on, version.effective_from) == (date(2026, 11, 19), date(2027, 1, 1))
+    assert version.paragraphs[0].text.startswith(
+        "Con efectos de 1 de enero de 2027, esta norma pasa a denominarse"
+    )

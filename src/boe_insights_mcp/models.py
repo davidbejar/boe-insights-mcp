@@ -259,6 +259,14 @@ class BlockVersion(_ApiModel):
     paragraphs: tuple[Paragraph, ...]
 
     @property
+    def starts_on(self) -> date | None:
+        """When this version starts to apply: ``effective_from``, else ``published_on``."""
+        # Why the fallback: ``fecha_vigencia`` is sometimes empty on a first or last version while
+        # ``fecha_publicacion`` is present, and versions are not reliably in order in the XML, so
+        # ordering and selection need one date that is almost always there (api-notes 6.1).
+        return self.effective_from or self.published_on
+
+    @property
     def body(self) -> tuple[Paragraph, ...]:
         """The paragraphs that are not footnotes, quoted ones included."""
         return tuple(p for p in self.paragraphs if not _is_footnote(p))
@@ -282,4 +290,4 @@ class Block(_ApiModel):
     """``tipo`` (``precepto``, ``nota_inicial``, ``preambulo``...), ``""`` when absent."""
     title: _Title
     versions: tuple[BlockVersion, ...]
-    """Ascending by ``effective_from`` (undated first), document order kept for ties."""
+    """Ascending by ``starts_on`` (undated first), document order kept for ties."""

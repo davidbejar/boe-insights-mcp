@@ -4,6 +4,9 @@ All network access goes through :class:`BoeClient`, which centralises caching, r
 retries, error mapping and data normalisation. Responses are cached as raw bodies, and only
 after they have parsed and validated.
 
+Two wire formats share one request path: the JSON endpoints and the XML-only block endpoint
+(api-notes 6).
+
 Public names: ``BoeClient`` (the endpoint methods), the ``*_TTL`` cache lifetimes, ``LAW_ID``
 (the identifier pattern, reused by ``references``) and ``ClientStats``. Layering: ``legislation``
 calls this module; this module composes ``cache`` (raw bodies), ``ratelimit`` (spacing and
@@ -21,8 +24,10 @@ import re
 import time
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
+from datetime import date
 from types import TracebackType
 from typing import Literal, Self, TypeVar, get_args
+from urllib.parse import quote
 
 import httpx
 from pydantic import TypeAdapter
@@ -37,6 +42,8 @@ from boe_insights_mcp.errors import (
     BoeUnavailableError,
 )
 from boe_insights_mcp.models import (
+    Block,
+    IndexEntry,
     LawAnalysis,
     LawMetadata,
     LawSummary,
@@ -44,15 +51,20 @@ from boe_insights_mcp.models import (
     as_list,
 )
 from boe_insights_mcp.ratelimit import RateLimiter
+from boe_insights_mcp.textparse import parse_block
 
 __all__ = [
     "ANALYSIS_TTL",
     "AUXILIARY_TTL",
     "BASE_URL",
     "DEFAULT_USER_AGENT",
+    "INITIAL_NOTE_TTL",
     "LAW_ID",
     "METADATA_TTL",
     "SEARCH_TTL",
+    "TEXT_BLOCK_TTL",
+    "TEXT_BLOCK_VERSIONED_TTL",
+    "TEXT_INDEX_TTL",
     "AuxiliaryTable",
     "BoeClient",
     "ClientStats",
@@ -71,6 +83,12 @@ AUXILIARY_TTL = 7 * 24 * 3600.0
 SEARCH_TTL = 30 * 60.0
 METADATA_TTL = 6 * 3600.0
 ANALYSIS_TTL = 6 * 3600.0
+TEXT_INDEX_TTL = 6 * 3600.0
+TEXT_BLOCK_TTL = 6 * 3600.0
+# A block cannot change without its ``fecha_actualizacion`` in the index changing, and that date
+# is part of the cache key, so a block fetched with it can be kept for a long time.
+TEXT_BLOCK_VERSIONED_TTL = 30 * 24 * 3600.0
+INITIAL_NOTE_TTL = 6 * 3600.0
 
 AuxiliaryTable = Literal[
     "materias",
@@ -82,7 +100,19 @@ AuxiliaryTable = Literal[
     "relaciones-posteriores",
 ]
 
-_ACCEPT = "application/json"
+_JSON = "application/json"
+# The block endpoint answers HTTP 400 to a JSON ``Accept`` (api-notes 6).
+_XML = "application/xml"
+# Real block ids contain dots (``a51ter.``, ``arts.1863bisa1873bis.``; api-notes 6.1) so dots are
+# allowed, but only these characters: nothing that could end the path segment, start a query or
+# fragment, or be decoded into something else. ``.`` and ``..`` alone are refused separately
+# because URL normalisation would treat them as path navigation.
+_BLOCK_ID = re.compile(r"[A-Za-z0-9_.-]{1,60}")
+# The initial note of a law is the block with this id (api-notes, "Initial note").
+_NOTE_BLOCK_ID = "no"
+# Cached in place of a body to remember that a law has no initial note. It is not XML, so a
+# reader that mistook it for a block would fail to parse it and drop it (the stale-body path).
+_NO_NOTE = b"boe-insights-mcp: no initial note"
 # Retry-After is honoured but capped; the total time budget of one call (``total_timeout``) can
 # still cut it short.
 _MAX_RETRY_AFTER = 60.0
@@ -142,11 +172,16 @@ def _first_record(data: object) -> object:
     return records[0]
 
 
-def _parse(body: bytes, build: Callable[[object], _T]) -> _T:
-    """Unwrap ``body`` and build a result; any failure becomes a ``BoeResponseError``."""
+def _from_envelope(build: Callable[[object], _T]) -> Callable[[bytes], _T]:
+    """Adapt a builder of ``data`` into a builder of a JSON response body."""
+    return lambda body: build(_unwrap_envelope(body))
+
+
+def _parse(body: bytes, build: Callable[[bytes], _T]) -> _T:
+    """Build a result from ``body``; any failure becomes a ``BoeResponseError``."""
     try:
-        return build(_unwrap_envelope(body))
-    except ValueError as error:  # includes JSON and pydantic validation errors
+        return build(body)
+    except ValueError as error:  # includes JSON, XML and pydantic validation errors
         raise BoeResponseError(
             f"BOE returned a response that could not be parsed ({type(error).__name__})",
             status=200,
@@ -171,6 +206,18 @@ def _build_analysis(data: object) -> LawAnalysis:
 def _build_table(data: object) -> dict[str, str]:
     """Validate an auxiliary table: an object mapping code to text (api-notes 7)."""
     return _TABLE.validate_python(data)
+
+
+def _build_index(data: object) -> list[IndexEntry]:
+    """Build the block index from ``data``, which holds the block list in any collapsed shape."""
+    # ``data`` is ``[{"bloque": [...]}]``, but a one-element list collapses to an object and a
+    # one-block index to a bare entry, so each layer goes through ``as_list`` (api-notes 6).
+    entries: list[IndexEntry] = []
+    for holder in as_list(data):
+        if not isinstance(holder, dict):
+            raise ValueError("index record is not an object")
+        entries.extend(IndexEntry.model_validate(entry) for entry in as_list(holder.get("bloque")))
+    return entries
 
 
 def _api_message(response: httpx.Response) -> str | None:
@@ -229,6 +276,13 @@ def _retry_after(response: httpx.Response) -> float | None:
     return min(float(value), _MAX_RETRY_AFTER)
 
 
+def _checked_block_id(block_id: str) -> str:
+    """Return ``block_id`` if it is a safe single path segment, else raise ``ValueError``."""
+    if not _BLOCK_ID.fullmatch(block_id) or block_id in {".", ".."}:
+        raise ValueError(f"invalid block identifier: {block_id!r}")
+    return block_id
+
+
 def _checked_law_id(law_id: str) -> str:
     """Return ``law_id`` if it is well formed; this also keeps it from altering the URL path."""
     if not LAW_ID.fullmatch(law_id):
@@ -273,7 +327,7 @@ class BoeClient:
         self._owns_http = http is None
         self._http = http if http is not None else httpx.AsyncClient()
         self._base_url = base_url if base_url.endswith("/") else f"{base_url}/"
-        self._headers = {"Accept": _ACCEPT, "User-Agent": user_agent}
+        self._user_agent = user_agent
         self._timeout = timeout
         self._total_timeout = total_timeout
         self._clock = clock
@@ -297,23 +351,70 @@ class BoeClient:
         params: dict[str, str | int] = {"limit": limit, "offset": offset}
         if query is not None:
             params["query"] = query
-        return await self._get("legislacion-consolidada", params, SEARCH_TTL, _build_summaries)
+        return await self._get(
+            "legislacion-consolidada", params, SEARCH_TTL, _from_envelope(_build_summaries)
+        )
 
     async def get_law_metadata(self, law_id: str) -> LawMetadata:
         """Return the metadata of one law, e.g. ``BOE-A-2015-10566``."""
         path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/metadatos"
-        return await self._get(path, None, METADATA_TTL, _build_metadata)
+        return await self._get(path, None, METADATA_TTL, _from_envelope(_build_metadata))
 
     async def get_law_analysis(self, law_id: str) -> LawAnalysis:
         """Return the subjects and amendment references of one law."""
         path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/analisis"
-        return await self._get(path, None, ANALYSIS_TTL, _build_analysis)
+        return await self._get(path, None, ANALYSIS_TTL, _from_envelope(_build_analysis))
+
+    async def get_text_index(self, law_id: str) -> list[IndexEntry]:
+        """Return the block index of one law's text, in document order."""
+        path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/texto/indice"
+        return await self._get(path, None, TEXT_INDEX_TTL, _from_envelope(_build_index))
+
+    async def get_text_block(
+        self, law_id: str, block_id: str, *, updated_on: date | None = None
+    ) -> Block:
+        """Return one block of a law's text with all its versions.
+
+        ``updated_on`` is the block's ``fecha_actualizacion`` from the index. It never goes to
+        the API; it only makes the cache entry specific to that revision and long-lived.
+        """
+        path = self._block_path(law_id, block_id)
+        return await self._get(
+            path,
+            None,
+            TEXT_BLOCK_TTL if updated_on is None else TEXT_BLOCK_VERSIONED_TTL,
+            parse_block,
+            accept=_XML,
+            revision=updated_on,
+        )
+
+    async def get_initial_note(self, law_id: str) -> Block | None:
+        """Return the law's initial note (block ``no``), or ``None`` when it has none.
+
+        A 404 is read as "no note", so the caller must already know the law exists; an unknown
+        law looks the same here. Other errors propagate and are never taken for absence.
+        """
+        path = self._block_path(law_id, _NOTE_BLOCK_ID)
+        # Absence is stored under the very key the note itself would use, as ``_NO_NOTE``. Only a
+        # 200 is cached by ``_get``, and without this a note-less law (most of them) would cost a
+        # request on every overview. Exactly one entry is written, with the note's lifetime.
+        key = self._cache_key(path, None, _XML, None)
+        if await self._cache.get(key) == _NO_NOTE:
+            self._cache_hits += 1
+            return None
+        try:
+            return await self._get(path, None, INITIAL_NOTE_TTL, parse_block, accept=_XML)
+        except BoeNotFoundError:
+            await self._cache.set(key, _NO_NOTE, INITIAL_NOTE_TTL)
+            return None
 
     async def get_auxiliary_table(self, name: AuxiliaryTable) -> dict[str, str]:
         """Return an auxiliary code table as a ``{code: text}`` mapping."""
         if name not in get_args(AuxiliaryTable):
             raise ValueError(f"unknown auxiliary table: {name!r}")
-        return await self._get(f"datos-auxiliares/{name}", None, AUXILIARY_TTL, _build_table)
+        return await self._get(
+            f"datos-auxiliares/{name}", None, AUXILIARY_TTL, _from_envelope(_build_table)
+        )
 
     async def aclose(self) -> None:
         """Close the HTTP client if this instance created it. Safe to call repeatedly."""
@@ -338,14 +439,41 @@ class BoeClient:
         """Current request and cache-hit counters."""
         return ClientStats(requests_sent=self._requests_sent, cache_hits=self._cache_hits)
 
+    def _block_path(self, law_id: str, block_id: str) -> str:
+        """The path of a block, validating both ids; the block id stays one path segment."""
+        # ``safe=""`` percent-encodes anything but unreserved characters (dots are unreserved).
+        # The pattern already excludes them; this is a second line of defence for the URL.
+        segment = quote(_checked_block_id(block_id), safe="")
+        return f"legislacion-consolidada/id/{_checked_law_id(law_id)}/texto/bloque/{segment}"
+
+    def _cache_key(
+        self,
+        path: str,
+        params: Mapping[str, str | int] | None,
+        accept: str,
+        revision: date | None,
+    ) -> str:
+        """The cache key of a request; ``revision`` separates entries without being requested."""
+        # Why ``revision`` is in the key but not in the request: the index date says which
+        # revision of a block we hold, so a changed date must miss the cache, yet the API has no
+        # such parameter and would not understand it. It is added as a key-only pseudo parameter.
+        extra = None if revision is None else {"updated_on": revision.isoformat()}
+        return make_key(f"{self._base_url}{path}", {**(params or {}), **(extra or {})}, accept)
+
     async def _get(
         self,
         path: str,
         params: Mapping[str, str | int] | None,
         ttl: float,
-        build: Callable[[object], _T],
+        build: Callable[[bytes], _T],
+        *,
+        accept: str = _JSON,
+        revision: date | None = None,
     ) -> _T:
         """Answer from the cache or the API; a body is cached only once it has been parsed.
+
+        ``build`` turns a raw body into the result and raises ``ValueError`` when it cannot;
+        ``accept`` is the wire format asked for (JSON by default, XML for blocks).
 
         A cached body that no longer parses (say, after an upgrade tightened a model) is
         deleted and fetched again once. Concurrent calls for the same key share one request.
@@ -353,7 +481,7 @@ class BoeClient:
         # Flow: cache -> (single-flight) network -> parse. The cache stores raw bodies and each
         # call parses its own copy, so a model change takes effect without clearing the cache.
         url = f"{self._base_url}{path}"
-        key = make_key(url, params, _ACCEPT)
+        key = self._cache_key(path, params, accept, revision)
         cached = await self._cache.get(key)
         if cached is not None:
             try:
@@ -367,7 +495,7 @@ class BoeClient:
             else:
                 self._cache_hits += 1
                 return result
-        body = await self._fetch_shared(key, url, params, ttl, build)
+        body = await self._fetch_shared(key, url, params, ttl, build, accept)
         return _parse(body, build)
 
     async def _fetch_shared(
@@ -376,7 +504,8 @@ class BoeClient:
         url: str,
         params: Mapping[str, str | int] | None,
         ttl: float,
-        build: Callable[[object], _T],
+        build: Callable[[bytes], _T],
+        accept: str,
     ) -> bytes:
         """Fetch and cache a body once for all concurrent callers of ``key`` (single flight).
 
@@ -393,7 +522,7 @@ class BoeClient:
         # still get the result.
         flight = self._flights.get(key)
         if flight is None:
-            task = asyncio.create_task(self._fetch(key, url, params, ttl, build))
+            task = asyncio.create_task(self._fetch(key, url, params, ttl, build, accept))
             flight = _Flight(task)
             self._flights[key] = flight
             # ``flight=flight`` binds the current value, not a late-bound loop variable.
@@ -431,15 +560,18 @@ class BoeClient:
         url: str,
         params: Mapping[str, str | int] | None,
         ttl: float,
-        build: Callable[[object], _T],
+        build: Callable[[bytes], _T],
+        accept: str,
     ) -> bytes:
         """Download the body, check that it parses, cache it and return it."""
-        body = await self._request(url, params)
+        body = await self._request(url, params, accept)
         _parse(body, build)  # validate before caching
         await self._cache.set(key, body, ttl)
         return body
 
-    async def _request(self, url: str, params: Mapping[str, str | int] | None) -> bytes:
+    async def _request(
+        self, url: str, params: Mapping[str, str | int] | None, accept: str
+    ) -> bytes:
         """GET ``url`` and return the body, retrying transient failures within the budget."""
         # ``total_timeout`` bounds the whole call, so a caller (and the model behind it) is never
         # left waiting minutes on retries. The deadline is checked before each attempt, caps each
@@ -459,7 +591,7 @@ class BoeClient:
                     response = await self._http.get(
                         url,
                         params=params,
-                        headers=self._headers,
+                        headers={"Accept": accept, "User-Agent": self._user_agent},
                         timeout=min(self._timeout, remaining),
                     )
                 except (httpx.TimeoutException, httpx.TransportError) as error:

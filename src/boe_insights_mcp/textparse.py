@@ -40,9 +40,10 @@ def parse_block(xml: bytes | str) -> Block:
         raise ValueError("<bloque> has no id attribute")
     versions = [_parse_version(version) for version in bloque.findall("version")]
     # Why re-sort: the server lists versions in an order that is usually but not always
-    # chronological, and an empty ``fecha_vigencia`` occurs (api-notes 6.1). ``sorted`` is
-    # stable, so ties and undated versions keep the server's order; undated ones go first.
-    versions.sort(key=_effective_key)
+    # chronological, and an empty ``fecha_vigencia`` occurs (api-notes 6.1), hence ``starts_on``
+    # (which falls back to the publication date). ``sort`` is stable, so ties and fully undated
+    # versions keep the server's order; undated ones go first.
+    versions.sort(key=_start_key)
     return Block(
         block_id=block_id,
         kind=bloque.get("tipo", ""),
@@ -63,9 +64,9 @@ def _parse_xml(xml: bytes | str) -> Element:
         raise ValueError(f"malformed XML: {error}") from error
 
 
-def _effective_key(version: BlockVersion) -> tuple[bool, date]:
-    """Sort key placing undated versions before dated ones."""
-    return (version.effective_from is not None, version.effective_from or date.min)
+def _start_key(version: BlockVersion) -> tuple[bool, date]:
+    """Sort key placing versions without any start date before dated ones."""
+    return (version.starts_on is not None, version.starts_on or date.min)
 
 
 def _parse_date(value: str | None) -> date | None:

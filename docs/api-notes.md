@@ -239,6 +239,11 @@ All return `{"status":..., "data": {"<code>": "<text>"}}`: an object, code to te
 * No `Accept` header at all: HTTP 400, XML body, text `No reconocido el formato de la cabecera Accept.`
 * Sunday summary (`GET B/boe/sumario/20261115`): HTTP 404 with the same body as an unknown id, so "no publication that day" and "unknown resource" are indistinguishable by response alone.
 
+## Verified after the second probe (2026-11-21)
+
+* Block ids can contain dots: the index fixtures list `a51ter.`, `a51quater.` (`BOE-A-1992-28925`), `art.1231a1253` and `arts.1863bisa1873bis.` (Código Civil). `GET B/legislacion-consolidada/id/BOE-A-1992-28925/texto/bloque/a51ter.` and `…/BOE-A-1889-4763/texto/bloque/art.1231a1253` both return HTTP 200. A client must therefore accept `.` in block ids while still treating the id as a single path segment.
+* A version whose body is `(Sin efecto)` marks a provision that no longer applies (last version of `dt` in `BOE-A-1992-28925`); treat it like `(Derogado)`.
+
 ## Unverified / open
 
 * Conditional requests (`If-None-Match`, `If-Modified-Since`): not tried; no validators in responses.

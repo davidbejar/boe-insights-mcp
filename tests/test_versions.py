@@ -14,6 +14,7 @@ from datetime import date
 import pytest
 from pydantic import ValidationError
 
+from boe_insights_mcp import versions as versions_module
 from boe_insights_mcp.models import Block, BlockVersion, Paragraph
 from boe_insights_mcp.textparse import parse_block
 from boe_insights_mcp.versions import (
@@ -30,6 +31,7 @@ from boe_insights_mcp.versions import (
 Loader = Callable[[str], bytes]
 
 HEADING = "Artículo 40. Potestad de inspección."
+NBSP = chr(0xA0)
 
 
 # --- factories ----------------------------------------------------------------------------------
@@ -108,7 +110,7 @@ def test_version_on_returns_the_version_object_itself() -> None:
     assert version_on(make_block(V1, V2), date(2021, 1, 1)) is V1
 
 
-def test_version_without_effective_date_counts_from_the_beginning() -> None:
+def test_version_without_any_date_counts_from_the_beginning() -> None:
     undated = law_version("undated", None)
     block = make_block(undated, V2)
     assert version_on(block, date(1900, 1, 1)) is undated
@@ -146,6 +148,14 @@ def test_version_on_prefers_the_later_of_two_versions_with_the_same_date() -> No
     ],
 )
 def test_repeal_marker_variants_are_detected_after_a_heading(marker: str) -> None:
+    assert is_repealed(repeal_version(marker)) is True
+
+
+@pytest.mark.parametrize(
+    "marker",
+    ["(Sin efecto).", "(Sin efecto)", "Sin efecto.", "Sin efecto", "(SIN EFECTO)", "sin efecto."],
+)
+def test_sin_efecto_is_a_repeal_marker(marker: str) -> None:
     assert is_repealed(repeal_version(marker)) is True
 
 
@@ -257,7 +267,7 @@ def test_a_block_without_versions_did_not_exist() -> None:
     assert state_on(make_block(), date(2026, 1, 1)) == "did_not_exist"
 
 
-def test_a_version_without_effective_date_is_in_force_at_any_date() -> None:
+def test_a_version_without_any_date_is_in_force_at_any_date() -> None:
     block = make_block(law_version("undated", None))
     assert state_on(block, date(1950, 1, 1)) == "in_force"
 
@@ -761,3 +771,339 @@ def test_fixture_future_version_is_not_yet_in_force(load_fixture: Loader) -> Non
     assert state_on(block, date(2026, 11, 19)) == "did_not_exist"
     assert state_on(block, date(2027, 7, 1)) == "in_force"
     assert version_on(block, date(2026, 11, 21)) is None
+
+
+# === Start date: ``starts_on = effective_from or published_on`` (spec section 8) ==============
+
+
+@pytest.mark.parametrize(
+    ("effective", "published", "expected"),
+    [
+        pytest.param(date(2020, 1, 1), date(2019, 12, 1), date(2020, 1, 1), id="effective-wins"),
+        pytest.param(date(2020, 1, 1), None, date(2020, 1, 1), id="effective-only"),
+        pytest.param(None, date(2019, 12, 1), date(2019, 12, 1), id="falls-back-to-published"),
+        pytest.param(None, None, None, id="no-dates"),
+    ],
+)
+def test_starts_on_is_the_effective_date_or_else_the_publication_date(
+    effective: date | None, published: date | None, expected: date | None
+) -> None:
+    version = make_version(para("x"), effective=effective, published=published)
+    assert version.starts_on == expected
+
+
+def test_starts_on_is_read_only() -> None:
+    version = make_version(para("x"), effective=date(2020, 1, 1))
+    with pytest.raises((ValidationError, AttributeError)):
+        version.starts_on = date(2021, 1, 1)  # type: ignore[misc]
+
+
+def test_version_on_places_a_version_without_effective_date_by_its_publication_date() -> None:
+    original = law_version("orig", date(2020, 1, 1))
+    pending = law_version("pending", None, published=date(2022, 6, 1))
+    block = make_block(original, pending)
+    assert version_on(block, date(2022, 5, 31)) is original
+    assert version_on(block, date(2022, 6, 1)) is pending
+    assert version_on(block, date(2030, 1, 1)) is pending
+
+
+def test_version_on_does_not_treat_a_published_but_undated_version_as_always_in_force() -> None:
+    only = law_version("only", None, published=date(2019, 5, 1))
+    block = make_block(only)
+    assert version_on(block, date(2019, 4, 30)) is None
+    assert version_on(block, date(2019, 5, 1)) is only
+
+
+def test_state_on_places_a_version_without_effective_date_by_its_publication_date() -> None:
+    block = make_block(law_version("only", None, published=date(2019, 5, 1)))
+    assert state_on(block, date(2019, 4, 30)) == "did_not_exist"
+    assert state_on(block, date(2019, 5, 1)) == "in_force"
+
+
+def test_state_on_sees_a_repeal_marker_from_its_publication_date_when_undated() -> None:
+    repeal = make_version(
+        para(HEADING, "articulo"), para("(Derogado)."), published=date(2021, 3, 1), law="repeal"
+    )
+    block = make_block(law_version("orig", date(2018, 1, 1)), repeal)
+    assert state_on(block, date(2021, 2, 28)) == "in_force"
+    assert state_on(block, date(2021, 3, 1)) == "repealed"
+
+
+def test_history_keeps_the_dates_of_a_version_without_effective_date() -> None:
+    late = law_version("late", None, published=date(2022, 6, 1))
+    events = history(make_block(law_version("orig", date(2020, 1, 1)), late))
+    assert (events[1].effective_from, events[1].published_on) == (None, date(2022, 6, 1))
+
+
+# --- real fixture: dt of RD 1624/1992 (6 versions, the last with an empty fecha_vigencia) --------
+
+
+@pytest.fixture
+def dt_block(load_fixture: Loader) -> Block:
+    return parse_block(load_fixture("texto_bloque_disposicion_multiversion_rd1624_dt.xml"))
+
+
+def source_of(version: BlockVersion | None) -> str | None:
+    return version.source_law_id if version else None
+
+
+def test_fixture_last_version_of_the_dt_is_a_sin_efecto_repeal(dt_block: Block) -> None:
+    last = dt_block.versions[-1]
+    assert last.source_law_id == "BOE-A-2026-4667"
+    assert is_repealed(last) is True
+    assert history(dt_block)[-1].kind == "repealed"
+    assert state_on(dt_block, date(2026, 3, 1)) == "repealed"
+    assert state_on(dt_block, date(2026, 2, 27)) == "in_force"
+
+
+@pytest.mark.parametrize(
+    ("on", "expected"),
+    [
+        (date(2017, 5, 27), None),
+        (date(2017, 5, 28), "BOE-A-2017-5857"),
+        (date(2019, 9, 24), "BOE-A-2017-5857"),
+        (date(2019, 9, 25), "BOE-A-2019-13563"),
+        (date(2025, 12, 24), "BOE-A-2019-13563"),
+        (date(2025, 12, 25), "BOE-A-2025-26458"),
+        (date(2026, 1, 28), "BOE-A-2026-2024"),
+        (date(2026, 2, 5), "BOE-A-2026-2547"),
+        (date(2026, 2, 27), "BOE-A-2026-2547"),
+        (date(2026, 2, 28), "BOE-A-2026-4667"),
+        (date(2030, 1, 1), "BOE-A-2026-4667"),
+    ],
+)
+def test_fixture_dt_version_on_uses_the_publication_date_for_the_undated_last_version(
+    dt_block: Block, on: date, expected: str | None
+) -> None:
+    assert source_of(version_on(dt_block, on)) == expected
+
+
+def test_fixture_dt_last_version_is_the_one_with_the_empty_effective_date(dt_block: Block) -> None:
+    last = dt_block.versions[-1]
+    assert last.source_law_id == "BOE-A-2026-4667"
+    assert last.effective_from is None
+    assert last.starts_on == date(2026, 2, 28)
+
+
+@pytest.mark.parametrize(
+    ("on", "expected"),
+    [
+        (date(2017, 5, 26), "did_not_exist"),
+        (date(2017, 5, 27), "not_yet_in_force"),
+        (date(2017, 5, 28), "in_force"),
+        (date(2019, 9, 25), "repealed"),  # (Anulada)
+        (date(2025, 12, 25), "in_force"),
+        (date(2026, 1, 28), "repealed"),  # (Anulada) again
+        (date(2026, 2, 5), "in_force"),
+    ],
+)
+def test_fixture_dt_states_over_its_life(dt_block: Block, on: date, expected: str) -> None:
+    assert state_on(dt_block, on) == expected
+
+
+def test_fixture_dt_history_lists_the_versions_in_chronological_order(dt_block: Block) -> None:
+    events = history(dt_block)
+    assert [e.source_law_id for e in events] == [
+        "BOE-A-2017-5857",
+        "BOE-A-2019-13563",
+        "BOE-A-2025-26458",
+        "BOE-A-2026-2024",
+        "BOE-A-2026-2547",
+        "BOE-A-2026-4667",
+    ]
+    assert [e.index for e in events] == [1, 2, 3, 4, 5, 6]
+    assert [e.kind for e in events[:5]] == [
+        "original",
+        "repealed",
+        "amended",
+        "repealed",
+        "amended",
+    ]
+    assert (events[-1].effective_from, events[-1].published_on) == (None, date(2026, 2, 28))
+
+
+# --- real fixture: initial note of Ley 30/1992 (repeal note listed before the original) ---------
+
+LEY30_NOTE = "texto_bloque_no_ley30_1992_two_versions_empty_vigencia.xml"
+
+
+@pytest.fixture
+def ley30_note(load_fixture: Loader) -> Block:
+    return parse_block(load_fixture(LEY30_NOTE))
+
+
+@pytest.mark.parametrize(
+    ("on", "expected"),
+    [
+        (date(1993, 2, 26), None),
+        (date(1993, 2, 27), "BOE-A-1992-2631"),
+        (date(2015, 10, 1), "BOE-A-1992-2631"),
+        (date(2015, 10, 2), "BOE-A-2015-10565"),
+        (date(2030, 1, 1), "BOE-A-2015-10565"),
+    ],
+)
+def test_fixture_ley30_note_version_on_orders_the_empty_vigencia_repeal_note_last(
+    ley30_note: Block, on: date, expected: str | None
+) -> None:
+    assert source_of(version_on(ley30_note, on)) == expected
+
+
+def test_fixture_ley30_note_history_starts_with_the_original_correction_note(
+    ley30_note: Block,
+) -> None:
+    events = history(ley30_note)
+    assert [e.source_law_id for e in events] == ["BOE-A-1992-2631", "BOE-A-2015-10565"]
+    assert events[0].kind == "original"
+
+
+# === repeal_note (spec section 7) ================================================================
+
+
+def repeal_note(note: Block | None) -> BlockVersion | None:
+    """Call ``versions.repeal_note`` through the module so that a missing function fails only
+    the tests that use it, not the collection of this whole file."""
+    return versions_module.repeal_note(note)
+
+
+REPEAL_NOTES = [
+    pytest.param(
+        "texto_bloque_no_lopd1999_repealed.xml", "BOE-A-2018-16673", id="lopd1999-single-version"
+    ),
+    pytest.param(
+        "texto_bloque_no_ley22_2011_repealed.xml", "BOE-A-2022-5809", id="ley22-2011-single-version"
+    ),
+    pytest.param(
+        "texto_bloque_no_ley7_2010_repealed_transitional.xml",
+        "BOE-A-2022-11311",
+        id="ley7-2010-transitional-paragraph",
+    ),
+    pytest.param(
+        "texto_bloque_no_ley11_2007_repealed_with_tengase.xml",
+        "BOE-A-2018-12131",
+        id="ley11-2007-two-repeal-versions-latest-wins",
+    ),
+    pytest.param(LEY30_NOTE, "BOE-A-2015-10565", id="ley30-1992-empty-vigencia-repeal-note"),
+]
+
+
+@pytest.mark.parametrize(("fixture", "expected_source"), REPEAL_NOTES)
+def test_repeal_note_finds_the_repeal_version_in_every_recorded_note(
+    load_fixture: Loader, fixture: str, expected_source: str
+) -> None:
+    note = parse_block(load_fixture(fixture))
+    found = repeal_note(note)
+    assert found is not None
+    assert found.source_law_id == expected_source
+    assert found in note.versions
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    [
+        "texto_bloque_no_rd424_2005_rename_not_repeal.xml",
+        "texto_bloque_no_rd1624_1992_correction_not_repeal.xml",
+    ],
+)
+def test_repeal_note_ignores_notes_that_do_not_repeal(load_fixture: Loader, fixture: str) -> None:
+    assert repeal_note(parse_block(load_fixture(fixture))) is None
+
+
+def test_repeal_note_of_nothing_is_none() -> None:
+    assert repeal_note(None) is None
+
+
+def test_repeal_note_of_a_block_without_versions_is_none() -> None:
+    assert repeal_note(make_block()) is None
+
+
+def test_repeal_note_of_a_version_without_paragraphs_is_none() -> None:
+    assert repeal_note(make_block(make_version())) is None
+
+
+def note_version(
+    first: str,
+    *more: str,
+    law: str = "note",
+    effective: date | None = None,
+    published: date | None = None,
+) -> BlockVersion:
+    """A note version whose paragraphs are ``first`` and ``more`` (kind ``siempreSeVe``)."""
+    paragraphs = [para(t, "siempreSeVe") for t in (first, *more)]
+    return make_version(*paragraphs, law=law, effective=effective, published=published)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("Norma derogada, con efectos de 7 de diciembre de 2018.", id="plain"),
+        pytest.param("NORMA DEROGADA, con efectos de 7 de diciembre de 2018.", id="upper-case"),
+        pytest.param("norma derogada, con efectos de 7 de diciembre de 2018.", id="lower-case"),
+        pytest.param("  Norma derogada, con efectos de 7 de diciembre.", id="leading-spaces"),
+        pytest.param("\n\tNorma derogada, con efectos de 7 de diciembre.", id="leading-newline"),
+        pytest.param(f"{NBSP}Norma derogada, con efectos de 7 de diciembre.", id="leading-nbsp"),
+        pytest.param(f"Norma{NBSP}derogada, con efectos de 7 de diciembre.", id="nbsp-inside"),
+        pytest.param("Norma   derogada, con efectos de 7 de diciembre.", id="repeated-spaces"),
+        pytest.param("Norma\nderogada, con efectos de 7 de diciembre.", id="newline-inside"),
+        pytest.param("Norma derogada", id="only-the-phrase"),
+    ],
+)
+def test_repeal_note_tolerates_case_nbsp_and_whitespace(text: str) -> None:
+    version = note_version(text)
+    assert repeal_note(make_block(version)) is version
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("Esta norma derogada con efectos de 2018.", id="mid-sentence"),
+        pytest.param("Incluye la Norma derogada por la ley 1/2000.", id="later-in-the-sentence"),
+        pytest.param("Con efectos de 1 de enero de 2027, norma derogada.", id="phrase-at-the-end"),
+        pytest.param("Derogada la norma con efectos de 2018.", id="reordered-words"),
+        pytest.param("Norma parcialmente derogada.", id="partially-repealed"),
+        pytest.param("", id="empty"),
+    ],
+)
+def test_repeal_note_requires_the_phrase_at_the_start_of_the_first_paragraph(text: str) -> None:
+    assert repeal_note(make_block(note_version(text))) is None
+
+
+def test_repeal_note_ignores_the_phrase_in_a_later_paragraph() -> None:
+    version = note_version(
+        "Incluye la corrección de errores.", "Norma derogada, con efectos de 2018."
+    )
+    assert repeal_note(make_block(version)) is None
+
+
+def test_repeal_note_picks_the_latest_repeal_version_by_start_date() -> None:
+    older = note_version(
+        "Norma derogada, primera redacción.", law="older", effective=date(2016, 1, 1)
+    )
+    newer = note_version(
+        "Norma derogada, segunda redacción.", law="newer", effective=date(2018, 1, 1)
+    )
+    # Deliberately out of order: the choice is by start date, not by position.
+    assert repeal_note(make_block(newer, older)) is newer
+    assert repeal_note(make_block(older, newer)) is newer
+
+
+def test_repeal_note_compares_start_dates_using_the_publication_date_when_undated() -> None:
+    dated = note_version("Norma derogada, A.", law="dated", effective=date(2016, 10, 2))
+    undated = note_version("Norma derogada, B.", law="undated", published=date(2018, 1, 1))
+    assert repeal_note(make_block(dated, undated)) is undated
+    assert repeal_note(make_block(undated, dated)) is undated
+
+
+def test_repeal_note_skips_later_versions_that_are_not_repeal_notes() -> None:
+    repeal = note_version(
+        "Norma derogada, con efectos de 2016.", law="repeal", effective=date(2016, 1, 1)
+    )
+    later = note_version(
+        "Incluye la corrección de errores.", law="later", effective=date(2020, 1, 1)
+    )
+    assert repeal_note(make_block(repeal, later)) is repeal
+
+
+def test_repeal_note_does_not_depend_on_the_block_kind() -> None:
+    version = note_version("Norma derogada, con efectos de 2018.")
+    block = Block(block_id="a1", kind="precepto", title="", versions=(version,))
+    assert repeal_note(block) is version

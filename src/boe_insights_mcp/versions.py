@@ -25,6 +25,7 @@ __all__ = [
     "diff_versions",
     "history",
     "is_repealed",
+    "repeal_note",
     "state_on",
     "version_on",
 ]
@@ -33,10 +34,15 @@ ArticleState = Literal["in_force", "repealed", "not_yet_in_force", "did_not_exis
 
 # A repealed article keeps a version whose whole body is a marker such as ``(Derogado).``
 # (api-notes 6). The marker must be the entire paragraph: "Derogado parcialmente..." or a
-# sentence that merely mentions a repeal is live text.
+# sentence that merely mentions a repeal is live text. ``Sin efecto`` was seen as the last
+# version of a provision in the real data (RD 1624/1992, api-notes 6.1).
 _REPEAL_MARKER = re.compile(
-    r"\(?\s*(derogad[oa]|suprimid[oa]|sin contenido|anulad[oa])\s*\)?\.?", re.IGNORECASE
+    r"\(?\s*(derogad[oa]|suprimid[oa]|sin contenido|sin efecto|anulad[oa])\s*\)?\.?",
+    re.IGNORECASE,
 )
+# Opening words of a law's initial note when the whole law is repealed (api-notes, "Initial
+# note"); matched at the start of the first paragraph only, never anywhere in the text.
+_REPEAL_NOTE_PREFIX = "norma derogada"
 # Minimum similarity for two paragraphs of an uneven replaced run to count as the same
 # paragraph reworded rather than one removed and another added.
 _PAIRING_THRESHOLD = 0.5
@@ -88,11 +94,12 @@ class VersionEvent(_Frozen):
 
 def version_on(block: Block, on: date) -> BlockVersion | None:
     """The latest version in effect on ``on``, or ``None`` when no version qualifies yet."""
-    # ``Block.versions`` is ascending by effective date, so the last qualifying version wins,
-    # which also makes the later of two versions with the same date win. An undated version
-    # counts as effective from the beginning.
+    # ``Block.versions`` is ascending by ``starts_on``, so the last qualifying version wins,
+    # which also makes the later of two versions with the same date win. A version with no date
+    # at all counts as applying from the beginning. ``starts_on`` and not ``effective_from``
+    # because ``fecha_vigencia`` can be empty on a first or last version (api-notes 6.1).
     for version in reversed(block.versions):
-        if version.effective_from is None or version.effective_from <= on:
+        if version.starts_on is None or version.starts_on <= on:
             return version
     return None
 
@@ -103,6 +110,31 @@ def is_repealed(version: BlockVersion) -> bool:
     if body and body[0].kind == "articulo":
         body = body[1:]  # the article heading survives a repeal
     return len(body) == 1 and _REPEAL_MARKER.fullmatch(body[0].text) is not None
+
+
+def repeal_note(note: Block | None) -> BlockVersion | None:
+    """The latest version of an initial note that announces a repeal, or ``None``."""
+    if note is None:
+        return None
+    # Latest by start date among the repeal versions only: a later version of the note may be an
+    # unrelated one ("Incluye las correcciones de errores...", api-notes, "Initial note") and
+    # must not hide the repeal. ``max`` returns the first of equal keys, so ties keep document
+    # order by scanning the reversed list (the later one wins).
+    candidates = [v for v in reversed(note.versions) if _announces_repeal(v)]
+    return max(candidates, key=_start_key, default=None)
+
+
+def _announces_repeal(version: BlockVersion) -> bool:
+    """Whether the first paragraph starts with "Norma derogada" (case and spacing ignored)."""
+    if not version.paragraphs:
+        return False
+    first = " ".join(version.paragraphs[0].text.replace("\u00a0", " ").split())
+    return first.casefold().startswith(_REPEAL_NOTE_PREFIX)
+
+
+def _start_key(version: BlockVersion) -> tuple[bool, date]:
+    """Sort key placing versions without any start date before dated ones."""
+    return (version.starts_on is not None, version.starts_on or date.min)
 
 
 def state_on(block: Block, on: date) -> ArticleState:
