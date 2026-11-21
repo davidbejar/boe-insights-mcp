@@ -1,0 +1,39 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "fecha_actualizacion": "20261118T115325Z",
+            "identificador": "DOGC-f-2017-90436",
+            "ambito": {
+                "codigo": "2",
+                "texto": "Auton\u00f3mico"
+            },
+            "departamento": {
+                "codigo": "8070",
+                "texto": "Comunidad Aut\u00f3noma de Catalu\u00f1a"
+            },
+            "rango": {
+                "codigo": "1300",
+                "texto": "Ley"
+            },
+            "fecha_disposicion": "20170801",
+            "numero_oficial": "17\/2017",
+            "titulo": "Ley 17\/2017, de 1 de agosto, del C\u00f3digo tributario de Catalu\u00f1a y de aprobaci\u00f3n de los libros primero, segundo y tercero, relativos a la Administraci\u00f3n tributaria de la Generalidad.",
+            "diario": "Diari Oficial de la Generalitat de Catalunya",
+            "fecha_publicacion": "20170803",
+            "diario_numero": "7426",
+            "fecha_vigencia": "20170804",
+            "estatus_derogacion": "N",
+            "estatus_anulacion": "N",
+            "vigencia_agotada": "N",
+            "estado_consolidacion": {
+                "codigo": "3",
+                "texto": "Finalizado"
+            },
+            "url_html_consolidada": "https:\/\/www.boe.es\/buscar\/act.php?id=DOGC-f-2017-90436"
+        }
+    ]
+}

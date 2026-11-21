@@ -14,7 +14,7 @@ import pytest
 
 from boe_insights_mcp import trends
 from boe_insights_mcp.catalogue import CatalogueStore
-from boe_insights_mcp.errors import BoeNotFoundError, BoeUnavailableError
+from boe_insights_mcp.errors import BoeNotFoundError, BoeResponseError, BoeUnavailableError
 from boe_insights_mcp.models import CodedValue, LawAnalysis, LawReference, LawSummary
 from boe_insights_mcp.schemas import TopicSpec
 from boe_insights_mcp.trends import TrendFilters
@@ -983,10 +983,28 @@ async def test_a_failed_law_is_not_complete_when_candidates_remain() -> None:
     assert (result.examined, result.failed, result.complete) == (0, 1, False)
 
 
-async def test_a_non_retryable_failure_propagates() -> None:
-    fake = FakeAnalyses({"D00": BoeNotFoundError("gone")})
+async def test_a_non_retryable_failure_is_skipped_and_counted_too() -> None:
+    # One law with a permanently malformed (or vanished) analysis must not sink the ranking.
+    fake = FakeAnalyses(
+        {
+            "D00": BoeResponseError("malformed"),
+            "D01": BoeNotFoundError("gone"),
+            "D02": analysis(modifica=2),
+        }
+    )
 
-    with pytest.raises(BoeNotFoundError):
+    result = await most_amended(
+        lopd_laws(3), fake, from_date=date(2001, 1, 1), to_date=date(2010, 12, 31)
+    )
+
+    assert (result.examined, result.failed, result.complete) == (1, 2, True)
+    assert [item.law.identifier for item in result.laws] == ["D02"]
+
+
+async def test_a_programming_error_still_propagates() -> None:
+    fake = FakeAnalyses({"D00": RuntimeError("bug")})
+
+    with pytest.raises(RuntimeError):
         await most_amended(
             lopd_laws(1), fake, from_date=date(2001, 1, 1), to_date=date(2010, 12, 31)
         )

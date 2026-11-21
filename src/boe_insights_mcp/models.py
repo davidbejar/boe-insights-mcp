@@ -8,7 +8,8 @@ Public names: ``LawSummary`` (a search hit), ``LawMetadata`` (a summary plus rep
 ``LawAnalysis`` with ``LawReference`` (subjects and amendment cross-references), ``CodedValue``
 and the ``as_list`` helper. The text models are ``IndexEntry`` (one row of a law's block index),
 ``Paragraph``, ``BlockVersion`` and ``Block`` (one block of text with all its versions); the
-latter three are built by ``textparse`` from the XML of ``/texto/bloque`` (api-notes 6).
+latter three are built by ``textparse`` from the XML of ``/texto/bloque`` and of the whole-law
+``/texto`` (api-notes 6 and "Text structure" of the third probe).
 ``client`` builds these from response bodies; ``legislation`` consumes them and converts them to
 the tool-facing ``schemas``. They are not sent to the model directly. Quirks are described in
 ``docs/api-notes.md`` section 0 and the sections cited below.
@@ -296,3 +297,10 @@ class Block(_ApiModel):
     title: _Title
     versions: tuple[BlockVersion, ...]
     """Ascending by ``starts_on`` (undated first), document order kept for ties."""
+    expires_on: date | None = None
+    """The ``fecha_caducidad`` of the block when it is a real date: from then on the block no
+    longer exists in the consolidated text (api-notes, third probe, "Text structure")."""
+    expired_marker: bool = False
+    """True when the block carries a ``fecha_caducidad`` at all, a real date or not. It is also
+    set for the sentinel ``00000001`` and for any other non-date value, which leave
+    ``expires_on`` empty."""

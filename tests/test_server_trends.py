@@ -398,12 +398,20 @@ async def test_most_amended_laws_requires_a_narrowing_filter(mcp: Client[Any]) -
         await mcp.call_tool("most_amended_laws", {"scope": "state"})
 
 
-async def test_most_amended_laws_translates_a_missing_analysis(
+async def test_most_amended_laws_skips_laws_whose_analysis_is_missing(
     mcp: Client[Any], router: respx.MockRouter, xml_response: JsonResponse, load_fixture: Loader
 ) -> None:
+    # One law's analysis failing, retryable or not, no longer fails the ranking: it is counted.
     router.get(url__regex=rf"{SEARCH_URL}/id/[A-Za-z0-9-]+/analisis").mock(
         return_value=xml_response(load_fixture("error_404_unknown_id.xml"), 404)
     )
 
-    with pytest.raises(ToolError, match="not_found"):
-        await mcp.call_tool("most_amended_laws", {"title": "ley", **PAST})
+    result = await call(mcp, "most_amended_laws", title="ley", **PAST)
+
+    assert result["laws"] == []
+    assert (result["examined"], result["failed"], result["complete"]) == (
+        0,
+        result["candidates"],
+        True,
+    )
+    assert result["candidates"] > 0

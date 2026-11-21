@@ -52,7 +52,7 @@ from boe_insights_mcp.models import (
     as_list,
 )
 from boe_insights_mcp.ratelimit import RateLimiter
-from boe_insights_mcp.textparse import parse_block
+from boe_insights_mcp.textparse import parse_block, parse_full_text
 
 __all__ = [
     "ANALYSIS_TTL",
@@ -60,6 +60,7 @@ __all__ = [
     "BASE_URL",
     "DEFAULT_MAX_RESPONSE_BYTES",
     "DEFAULT_USER_AGENT",
+    "FULL_TEXT_TTL",
     "INITIAL_NOTE_TTL",
     "METADATA_TTL",
     "SEARCH_TTL",
@@ -90,6 +91,10 @@ TEXT_BLOCK_TTL = 6 * 3600.0
 # is part of the cache key, so a block fetched with it can be kept for a long time.
 TEXT_BLOCK_VERSIONED_TTL = 30 * 24 * 3600.0
 INITIAL_NOTE_TTL = 6 * 3600.0
+# The whole-law text (up to 3 MB for the Código Civil) is what the table of contents is built
+# from. Like the other per-law data it can change when the law is amended, so it gets the same
+# six hours; there is no per-block revision date to key it on.
+FULL_TEXT_TTL = 6 * 3600.0
 # The largest response body accepted. The biggest real one seen is the 763 KB Código Civil index
 # (api-notes 6.1); a whole-law ``/texto`` can reach several MB, so the limit is generous. It
 # exists so that a hostile or broken server cannot make us hold an unbounded body in memory.
@@ -419,6 +424,16 @@ class BoeClient:
             accept=_XML,
             revision=updated_on,
         )
+
+    async def get_full_text(self, law_id: str) -> list[Block]:
+        """Return every block of a law's text with all its versions, in document order.
+
+        One request for the whole law (``/texto``), which is the only place that carries the
+        heading texts (api-notes, third probe, "Text structure"). The response can be several
+        MB, so it counts against the response size cap like every other call.
+        """
+        path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/texto"
+        return await self._get(path, None, FULL_TEXT_TTL, parse_full_text, accept=_XML)
 
     async def get_initial_note(self, law_id: str) -> Block | None:
         """Return the law's initial note (block ``no``), or ``None`` when it has none.

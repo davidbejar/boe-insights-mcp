@@ -47,7 +47,8 @@ TREND_TOOL_NAMES = {
     "explain_spike",
     "most_amended_laws",
 }
-TOOL_NAMES = OLD_TOOL_NAMES | NEW_TOOL_NAMES | TREND_TOOL_NAMES
+STRUCTURE_TOOL_NAMES = {"get_law_structure"}
+TOOL_NAMES = OLD_TOOL_NAMES | NEW_TOOL_NAMES | TREND_TOOL_NAMES | STRUCTURE_TOOL_NAMES
 MAX_DESCRIPTION_WORDS = 120
 
 Loader = Callable[[str], bytes]

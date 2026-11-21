@@ -16,6 +16,7 @@ from boe_insights_mcp.schemas import (
     ArticleHistoryResult,
     CompareArticleVersionsResult,
     LawOverview,
+    LawStructureResult,
     ReadArticleResult,
     ResolveReferenceResult,
     SearchLegislationResult,
@@ -216,3 +217,33 @@ async def test_live_trend_tools_share_one_catalogue_download(mcp: Client[Any]) -
     assert amended is not None
     assert amended["examined"] <= 3
     assert amended["candidates"] >= 1
+
+
+async def test_live_law_structure_of_ley_40_2015_in_headings_mode(mcp: Client[Any]) -> None:
+    # One whole-law request (about 0.7 MB) plus the metadata.
+    result = await mcp.call_tool("get_law_structure", {"law_id": LEY_40, "detail": "headings"})
+
+    page = LawStructureResult.model_validate(result.structured_content)
+    assert page.entries[0].label == "TÍTULO PRELIMINAR"
+    assert page.counts["article"] > 100  # counts cover the articles that headings mode leaves out
+    assert {e.kind for e in page.entries} <= {
+        "preamble",
+        "book",
+        "title",
+        "chapter",
+        "section",
+        "subsection",
+        "group",
+        "annex",
+        "other",
+    }
+
+
+async def test_live_overview_of_an_asturian_law_names_the_regional_gazette(
+    mcp: Client[Any],
+) -> None:
+    result = await mcp.call_tool("get_law_overview", {"law_id": "BOE-A-2026-23272"})
+
+    overview = LawOverview.model_validate(result.structured_content)
+    assert overview.first_published is not None
+    assert (overview.first_published.gazette, overview.first_published.number) == ("BOPA", "206")

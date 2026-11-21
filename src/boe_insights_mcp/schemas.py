@@ -17,6 +17,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
 
+from boe_insights_mcp.structure import EntryKind
 from boe_insights_mcp.versions import ArticleState
 
 __all__ = [
@@ -39,10 +40,12 @@ __all__ = [
     "DepartmentCount",
     "ExplainSpikeResult",
     "FindCodesResult",
+    "FirstPublication",
     "GroupSeries",
     "LawBrief",
     "LawOverview",
     "LawStatus",
+    "LawStructureResult",
     "LegislationOverTimeResult",
     "MostAmendedLawsResult",
     "PeriodCount",
@@ -54,6 +57,7 @@ __all__ = [
     "ResolveReferenceResult",
     "SearchLegislationResult",
     "SpikeContribution",
+    "StructureItem",
     "TopDepartmentsResult",
     "TopicSpec",
     "TopicTrend",
@@ -69,6 +73,9 @@ LawStatus = Literal[
     "validity_exhausted",
     "not_yet_in_force",
 ]
+
+
+_Day = date
 
 
 class _Output(BaseModel):
@@ -192,6 +199,15 @@ class AmendmentSummary(_Output):
     affects_sample: list[ReferenceBrief]
 
 
+class FirstPublication(_Output):
+    """Where and when a regional law was first published."""
+
+    gazette: str = Field(description="Gazette abbreviation or name, e.g. 'BOPA'.")
+    number: str | None = Field(default=None, description="Issue number of the gazette.")
+    # ``_Day`` and not ``date``: inside this class the name ``date`` is the field itself.
+    date: _Day = Field(description="Publication date in that gazette.")
+
+
 class LawOverview(_Output):
     """Identity, legal status and amendment summary of one law."""
 
@@ -202,7 +218,16 @@ class LawOverview(_Output):
     department: str | None = None
     scope: str | None = None
     enacted_on: date | None = Field(default=None, description="Date of the disposition.")
-    published_on: date | None = None
+    published_on: date | None = Field(
+        default=None,
+        description="Publication date in the gazette of record: the BOE for state laws and for "
+        "regional laws reprinted there.",
+    )
+    first_published: FirstPublication | None = Field(
+        default=None,
+        description="For regional laws: the regional gazette, issue and date of first "
+        "publication, which governs entry into force. Null for state laws or when unknown.",
+    )
     effective_from: date | None = None
     status: LawStatus = Field(
         description="Derived from the BOE's repeal, annulment and validity flags and from the "
@@ -315,7 +340,10 @@ class VersionInfo(_Output):
         description="When this version starts to apply: effective_from, else published_on."
     )
     effective_from: date | None = Field(description="The BOE's effective date; may be missing.")
-    published_on: date | None
+    published_on: date | None = Field(
+        description="Date this version was published; "
+        "for regional laws this is the regional gazette date.",
+    )
     introduced_by: str = Field(description="Identifier of the norm that introduced this version.")
 
 
@@ -420,7 +448,10 @@ class ArticleHistoryEvent(_Output):
     index: int = Field(description="1-based position among the article's versions.")
     kind: Literal["original", "amended", "repealed"]
     effective_from: date | None
-    published_on: date | None
+    published_on: date | None = Field(
+        description="Date this version was published; "
+        "for regional laws this is the regional gazette date.",
+    )
     introduced_by: str = Field(description="Identifier of the norm that introduced the version.")
     added: int = Field(description="Paragraphs added versus the previous version.")
     removed: int
@@ -438,6 +469,50 @@ class ArticleHistoryResult(ArticleResult):
     current_state: ArticleState | None = Field(
         default=None, description="State of the article today."
     )
+
+
+class StructureItem(_Output):
+    """One line of a law's table of contents."""
+
+    block_id: str = Field(description="Pass this as block_id to the article tools.")
+    kind: EntryKind
+    level: int = Field(description="Nesting depth; 1 is the top level.")
+    label: str = Field(description="Designation, e.g. 'TÍTULO I', 'Artículo 27'.")
+    heading: str = Field(description="Subject line after the designation; empty when none.")
+    state: Literal["repealed", "not_yet_in_force"] | None = Field(
+        default=None, description="Present only when the entry is not in force on as_of."
+    )
+
+    @model_serializer(mode="wrap")
+    def _omit_state_in_force(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Leave ``state`` out when it is ``None`` (in force, the usual case), to save space."""
+        data: dict[str, object] = handler(self)
+        if data.get("state") is None:
+            data.pop("state", None)
+        return data
+
+
+class LawStructureResult(_Output):
+    """One page of a law's table of contents as of a date."""
+
+    law_id: str
+    title: str = Field(description="Title of the law.")
+    as_of: date = Field(description="The date the structure is valid for.")
+    entries: list[StructureItem] = Field(description="In reading order.")
+    returned: int = Field(description="Number of entries in this page.")
+    total_entries: int = Field(description="Entries in the whole structure for this detail level.")
+    has_more: bool
+    next_offset: int | None = Field(
+        description="Offset to pass for the next page; None when has_more is false."
+    )
+    counts: dict[str, int] = Field(
+        description="Entries per kind in the whole law, whatever detail and page."
+    )
+    note: str | None = Field(
+        default=None,
+        description="Explains a law not yet in force, repealed or empty on as_of.",
+    )
+    provenance: Provenance
 
 
 # --- Trend tools --------------------------------------------------------------------------------
@@ -533,7 +608,11 @@ class TopicSpec(BaseModel):
     """One topic to compare: a name and at least one criterion."""
 
     name: str = Field(min_length=1, description="Label for the topic, e.g. 'teletrabajo'.")
-    title: str | None = Field(default=None, description="Words that must all be in the title.")
+    title: str | None = Field(
+        default=None,
+        description="Words that must all be in the title "
+        "(narrow: use text for laws that treat a topic without naming it).",
+    )
     text: str | None = Field(default=None, description="Words that must all be in the body text.")
     subject_code: str | None = Field(default=None, description="BOE subject (materia) code.")
 
@@ -611,7 +690,7 @@ class MostAmendedLawsResult(_Output):
     laws: list[AmendedLaw] = Field(description="Most amended first.")
     candidates: int = Field(description="Matching laws in the range.")
     examined: int = Field(description="Laws whose amendments were counted.")
-    failed: int = Field(description="Laws skipped after a temporary BOE error.")
+    failed: int = Field(description="Laws skipped after a BOE error.")
     complete: bool = Field(description="True when every candidate was examined.")
     note: str | None = Field(default=None, description="What to do when not complete.")
     coverage: Coverage

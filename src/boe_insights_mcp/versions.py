@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict
 from boe_insights_mcp.models import Block, BlockVersion, collapse_whitespace
 
 __all__ = [
+    "MONTHS",
     "ArticleState",
     "ParagraphChange",
     "VersionDiff",
@@ -53,7 +54,9 @@ _PARTIAL_NOTE_PREFIX = "norma derogada parcialmente"
 # The date of a whole-law repeal in the note's first paragraph: "con efectos de 7 de diciembre
 # de 2018" (all five wordings of api-notes "Initial note").
 _NOTE_DATE = re.compile(r"con efectos de (\d{1,2}) de ([a-z]+) de (\d{4})", re.IGNORECASE)
-_MONTHS = {
+# Spanish month names (lower case) to month numbers; also used by ``structure`` to read dates in
+# publication notes. ``setiembre`` is an accepted older spelling.
+MONTHS = {
     name: number
     for number, name in enumerate(
         (
@@ -193,10 +196,10 @@ def repeal_version_date(version: BlockVersion) -> date | None:
 def _wording_date(version: BlockVersion) -> date | None:
     """The date in "con efectos de <d> de <mes> de <yyyy>" of the first paragraph, if valid."""
     match = _NOTE_DATE.search(collapse_whitespace(version.paragraphs[0].text))
-    if match is None or match.group(2).casefold() not in _MONTHS:
+    if match is None or match.group(2).casefold() not in MONTHS:
         return None
     try:
-        return date(int(match.group(3)), _MONTHS[match.group(2).casefold()], int(match.group(1)))
+        return date(int(match.group(3)), MONTHS[match.group(2).casefold()], int(match.group(1)))
     except ValueError:  # an impossible day such as 31 de abril
         return None
 

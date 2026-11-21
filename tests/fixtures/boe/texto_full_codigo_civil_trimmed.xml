@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <texto>
+      <bloque id="preambulo" tipo="parte_dispositiva">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="parrafo">Teniendo presente lo dispuesto en la ley de 26 de Mayo último; conformándome con lo propuesto por el Ministro de Gracia y Justicia, y de acuerdo con el parecer de mi Consejo de Ministros;</p>
+          <p class="parrafo">En nombre de mi Augusto Hijo el Rey D. Alfonso XIII, y como Reina Regente del Reino,</p>
+          <p class="parrafo">Vengo en decretar que se publique e inserte en la Gaceta de Madrid el adjunto texto de la nueva edición del Código Civil, hecha con las enmiendas y adiciones propuestas por la Sección de lo civil de la Comisión general de codificación, según el resultado de la discusión habida en ambos Cuerpos Colegisladores, y en cumplimiento de lo preceptuado por la mencionada ley de 26 de Mayo último.</p>
+        </version>
+      </bloque>
+      <bloque id="fi" tipo="firma">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="parrafo_2">Dado en San Ildefonso a veinticuatro de Julio de mil ochocientos ochenta y nueve.</p>
+          <p class="firma_rey">MARÍA CRISTINA</p>
+          <p class="firma_ministro">El Ministro de Gracia y Justicia,</p>
+          <p class="firma_ministro">JOSÉ CANALEJAS Y MÉNDEZ</p>
+          <p class="firma_ministro"> </p>
+        </version>
+      </bloque>
+      <bloque id="codigocivil" tipo="encabezado" titulo="CÓDIGO CIVIL">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="anexo">CÓDIGO CIVIL</p>
+        </version>
+      </bloque>
+      <bloque id="tpreliminar" tipo="encabezado" titulo="TÍTULO PRELIMINAR">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="titulo_num">TÍTULO PRELIMINAR</p>
+          <p class="titulo_tit">De las Leyes, de sus efectos y de las reglas generales para su aplicación</p>
+        </version>
+        <version id_norma="BOE-A-1974-1083" fecha_publicacion="19740709" fecha_vigencia="19740729">
+          <p class="titulo_num">TÍTULO PRELIMINAR</p>
+          <p class="titulo_tit">De las normas jurídicas, su aplicación y eficacia</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica la rúbrica por el Decreto 1836/1974, de 31 de mayo. <a class="refPost">Ref. BOE-A-1974-1083</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="ci" tipo="encabezado" titulo="CAPÍTULO I">
+        <version id_norma="BOE-A-1974-1083" fecha_publicacion="19740709" fecha_vigencia="19740729">
+          <p class="capitulo_num">CAPÍTULO I</p>
+          <p class="capitulo_tit">Fuentes del derecho</p>
+          <blockquote>
+            <p class="nota_pie">Se añade por el Decreto 1836/1974, de 31 de mayo. <a class="refPost">Ref. BOE-A-1974-1083</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="a1" tipo="precepto" titulo="Art 1">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Artículo 1.</p>
+          <p class="parrafo">Las Leyes obligarán en la Península, islas adyacentes, Canarias y territorios de África sujetos a la legislación peninsular, a los veinte días de su promulgación, si en ellas no se dispusiere otra cosa.</p>
+          <p class="parrafo">Se entiende hecha la promulgación el día en que termine la inserción de la Ley en la Gaceta.</p>
+        </version>
+        <version id_norma="BOE-A-1974-1083" fecha_publicacion="19740709" fecha_vigencia="19740729">
+          <p class="articulo">Artículo 1.</p>
+          <p class="parrafo">1. Las fuentes del ordenamiento jurídico español son la ley, la costumbre y los principios generales del derecho.</p>
+          <p class="parrafo">2. Carecerán de validez las disposiciones que contradigan otra de rango superior.</p>
+          <p class="parrafo">3. La costumbre sólo regirá en defecto de ley aplicable, siempre que no sea contraria a la moral o al orden público, y que resulte probada.</p>
+          <p class="parrafo">Los usos jurídicos que no sean meramente interpretativos de una declaración de voluntad, tendrán la consideración de costumbre.</p>
+          <p class="parrafo">4. Los principios generales del derecho se aplicarán en defecto de ley o costumbre, sin perjuicio de su carácter informador del ordenamiento jurídico.</p>
+          <p class="parrafo">5. Las normas jurídicas contenidas en los tratados internacionales no serán de aplicación directa en España en tanto no hayan pasado a formar parte del ordenamiento interno mediante su publicación íntegra en el «Boletín Oficial del Estado».</p>
+          <p class="parrafo">6. La jurisprudencia complementará el ordenamiento jurídico con la doctrina que, de modo reiterado, establezca el Tribunal Supremo al interpretar y aplicar la ley, la costumbre y los principios generales del derecho.</p>
+          <p class="parrafo">7. Los Jueces y Tribunales tienen el deber inexcusable de resolver en todo caso los asuntos de que conozcan, ateniéndose al sistema de fuentes establecido.</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica por el Decreto 1836/1974, de 31 de mayo. <a class="refPost">Ref. BOE-A-1974-1083</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="art2" tipo="precepto" titulo="Art 2">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Artículo 2.</p>
+          <p class="parrafo">La ignorancia de las Leyes no excusa de su cumplimiento.</p>
+        </version>
+        <version id_norma="BOE-A-1974-1083" fecha_publicacion="19740709" fecha_vigencia="19740729">
+          <p class="articulo">Artículo 2.</p>
+          <p class="parrafo">1. Las leyes entrarán en vigor a los veinte días de su completa publicación en el «Boletín Oficial del Estado», si en ellas no se dispone otra cosa.</p>
+          <p class="parrafo">2. Las leyes sólo se derogan por otras posteriores. La derogación tendrá el alcance que expresamente se disponga y se extenderá siempre a todo aquello que en la ley nueva, sobre la misma materia sea incompatible con la anterior. Por la simple derogación de una ley no recobran vigencia las que ésta hubiere derogado.</p>
+          <p class="parrafo">3. Las leyes no tendrán efecto retroactivo, si no dispusieren lo contrario.</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica por el Decreto 1836/1974, de 31 de mayo. <a class="refPost">Ref. BOE-A-1974-1083</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="lprimero" tipo="encabezado" titulo="LIBRO PRIMERO">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="libro_num">LIBRO PRIMERO</p>
+          <p class="libro_tit">De las personas</p>
+        </version>
+      </bloque>
+      <bloque id="tprimero" tipo="encabezado" titulo="TÍTULO PRIMERO">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="titulo_num">TÍTULO I</p>
+          <p class="titulo_tit">De los españoles y extranjeros</p>
+        </version>
+      </bloque>
+      <bloque id="art17" tipo="precepto" titulo="Art 17">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Artículo 17.</p>
+          <p class="parrafo">Son españoles:</p>
+          <p class="parrafo_2">1.º Las personas nacidas en territorio español.</p>
+          <p class="parrafo">2.º Los hijos de padre o madre españoles, aunque hayan nacido fuera de España.</p>
+          <p class="parrafo">3.º Los extranjeros que hayan obtenido carta de naturaleza.</p>
+          <p class="parrafo">4.º Los que, sin ella, hayan ganado vecindad en cualquier pueblo de la Monarquía.</p>
+        </version>
+        <version id_norma="BOE-A-1954-10882" fecha_publicacion="19540716" fecha_vigencia="19540805">
+          <p class="articulo">Artículo 17.</p>
+          <p class="parrafo">Son españoles:</p>
+          <p class="parrafo">Primero. Los hijos de padre español.</p>
+          <p class="parrafo">Segundo. Los hijos de madre española aunque el padre sea extranjero, cuando no sigan la nacionalidad del padre.</p>
+          <p class="parrafo">Tercero. Los nacidos en España de padres extranjeros, si éstos hubieran nacido en España y en ella estuviesen domiciliados al tiempo del nacimiento. Exceptúanse los hijos de extranjeros adscritos al servicio diplomático.</p>
+          <p class="parrafo">Cuarto. Los nacidos en España de padres desconocidos; sin perjuicio de que conocida su verdadera filiación, ésta surta los efectos que procedan.</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica por el art. 1 de la Ley de 15 de julio de 1954. <a class="refPost">Ref. BOE-A-1954-10882</a>.</p>
+          </blockquote>
+        </version>
+        <version id_norma="BOE-A-1982-19493" fecha_publicacion="19820730" fecha_vigencia="19820819">
+          <p class="articulo">Artículo 17.</p>
+          <p class="parrafo">Son españoles de origen:</p>
+          <p class="parrafo">1. Los hijos de padre o madre españoles.</p>
+          <p class="parrafo">2. Los nacidos en España de padres extranjeros si, al menos uno de éstos, hubiera nacido también en España. Se exceptúan los hijos de padre o madre extranjeros adscritos al servicio diplomático o consular.</p>
+          <p class="parrafo">3. Los nacidos en España de padres extranjeros si ambos carecieren de nacionalidad o si la legislación de ninguno de ellos atribuye al hijo una nacionalidad.</p>
+          <p class="parrafo">4. Los nacidos en España cuya filiación sea desconocida o aunque conocida respecto de uno de los padres la legislación de éste no atribuya al hijo su nacionalidad y los menores hallados en territorio español si no se conoce el lugar de su nacimiento ni su filiación.</p>
+          <p class="parrafo">La determinación legal de la filiación respecto del padre o madre españoles producirá automáticamente la adquisición de la nacionalidad española de origen.</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica por el art. único de la Ley 51/1982, de 13 de julio. <a class="refPost">Ref. BOE-A-1982-19493</a>.</p>
+            <p class="nota_pie">Se modifica por el art. 1 de la Ley de 15 de julio de 1954. <a class="refPost">Ref. BOE-A-1954-10882</a>.</p>
+          </blockquote>
+        </version>
+        <version id_norma="BOE-A-1990-30520" fecha_publicacion="19901218" fecha_vigencia="19910107">
+          <p class="articulo">Artículo 17.</p>
+          <p class="parrafo">1. Son españoles de origen:</p>
+          <p class="parrafo_2">a) Los nacidos de padre o madre españoles.</p>
+          <p class="parrafo">b) Los nacidos en España de padres extranjeros si, al menos, uno de ellos hubiera nacido también en España. Se exceptúan los hijos de funcionario diplomático o consular acreditado en España.</p>
+          <p class="parrafo">c) Los nacidos en España de padres extranjeros, si ambos carecieren de nacionalidad o si la legislación de ninguno de ellos atribuye al hijo una nacionalidad.</p>
+          <p class="parrafo">d) Los nacidos en España cuya filiación no resulte determinada. A estos efectos, se presumen nacidos en territorio español los menores de edad cuyo primer lugar conocido de estancia sea territorio español.</p>
+          <p class="parrafo_2">2. La filiación o el nacimiento en España, cuya determinación se produzca después de los dieciocho años de edad, no son por sí solos causa de adquisición de la nacionalidad española. El interesado tiene entonces derecho a optar por la nacionalidad española de origen en el plazo de dos años a contar desde aquella determinación.</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica por el art. único de la Ley 18/1990, de 17 de diciembre. <a class="refPost">Ref. BOE-A-1990-30520</a>.</p>
+            <p class="nota_pie">Se modifica por el art. único de la Ley 51/1982, de 13 de julio. <a class="refPost">Ref. BOE-A-1982-19493</a>.</p>
+            <p class="nota_pie">Se modifica por el art. 1 de la Ley de 15 de julio de 1954. <a class="refPost">Ref. BOE-A-1954-10882</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="art27" tipo="precepto" titulo="Art 27">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Artículo 27</p>
+          <p class="parrafo">Los extranjeros gozan en España de los derechos que las Leyes civiles conceden a los españoles, salvo lo dispuesto en el artículo 2.º de la Constitución del Estado o en tratados internacionales.</p>
+        </version>
+        <version id_norma="BOE-A-1954-10882" fecha_publicacion="19540716" fecha_vigencia="19540805">
+          <p class="articulo">Artículo 27</p>
+          <p class="parrafo">Los extranjeros gozan en España de los mismos derechos civiles que los españoles, salvo lo dispuesto en las Leyes especiales y en los Tratados.</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica por el art. 1 de la Ley de 15 de julio de 1954. <a class="refPost">Ref. BOE-A-1954-10882</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="art28" tipo="precepto" titulo="Art 28">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Artículo 28.</p>
+          <p class="parrafo">Las corporaciones, fundaciones y asociaciones, reconocidas por la ley y domiciliadas en España, gozarán de la nacionalidad española, siempre que tengan el concepto de personas jurídicas con arreglo a las disposiciones del presente Código.</p>
+          <p class="parrafo">Las asociaciones domiciliadas en el extranjero tendrán en España la consideración y los derechos que determinen los tratados o leyes especiales.</p>
+        </version>
+      </bloque>
+      <bloque id="cprimero-3" tipo="encabezado" titulo="CAPÍTULO PRIMERO">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="capitulo_num">CAPÍTULO PRIMERO</p>
+          <p class="capitulo_tit">Disposiciones generales</p>
+        </version>
+        <version id_norma="BOE-A-1981-16216" fecha_publicacion="19810720" fecha_vigencia="19810809">
+          <p class="capitulo_num">CAPÍTULO I</p>
+          <p class="capitulo_tit">De la promesa de matrimonio</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica la rúbrica por el art. 1 de la Ley 30/1981, de 7 de julio. <a class="refPost">Ref. BOE-A-1981-16216</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="sprimera" tipo="precepto" fecha_caducidad="19810720" titulo="Sección primera">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="seccion">Sección primera. De las formas del matrimonio</p>
+        </version>
+        <version id_norma="BOE-A-1958-6677" fecha_publicacion="19580425" fecha_vigencia="19580515">
+          <p class="seccion">Sección primera. De las clases de matrimonio</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica la rúbrica por el art. 2 de la Ley de 24 de abril de 1958. <a class="refPost">Ref. BOE-A-1958-6677</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="cii-4" tipo="encabezado" fecha_caducidad="19810720" titulo="CAPÍTULO II">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="capitulo_num">CAPÍTULO II</p>
+          <p class="capitulo_tit">Del matrimonio canónico</p>
+        </version>
+      </bloque>
+      <bloque id="art75" tipo="precepto" titulo="Art 75">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Artículo 75.</p>
+          <p class="parrafo">Los requisitos, forma y solemnidades para la celebración del matrimonio canónico se rigen por las disposiciones de la Iglesia Católica y del Santo Concilio de Trento, admitidas como Leyes del Reino.</p>
+        </version>
+        <version id_norma="BOE-A-1958-6677" fecha_publicacion="19580425" fecha_vigencia="19580515">
+          <p class="articulo">Artículo 75.</p>
+          <p class="parrafo">El matrimonio canónico, en cuanto se refiere a su constitución y validez y, en general, a su reglamentación jurídica, se regirá por las disposiciones de la Iglesia Católica.</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica por el art. 1 de la Ley de 24 de abril de 1958. <a class="refPost">Ref. BOE-A-1958-6677</a>.</p>
+          </blockquote>
+        </version>
+        <version id_norma="BOE-A-1981-16216" fecha_publicacion="19810720" fecha_vigencia="19810809">
+          <p class="articulo">Artículo 75.</p>
+          <p class="parrafo">Si la causa de nulidad fuere la falta de edad, mientras el contrayente sea menor sólo podrá ejercitar la acción cualquiera de sus padres, tutores o guardadores y, en todo caso, el Ministerio Fiscal.</p>
+          <p class="parrafo">Al llegar a la mayoría de edad sólo podrá ejercitar la acción el contrayente menor, salvo que los cónyuges hubieren vivido juntos durante un año después de alcanzada aquélla.</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica por el art. 1 de la Ley 30/1981, de 7 de julio. <a class="refPost">Ref. BOE-A-1981-16216</a>.</p>
+            <p class="nota_pie">Se modifica por el art. 1 de la Ley de 24 de abril de 1958. <a class="refPost">Ref. BOE-A-1958-6677</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="art307" tipo="precepto" fecha_caducidad="19831115" titulo="Art 307">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Artículo 307.</p>
+          <p class="parrafo">Ningún vocal del consejo de familia asistirá a su reunión, ni emitirá su voto, cuando se trate de negocio en que tengan interés él, sus descendientes, ascendientes o consorte; pero podrá ser oído, si el consejo lo estima conveniente.</p>
+        </version>
+        <version id_norma="BOE-A-1983-28123" fecha_publicacion="19831026" fecha_vigencia="19831115">
+          <p class="articulo">Artículo 307. <strong>(Sin contenido)</strong></p>
+          <blockquote>
+            <p class="nota_pie">Se deja sin contenido por el art. 3 de la Ley 13/1983, de 24 de octubre. <a class="refPost">Ref. BOE-A-1983-28123</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="lsegundo" tipo="encabezado" titulo="LIBRO SEGUNDO">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="libro_num">LIBRO SEGUNDO</p>
+          <p class="libro_tit">De los bienes, de la propiedad y de sus modificaciones</p>
+        </version>
+        <version id_norma="BOE-A-2021-20727" fecha_publicacion="20211216" fecha_vigencia="20220105">
+          <p class="libro_num">LIBRO SEGUNDO</p>
+          <p class="libro_tit">De los animales, de los bienes, de la propiedad y de sus modificaciones</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica la rúbrica por el art. 1.6 de la Ley 17/2021, de 15 de diciembre de 2021. <a class="refPost">Ref. BOE-A-2021-20727#ap</a></p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="disposicionpreliminar" tipo="precepto" fecha_caducidad="20211216" titulo="Disposición preliminar">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="seccion">Disposición preliminar</p>
+        </version>
+      </bloque>
+      <bloque id="tviii-2" tipo="encabezado" titulo="TÍTULO VIII">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="titulo_num">TÍTULO VIII</p>
+          <p class="titulo_tit">Del Registro de la Propiedad</p>
+        </version>
+      </bloque>
+      <bloque id="cunico" tipo="encabezado" titulo="CAPÍTULO ÚNICO">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="capitulo">CAPÍTULO ÚNICO</p>
+        </version>
+      </bloque>
+      <bloque id="art605" tipo="precepto" titulo="Art 605">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Artículo 605.</p>
+          <p class="parrafo">El Registro de la Propiedad tiene por objeto la inscripción o anotación de los actos y contratos relativos al dominio y demás derechos reales sobre bienes inmuebles.</p>
+        </version>
+      </bloque>
+      <bloque id="disposicionpreliminar-2" tipo="encabezado" titulo="Disposición preliminar">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="seccion">Disposición preliminar</p>
+        </version>
+      </bloque>
+      <bloque id="tiii-3" tipo="encabezado" titulo="TÍTULO III">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="titulo_num">TÍTULO III</p>
+          <p class="titulo_tit">De las sucesiones</p>
+          <p class="seccion">Disposiciones generales</p>
+        </version>
+      </bloque>
+      <bloque id="art.1873bis" tipo="precepto" fecha_caducidad="00000001" titulo="Art. 1873 bis">
+        <version id_norma="BOE-A-1941-12345" fecha_publicacion="19411216" fecha_vigencia="19420105">
+          <p class="articulo">Artículo 1873 bis.</p>
+          <p class="parrafo">No cumplida la obligación garantizada dentro del plazo estipulado, se procederá con arreglo a lo dispuesto en el artículo mil ochocientos setenta y dos, con citación también de los acreedores preferentes, si los hubiere. Si el valor de las cosas pignoradas no alcanzare a cubrir el importe de las obligaciones, intereses y gastos de todo género, el acreedor conservará su derecho contra el deudor por la diferencia.</p>
+          <p class="parrafo">Antes del vencimiento podrá el deudor en cualquier tiempo pagar al acreedor el crédito con sus intereses, debiendo precisamente, para quedar liberado de las obligaciones contraídas, exigir la entrega del documento en que constasen, con el que podrá obtener la cancelación de los asientos del Registro. Si el acreedor se negare a recibir el pago de la obligación principal, o fuese desconocido por tratarse de endosatario que no hubiera inscrito el endoso en el correspondiente Registro, podrá el deudor consignar su importe judicialmente, y quedarán en tal caso libres del gravamen los bienes pignorados.</p>
+          <blockquote>
+            <p class="nota_pie">Se añade por el art. 3 de la Ley de 5 de diciembre de 1941. <a class="refPost">Ref. BOE-A-1941-12345</a>.</p>
+          </blockquote>
+        </version>
+        <version id_norma="BOE-A-1954-15448" fecha_publicacion="19541218" fecha_vigencia="19550815">
+          <p class="articulo">Artículo 1873 bis. <strong>(Derogado)</strong></p>
+          <blockquote>
+            <p class="nota_pie">Se deroga por la disposición final derogatoria de la Ley de 16 de diciembre de 1954. <a class="refPost">Ref. BOE-A-1954-15448</a>.</p>
+            <p class="nota_pie">Se añade por el art. 3 de la Ley de 5 de diciembre de 1941. <a class="refPost">Ref. BOE-A-1941-12345</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+      <bloque id="df" tipo="encabezado" titulo="DISPOSICIÓN FINAL">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="capitulo">DISPOSICIÓN FINAL</p>
+        </version>
+      </bloque>
+      <bloque id="art1976" tipo="precepto" titulo="Art 1976">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Artículo 1976.</p>
+          <p class="parrafo">Quedan derogados todos los cuerpos legales, usos y costumbres que constituyen el derecho civil común en todas las materias que son objeto de este Código, y quedarán sin fuerza y vigor, así en su concepto de leyes directamente obligatorias como en el de derecho supletorio. Esta disposición no es aplicable a las leyes que en este Código se declaran subsistentes.</p>
+        </version>
+      </bloque>
+      <bloque id="dt" tipo="encabezado" titulo="DISPOSICIONES TRANSITORIAS">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="capitulo">DISPOSICIONES TRANSITORIAS</p>
+          <p class="parrafo_2">Las variaciones introducidas por este Código, que perjudiquen derechos adquiridos según la legislación civil anterior, no tendrán efecto retroactivo.</p>
+          <p class="parrafo">Para aplicar la legislación que corresponda, en los casos que no estén expresamente determinados en el Código, se observarán las reglas siguientes:</p>
+        </version>
+      </bloque>
+      <bloque id="primera" tipo="precepto" titulo="Primera">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Primera.</p>
+          <p class="parrafo">Se regirán por la legislación anterior al Código los derechos nacidos, según ella, de hechos realizados bajo su régimen, aunque el Código los regule de otro modo o no los reconozca. Pero si el derecho apareciere declarado por primera vez en el Código, tendrá efecto, desde luego, aunque el hecho que lo origine se verificara bajo la legislación anterior, siempre que no perjudique a otro derecho adquirido de igual origen.</p>
+        </version>
+      </bloque>
+      <bloque id="da" tipo="encabezado" titulo="DISPOSICIONES ADICIONALES">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="capitulo">DISPOSICIONES ADICIONALES</p>
+        </version>
+      </bloque>
+      <bloque id="primera-2" tipo="precepto" titulo="Primera">
+        <version id_norma="BOE-A-1889-4763" fecha_publicacion="18890725" fecha_vigencia="18890816">
+          <p class="articulo">Primera.</p>
+          <p class="parrafo">El Presidente del Tribunal Supremo y los de las Audiencias Territoriales elevarán al Ministerio de Gracia y Justicia, al fin de cada año, una Memoria, en la que, refiriéndose a los negocios de que hayan conocido durante el mismo las Salas de lo civil, señalen las deficiencias y dudas que hayan encontrado al aplicar este Código. En ella harán constar detalladamente las cuestiones y puntos de derecho controvertidos y los artículos u omisiones del Código que han dado ocasión a las dudas del Tribunal.</p>
+        </version>
+      </bloque>
+      <bloque id="cuarta-2" tipo="precepto" titulo="Cuarta">
+        <version id_norma="BOE-A-2003-21053" fecha_publicacion="20031119" fecha_vigencia="20031120">
+          <p class="articulo">Cuarta.</p>
+          <p class="parrafo">La referencia que a personas con discapacidad se realiza en los artículos 756, 822 y 1041, se entenderá hecha al concepto definido en la Ley de protección patrimonial de las personas con discapacidad y de Modificación del Código Civil, de la Ley de Enjuiciamiento Civil y de la Normativa Tributaria con esta finalidad.</p>
+          <blockquote>
+            <p class="nota_pie">Se añade por el art. 13 de la Ley 41/2003, de 18 de noviembre. <a class="refPost">Ref. BOE-A-2003-21053</a>.</p>
+          </blockquote>
+        </version>
+        <version id_norma="BOE-A-2021-9233" fecha_publicacion="20210603" fecha_vigencia="20210903">
+          <p class="articulo">Cuarta.</p>
+          <p class="parrafo">La referencia a la discapacidad que se realiza en los artículos 96, 756 número 7.º, 782, 808, 822 y 1041, se entenderá hecha al concepto definido en la Ley 41/2003, de 18 de noviembre, de protección patrimonial de las personas con discapacidad y de modificación del Código Civil, de la Ley de Enjuiciamiento Civil y de la Normativa Tributaria con esta finalidad, y a las personas que están en situación de dependencia de grado II o III de acuerdo con la Ley 39/2006, de 14 de diciembre, de Promoción de la Autonomía Personal y Atención a las personas en situación de dependencia.</p>
+          <p class="parrafo">A los efectos de los demás preceptos de este Código, salvo que otra cosa resulte de la dicción del artículo de que se trate, toda referencia a la discapacidad habrá de ser entendida a aquella que haga precisa la provisión de medidas de apoyo para el ejercicio de la capacidad jurídica.</p>
+          <blockquote>
+            <p class="nota_pie">Se modifica, con efectos de 3 de septiembre de 2021, por el art. 2.67 de la Ley 8/2021, de 2 de junio. <a class="refPost">Ref. BOE-A-2021-9233#as</a></p>
+            <p class="nota_pie">Se añade por el art. 13 de la Ley 41/2003, de 18 de noviembre. <a class="refPost">Ref. BOE-A-2003-21053</a>.</p>
+          </blockquote>
+        </version>
+      </bloque>
+    </texto>
+  </data>
+</response>

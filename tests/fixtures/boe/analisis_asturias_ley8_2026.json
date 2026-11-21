@@ -1,0 +1,53 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "materias": [
+                {
+                    "materia": {
+                        "codigo": "5281",
+                        "texto": "Organizaci\u00f3n de las Comunidades Aut\u00f3nomas"
+                    }
+                }
+            ],
+            "notas": {
+                "nota": "Publicada en el BOPA n\u00fam. 206, de 23 de octubre de 2026."
+            },
+            "referencias": {
+                "anteriores": [
+                    {
+                        "anterior": [
+                            {
+                                "id_norma": "BOE-A-1995-9683",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "la Ley 1\/1995, de 27 de enero"
+                            },
+                            {
+                                "id_norma": "BOE-A-1984-15211",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "los arts. 1 y 7 de la Ley 4\/1984, de 5 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-1982-634",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "DE CONFORMIDAD con"
+                                },
+                                "texto": "el art. 31.2 del Estatuto aprobado por Ley Org\u00e1nica 7\/1981, de 30 de diciembre"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

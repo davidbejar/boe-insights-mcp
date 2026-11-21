@@ -1,0 +1,168 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "materias": [
+                {
+                    "materia": {
+                        "codigo": "6658",
+                        "texto": "Sistema tributario"
+                    }
+                }
+            ],
+            "referencias": {
+                "anteriores": [
+                    {
+                        "anterior": [
+                            {
+                                "id_norma": "BOE-A-2015-3637",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "la disposici\u00f3n adicional 1 de la Ley 3\/2015, de 11 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2007-15212",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "la Ley 7\/2007, de 17 de julio"
+                            },
+                            {
+                                "id_norma": "",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "el Decreto 158\/2007, de 24 de julio (DOGC n\u00fam. 4934, de 26 de julio)"
+                            },
+                            {
+                                "id_norma": "",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "el Decreto 162\/2010, de 9 de noviembre (DOGC n\u00fam. 5755, de 15 de noviembre)"
+                            },
+                            {
+                                "id_norma": "BOE-A-2006-13087",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "DE CONFORMIDAD con"
+                                },
+                                "texto": "el art. 65 del Estatuto aprobado por Ley Org\u00e1nica 6\/2006, de 19 de julio"
+                            }
+                        ]
+                    }
+                ],
+                "posteriores": [
+                    {
+                        "posterior": [
+                            {
+                                "id_norma": "BOE-A-2025-22438",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": "la disposici\u00f3n adicional 5.3 del libro 2, MODIFICA y A\u00d1ADE determinados preceptos, por Decreto-ley 15\/2025, de 26 de agosto"
+                            },
+                            {
+                                "id_norma": "BOE-A-2022-953",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": "la disposici\u00f3n adicional 4 del libro 2 y SE A\u00d1ADE una disposici\u00f3n adicional al libro 1, por Ley 2\/2021, de 29 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2026-24007",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el t\u00edtulo del cap\u00edtulo VII del t\u00edtulo I y el art. 217-1 del libro 2, por Ley 11\/2026, de 9 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2026-15679",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 218-2 del libro 2, por Ley 5\/2026, de 20 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2026-561",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 218-2 del libro 2, por Decreto-ley 21\/2025, de 14 de octubre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2023-10344",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 2.1 y se aprueba el libro 4, por Ley 3\/2023, de 16 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-5569",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "y SE A\u00d1ADE determinados preceptos, por Ley 5\/2020, de 29 de abril"
+                            },
+                            {
+                                "id_norma": "DOGC-f-2018-90257",
+                                "relacion": {
+                                    "codigo": "202",
+                                    "texto": "CORRECCI\u00d3N de erratas"
+                                },
+                                "texto": "en DOGC num. 7539, de 19 de enero de 2018"
+                            },
+                            {
+                                "id_norma": "BOE-A-2024-6951",
+                                "relacion": {
+                                    "codigo": "331",
+                                    "texto": "SE DICTA EN RELACI\u00d3N"
+                                },
+                                "texto": "y se aprueba el libro sexto, por Decreto Legislativo 1\/2024, de 12 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-8149",
+                                "relacion": {
+                                    "codigo": "470",
+                                    "texto": "SE DECLARA"
+                                },
+                                "texto": "en el Recurso 4362\/2017, la inconstitucionalidad y nulidad de los incisos y preceptos citados; la constitucionalidad de lo indicado seg\u00fan los fj establecidos, por Sentencia 65\/2020, de 18 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2018-1968",
+                                "relacion": {
+                                    "codigo": "470",
+                                    "texto": "SE DECLARA"
+                                },
+                                "texto": ", en el Recurso 4362\/2017, el levantamiento de la suspensi\u00f3n de vigencia y aplicaci\u00f3n de los arts. 122-10.6, 223-1 y 223-2 y su mantenimiento respecto a los dem\u00e1s preceptos impugnados, por Auto  de 7 de febrero de 2018"
+                            },
+                            {
+                                "id_norma": "BOE-A-2017-10452",
+                                "relacion": {
+                                    "codigo": "694",
+                                    "texto": "Recurso"
+                                },
+                                "texto": "4362\/2017 planteado en relaci\u00f3n con el art. 5 y preceptos conexos, con suspensi\u00f3n, desde el 13 de septiembre de 2017, de vigencia y aplicaci\u00f3n de los preceptos impugnados, y desde el 8 de septiembre de 2017, para las partes legitimadas"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

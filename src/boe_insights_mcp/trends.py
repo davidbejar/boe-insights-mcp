@@ -803,11 +803,11 @@ async def most_amended_laws(
             break
         try:
             analysis = await client.get_law_analysis(law.identifier)
-        except BoeError as error:
-            if not error.retryable:
-                raise
-            # A temporary failure of one law must not sink the whole ranking: skip it, say so
-            # in ``failed``, and it is tried again on the next call.
+        except BoeError:
+            # Any BOE failure, retryable or not, skips just this law: a permanently malformed
+            # analysis of one law must not sink the ranking of the others. It is counted in
+            # ``failed`` and tried again on the next call. Programming errors are not
+            # ``BoeError`` and still propagate.
             failed += 1
             fresh += 1
         else:

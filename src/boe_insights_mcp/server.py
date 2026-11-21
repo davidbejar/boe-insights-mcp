@@ -6,8 +6,9 @@ or :mod:`boe_insights_mcp.articles` and turns client errors into messages the mo
 ``create_server`` builds the ``FastMCP`` instance and registers the tool functions
 (``search_legislation``, ``resolve_reference``, ``get_law_overview``, ``find_codes``,
 ``get_amendment_history``, ``read_article``, ``compare_article_versions``,
-``get_article_history``, and the trend tools ``legislation_over_time``, ``top_departments``,
-``compare_topics``, ``explain_spike`` and ``most_amended_laws``); ``main`` runs it over stdio.
+``get_article_history``, ``get_law_structure``, and the trend tools ``legislation_over_time``,
+``top_departments``, ``compare_topics``, ``explain_spike`` and ``most_amended_laws``); ``main``
+runs it over stdio.
 Layering: tool functions here -> use cases in ``legislation``, ``articles`` and ``trends`` ->
 ``client`` (and ``catalogue`` for the trend tools).
 This is also where the cache, rate limiter, client and catalogue store are created, in the
@@ -53,6 +54,7 @@ from boe_insights_mcp.schemas import (
     ExplainSpikeResult,
     FindCodesResult,
     LawOverview,
+    LawStructureResult,
     LegislationOverTimeResult,
     MostAmendedLawsResult,
     ReadArticleResult,
@@ -76,7 +78,8 @@ _INSTRUCTIONS = (
     "department, subject and rank codes its filters take. read_article gives an article's text "
     "on a date, compare_article_versions shows what changed between two dates and "
     "get_article_history lists the amendments of one article; get_amendment_history lists the "
-    "norms that amended a whole law. legislation_over_time, top_departments, compare_topics, "
+    "norms that amended a whole law; get_law_structure gives a law's table of contents with the "
+    "block_id of each article. legislation_over_time, top_departments, compare_topics, "
     "explain_spike and most_amended_laws count laws from a downloaded copy of the collection "
     "(the first call can take about 30 seconds); most_amended_laws examines a limited number of "
     "laws per call, so repeat it while complete is false. The status of a law is derived from "
@@ -117,6 +120,8 @@ _INVALID_QUERY_ADVICE = {
     "or get the identifier again from resolve_reference.",
     "get_article_history": "Check the identifier and the article wording, or get the identifier "
     "again from resolve_reference.",
+    "get_law_structure": "Check the identifier (for example BOE-A-2015-10566) or get it again "
+    "from resolve_reference.",
     # The trend tools send the BOE only the text and subject_code filters.
     "legislation_over_time": "Simplify the text filter or check subject_code, then try again.",
     "top_departments": "Simplify the text filter or check subject_code, then try again.",
@@ -770,6 +775,39 @@ async def most_amended_laws(
     )
 
 
+async def get_law_structure(
+    ctx: Context,
+    law_id: _LAW_ID,
+    as_of: Annotated[
+        date | None,
+        Field(
+            description="Show the structure valid on this date, ISO format, e.g. 2017-01-01. "
+            "Default: today."
+        ),
+    ] = None,
+    detail: Annotated[
+        Literal["headings", "all"],
+        Field(description="'headings' leaves out the articles and provisions."),
+    ] = "all",
+    offset: Annotated[
+        int, Field(ge=0, description="Start position; pass next_offset from the previous page.")
+    ] = 0,
+    limit: Annotated[
+        int, Field(ge=1, le=articles.MAX_STRUCTURE_LIMIT, description="Entries per page.")
+    ] = articles.DEFAULT_STRUCTURE_LIMIT,
+) -> LawStructureResult:
+    """Table of contents of a law: books, titles, chapters, sections and article headings, each
+    with the block_id to pass to the article tools. Use it to find which article deals with a
+    matter before reading it. Large codes need paging or detail='headings'.
+    """
+    return await _guard(
+        articles.get_law_structure(
+            _client(ctx), law_id, as_of=as_of, detail=detail, offset=offset, limit=limit
+        ),
+        "get_law_structure",
+    )
+
+
 # (function, display title). Registered by ``create_server``; every tool is read-only and
 # idempotent, and "open world" because it reads an external service.
 _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
@@ -781,6 +819,7 @@ _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (read_article, "Read an article"),
     (compare_article_versions, "Compare article versions"),
     (get_article_history, "Get an article's history"),
+    (get_law_structure, "Get a law's table of contents"),
     (legislation_over_time, "Count laws over time"),
     (top_departments, "Rank departments by laws"),
     (compare_topics, "Compare topics over time"),
