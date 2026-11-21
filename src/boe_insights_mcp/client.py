@@ -24,7 +24,7 @@ import re
 import time
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from types import TracebackType
 from typing import Literal, Self, TypeVar, get_args
 from urllib.parse import quote
@@ -113,6 +113,8 @@ AuxiliaryTable = Literal[
 _JSON = "application/json"
 # The block endpoint answers HTTP 400 to a JSON ``Accept`` (api-notes 6).
 _XML = "application/xml"
+# Key of the one entry that is not a response body: when the catalogue pages were downloaded.
+_CATALOGUE_STAMP_KEY = "boe-insights-mcp:catalogue-downloaded-at"
 # Real block ids contain dots (``a51ter.``, ``arts.1863bisa1873bis.``; api-notes 6.1) so dots are
 # allowed, but only these characters: nothing that could end the path segment, start a query or
 # fragment, or be decoded into something else. ``.`` and ``..`` alone are refused separately
@@ -391,6 +393,25 @@ class BoeClient:
         """Return the subjects and amendment references of one law."""
         path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/analisis"
         return await self._get(path, None, ANALYSIS_TTL, _from_envelope(_build_analysis))
+
+    async def read_catalogue_stamp(self) -> datetime | None:
+        """When the cached catalogue pages were downloaded, or ``None`` when no stamp is cached.
+
+        The catalogue store writes the stamp with :meth:`write_catalogue_stamp` after a
+        download, so that a restarted process can tell cached pages from fresh ones.
+        """
+        raw = await self._cache.get(_CATALOGUE_STAMP_KEY)
+        if raw is None:
+            return None
+        try:
+            stamp = datetime.fromisoformat(raw.decode("ascii"))
+        except (UnicodeDecodeError, ValueError):
+            return None  # a damaged entry is the same as no entry
+        return stamp if stamp.tzinfo is not None else None
+
+    async def write_catalogue_stamp(self, when: datetime, ttl: float) -> None:
+        """Cache the time of a catalogue download for ``ttl`` seconds."""
+        await self._cache.set(_CATALOGUE_STAMP_KEY, when.isoformat().encode("ascii"), ttl)
 
     async def has_cached_analysis(self, law_id: str) -> bool:
         """Whether the analysis of ``law_id`` is in the cache right now; sends no request.

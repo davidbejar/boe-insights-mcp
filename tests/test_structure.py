@@ -1,9 +1,8 @@
-"""Contract tests for ``boe_insights_mcp.structure`` (spec A2): the table of contents of a law.
+"""Contract tests for ``boe_insights_mcp.structure``: the table of contents of a law.
 
 Most tests build small ``Block`` objects with the factories below, so each test shows one rule and
 a parser bug cannot be mistaken for a structure bug. The last sections run end-to-end checks on the
-real ``texto_full_*`` fixtures parsed with ``parse_full_text``. Rules cited as C1 to C8
-are the "Clarifications to Part A" of the spec.
+real ``texto_full_*`` fixtures parsed with ``parse_full_text``.
 """
 
 from __future__ import annotations
@@ -294,11 +293,48 @@ def test_marker_without_a_date_is_skipped_whatever_the_date() -> None:
     assert build(sentinel, on=date(1950, 1, 1)) == []
 
 
-def test_expired_blocks_with_later_versions_are_still_skipped() -> None:
-    # Known data oddity (FINDINGS D.4): versions dated after the expiry say nothing.
+def test_a_block_with_a_version_after_its_expiry_marker_is_listed_until_that_version_starts() -> (
+    None
+):
+    # ``fecha_caducidad`` is the publication date of the repealing law, not the day the repeal
+    # took effect; the last version's start is the best date for it (api-notes, third probe,
+    # "What fecha_caducidad means").
+    old = version(para("articulo", "Artículo 1. A."), effective=date(1990, 1, 1))
     later = version(para("articulo", "Artículo 1. B."), effective=date(2010, 1, 1))
-    expired = article("a1", versions=(later,), expires_on=date(2003, 7, 10), expired_marker=True)
+    expired = article(
+        "a1", versions=(old, later), expires_on=date(2003, 7, 10), expired_marker=True
+    )
+
+    assert ids(build(expired, on=date(2005, 1, 1))) == ["a1"]  # after the marker, before the repeal
+    assert ids(build(expired, on=date(2009, 12, 31))) == ["a1"]
+    assert build(expired, on=date(2010, 1, 1)) == []
     assert build(expired) == []
+
+
+def test_a_block_whose_last_version_predates_the_marker_goes_at_the_marker() -> None:
+    old = version(para("articulo", "Artículo 1. A."), effective=date(1990, 1, 1))
+    expired = article("a1", versions=(old,), expires_on=date(2003, 7, 10), expired_marker=True)
+
+    assert ids(build(expired, on=date(2003, 7, 9))) == ["a1"]
+    assert build(expired, on=date(2003, 7, 10)) == []
+
+
+def test_a_marker_without_a_date_removes_the_block_from_its_last_version_on() -> None:
+    old = version(para("articulo", "Artículo 1. A."), effective=date(1990, 1, 1))
+    repeal = version(para("articulo", "Artículo 1. (Derogado)"), effective=date(2000, 1, 1))
+    sentinel = article("a1", versions=(old, repeal), expired_marker=True)
+
+    assert ids(build(sentinel, on=date(1999, 12, 31))) == ["a1"]
+    assert build(sentinel, on=date(2000, 1, 1)) == []
+
+
+def test_a_listed_block_before_its_removal_shows_its_normal_state() -> None:
+    old = version(para("articulo", "Artículo 1. A."), effective=date(1990, 1, 1))
+    repeal = version(para("articulo", "Artículo 1. (Derogado)"), effective=date(2020, 1, 1))
+    gone = article("a1", versions=(old, repeal), expires_on=date(2010, 1, 1), expired_marker=True)
+
+    (before,) = build(gone, on=date(2015, 1, 1))
+    assert before.state == "in_force"
 
 
 def test_expired_heading_is_skipped_and_does_not_act_as_a_parent() -> None:
@@ -415,7 +451,7 @@ def test_unrecognised_heading_block_without_title_uses_its_first_paragraph() -> 
     assert (entry.kind, entry.label, entry.heading) == ("other", "Primera línea.", "")
 
 
-# --- C2: ordinal splitting ----------------------------------------------------------------------
+# --- ordinal splitting ----------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -488,7 +524,7 @@ def test_section_without_a_recognised_ordinal_is_all_label(text: str) -> None:
     assert (entry.label, entry.heading) == (text, "")
 
 
-# --- C3: capitulo paragraphs ---------------------------------------------------------------------
+# --- capitulo paragraphs ---------------------------------------------------------------------
 
 
 def test_capitulo_unico_paragraph_is_a_real_chapter() -> None:
@@ -533,7 +569,7 @@ def test_single_capitulo_chapter_does_not_reset_the_nesting() -> None:
     assert levels(entries) == [1, 2, 3]
 
 
-# --- C4: precedence inside a heading block ----------------------------------------------------
+# --- precedence inside a heading block ----------------------------------------------------
 
 
 def test_num_tit_pair_wins_over_a_single_paragraph() -> None:
@@ -572,7 +608,7 @@ def test_body_text_and_quoted_notes_in_a_heading_block_are_ignored() -> None:
     assert (entry.kind, entry.label, entry.heading) == ("group", "DISPOSICIONES TRANSITORIAS", "")
 
 
-# --- C5: levels of articles, provisions and other entries -------------------------------------
+# --- levels of articles, provisions and other entries -------------------------------------
 
 
 def test_disposicion_directly_after_a_non_group_heading_is_level_one() -> None:
@@ -595,7 +631,9 @@ def test_provision_not_starting_with_disposicion_is_nested_under_the_nearest_hea
 
 
 def test_provision_from_the_block_title_is_nested_under_the_nearest_heading() -> None:
-    b = block("s", "precepto", para("seccion", "Sección primera. X"), title="Sección primera")
+    # Edited with the rule that a ``precepto`` with a heading paragraph is a heading: the block
+    # here has only a plain paragraph, so it still falls back to its title.
+    b = block("s", "precepto", para("parrafo", "Texto."), title="Primera")
     entries = build(title_h("t"), b)
     assert (kinds(entries)[-1], levels(entries)) == ("provision", [1, 2])
 
@@ -763,11 +801,23 @@ def test_bare_ordinal_provision_has_no_heading_and_no_trailing_period() -> None:
 
 
 def test_precepto_without_articulo_paragraph_uses_the_block_title() -> None:
+    b = block("s", "precepto", para("parrafo", "Texto."), title="Sección primera")
+    (entry,) = build(b)
+    assert (entry.kind, entry.label, entry.heading) == ("provision", "Sección primera", "")
+
+
+def test_precepto_with_a_heading_paragraph_and_no_articulo_is_a_heading() -> None:
+    # Replaces the old expectation (a provision labelled with the block title): ``sprimera-2`` of
+    # the Código Civil is typed ``precepto`` but is the heading "Sección 1.ª ...".
     b = block(
         "s", "precepto", para("seccion", "Sección primera. De las clases"), title="Sección primera"
     )
     (entry,) = build(b)
-    assert (entry.kind, entry.label, entry.heading) == ("provision", "Sección primera", "")
+    assert (entry.kind, entry.label, entry.heading) == (
+        "section",
+        "Sección primera",
+        "De las clases",
+    )
 
 
 @pytest.mark.parametrize("title", ["Art. 1873 bis", "ART. 5", "Artículo 7"])
@@ -1170,9 +1220,13 @@ def test_codigo_civil_drops_expired_blocks_today(load_fixture: Loader) -> None:
     assert {"a1", "art17", "cprimero-3", "tpreliminar"} <= set(got)
 
 
-def test_codigo_civil_sentinel_block_is_skipped_at_any_date(load_fixture: Loader) -> None:
-    assert "art.1873bis" not in civil(load_fixture, date(1950, 1, 1))
-    assert "art.1873bis" not in civil(load_fixture, date(1900, 1, 1))
+def test_codigo_civil_sentinel_block_is_listed_until_its_last_version_starts(
+    load_fixture: Loader,
+) -> None:
+    # ``art.1873bis`` has the sentinel marker and versions from 1942 and 1955-08-15.
+    assert "art.1873bis" in civil(load_fixture, date(1950, 1, 1))
+    assert "art.1873bis" not in civil(load_fixture, date(1955, 8, 15))
+    assert "art.1873bis" not in civil(load_fixture, date(1900, 1, 1))  # nothing existed yet
 
 
 def test_codigo_civil_block_with_a_real_expiry_is_present_before_it(load_fixture: Loader) -> None:
@@ -1231,7 +1285,7 @@ def test_codigo_civil_group_headings_and_bare_ordinal_provisions(load_fixture: L
 
 
 def test_codigo_civil_group_with_body_paragraphs_is_still_a_group(load_fixture: Loader) -> None:
-    # ``dt`` holds a ``capitulo`` paragraph followed by body text (C4: other paragraphs ignored).
+    # ``dt`` holds a ``capitulo`` paragraph followed by body text (other paragraphs ignored).
     entry = civil(load_fixture, ON)["dt"]
     assert (entry.kind, entry.level, entry.label, entry.heading) == (
         "group",
@@ -1257,13 +1311,13 @@ def test_codigo_civil_capitulo_unico_is_a_real_chapter_inside_the_title(
 
 
 def test_codigo_civil_title_with_a_seccion_paragraph_is_a_title(load_fixture: Loader) -> None:
-    # ``tiii-3``: titulo_num + titulo_tit + a ``seccion`` paragraph; the pair wins (C4).
+    # ``tiii-3``: titulo_num + titulo_tit + a ``seccion`` paragraph; the pair wins.
     entry = civil(load_fixture, ON)["tiii-3"]
     assert (entry.kind, entry.label, entry.heading) == ("title", "TÍTULO III", "De las sucesiones")
 
 
 def test_codigo_civil_skips_blocks_not_yet_published_in_1900(load_fixture: Loader) -> None:
-    # C1: ``ci`` has only a 1974 version, so on 1900-01-01 it did not exist.
+    # ``ci`` has only a 1974 version, so on 1900-01-01 it did not exist.
     assert "ci" not in civil(load_fixture, date(1900, 1, 1))
     assert "ci" in civil(load_fixture, ON)
 
@@ -1440,7 +1494,20 @@ def test_number_marker_variants(marker: str) -> None:
     assert result == GazettePublication("BOPV", "129", date(1998, 7, 10))
 
 
-@pytest.mark.parametrize("gazette", ["bopa", "Bopa"])
+def test_an_abbreviation_with_lower_case_letters_and_two_capitals_is_accepted() -> None:
+    # Castilla y León's gazette is the BOCyL.
+    result = parse_publication_note(["Publicada en el BOCyL núm. 206, de 23 de octubre de 2026."])
+
+    assert result == GazettePublication("BOCyL", "206", date(2026, 10, 23))
+
+
+def test_an_issue_number_with_a_thousands_dot_is_kept_as_written() -> None:
+    result = parse_publication_note(["Publicada en el DOGC núm. 7.345, de 23 de octubre de 2026."])
+
+    assert result == GazettePublication("DOGC", "7.345", date(2026, 10, 23))
+
+
+@pytest.mark.parametrize("gazette", ["bopa", "Bopa", "bOPA"])
 def test_the_gazette_abbreviation_is_matched_as_written_in_capitals(gazette: str) -> None:
     assert (
         parse_publication_note([f"Publicada en el {gazette} núm. 206, de 23 de octubre de 2026."])
@@ -1483,7 +1550,7 @@ def test_accepts_a_tuple_of_notes() -> None:
 
 
 def test_impossible_date_in_one_note_does_not_hide_a_valid_later_note() -> None:
-    # C7: an impossible date does not match; the scan goes on to the next note.
+    # An impossible date does not match; the scan goes on to the next note.
     notes = [
         "Publicada en el BOPA núm. 206, de 31 de febrero de 2026.",
         "Publicada en el BON núm. 35, de 20 de marzo de 1991.",

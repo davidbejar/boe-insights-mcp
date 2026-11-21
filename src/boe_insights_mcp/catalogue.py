@@ -16,11 +16,12 @@ download.
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import logging
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from boe_insights_mcp.clock import utc_now
 from boe_insights_mcp.errors import BoeResponseError
@@ -40,6 +41,10 @@ __all__ = [
 # 6.7 MB per page, a quarter of the response cap (api-notes, "Bulk download").
 CATALOGUE_PAGE_SIZE = 5000
 CATALOGUE_TTL = 24 * 3600.0
+# The stamp of the download expires this much before the cached pages, which are written
+# first and so expire first; without the margin a stamp could outlive its pages and make a fresh
+# download look old.
+_STAMP_MARGIN = 120.0
 # A safety stop, not an expectation: 40 000 records is three times today's collection. Without
 # it a misbehaving API that never returns a short page would make us download forever.
 MAX_CATALOGUE_PAGES = 8
@@ -65,6 +70,23 @@ class SearchClient(Protocol):
         ...
 
 
+@runtime_checkable
+class StampingClient(Protocol):
+    """Optional client capability: remembering when the cached pages were downloaded.
+
+    ``BoeClient`` has it (the stamp lives in the same disk cache as the pages); a client
+    without it makes the store use the time its own download finished.
+    """
+
+    async def read_catalogue_stamp(self) -> datetime | None:
+        """The time the cached pages were downloaded, or ``None``."""
+        ...
+
+    async def write_catalogue_stamp(self, when: datetime, ttl: float) -> None:
+        """Remember ``when`` for ``ttl`` seconds."""
+        ...
+
+
 @dataclass(frozen=True)
 class Catalogue:
     """A snapshot of every consolidated law."""
@@ -72,7 +94,7 @@ class Catalogue:
     laws: tuple[LawSummary, ...]
     """Unique by identifier, in API order (publication date, newest first)."""
     fetched_at: datetime
-    """UTC time at which the download finished."""
+    """UTC time at which the pages were really downloaded (from the stamp when they were cached)."""
     newest_update: datetime | None
     """The latest ``updated_at`` of any law: the BOE's own freshness stamp for the data."""
 
@@ -86,17 +108,41 @@ class _Download:
     """
 
     task: asyncio.Task[Catalogue]
-    listeners: list[ProgressCallback] = field(default_factory=list)
+    listeners: list[_Listener] = field(default_factory=list)
     waiters: int = 0
 
 
-async def _notify(callbacks: Sequence[ProgressCallback], done: int, message: str) -> None:
-    """Call every progress callback, ignoring the ones that fail."""
+@dataclass(frozen=True)
+class _Listener:
+    """A progress callback together with the context of the caller that registered it."""
+
+    callback: ProgressCallback
+    context: contextvars.Context
+
+    @staticmethod
+    def of(callback: ProgressCallback) -> _Listener:
+        """A listener for ``callback`` that runs in a copy of the current context."""
+        return _Listener(callback, contextvars.copy_context())
+
+
+async def _call(callback: ProgressCallback, done: int, message: str) -> None:
+    """Await one progress callback; a coroutine, which is what ``create_task`` accepts."""
+    await callback(done, None, message)
+
+
+async def _notify(listeners: Sequence[_Listener], done: int, message: str) -> None:
+    """Call every progress callback in its own caller's context, ignoring the ones that fail."""
     # Progress is a courtesy. A callback can fail because the client that wanted it went away,
     # and that must not abort a 30-second download other callers are waiting for.
-    for callback in list(callbacks):
+    for listener in list(listeners):
         try:
-            await callback(done, None, message)
+            # The download runs in the task of whoever started it, but FastMCP's
+            # ``Context.report_progress`` finds its request through a context variable. Running
+            # the callback in a task created with the caller's context makes it report to the
+            # caller's own request instead of to the first one's.
+            await asyncio.create_task(
+                _call(listener.callback, done, message), context=listener.context
+            )
         except Exception:
             _LOG.debug("progress callback failed", exc_info=True)
 
@@ -121,24 +167,33 @@ class CatalogueStore:
         if snapshot is not None and self._is_fresh(snapshot):
             return snapshot
         download = self._download
+        listener = _Listener.of(progress) if progress is not None else None
         if download is None:
-            listeners: list[ProgressCallback] = []
+            listeners: list[_Listener] = []
             task = asyncio.create_task(self._download_all(listeners))
             download = _Download(task, listeners)
             self._download = download
             task.add_done_callback(lambda done, download=download: self._land(download, done))
-        if progress is not None:
-            download.listeners.append(progress)
+        if listener is not None:
+            download.listeners.append(listener)
         download.waiters += 1
         try:
             # Same ownership scheme as ``BoeClient._fetch_shared``: the task belongs to the
             # download, not to the caller that started it, and callers await it through
             # ``shield`` so cancelling one caller cancels only its own wait.
             return await asyncio.shield(download.task)
+        except Exception:
+            if snapshot is None:
+                raise
+            # A refresh that fails must not take a working tool down: the previous snapshot is
+            # served, and its own ``fetched_at`` tells the caller how old it is. Cancellation is
+            # a ``BaseException`` and passes through. The next call tries to refresh again.
+            _LOG.warning("catalogue refresh failed, serving the previous snapshot", exc_info=True)
+            return snapshot
         finally:
             download.waiters -= 1
-            if progress is not None:
-                download.listeners.remove(progress)
+            if listener is not None:
+                download.listeners.remove(listener)
             if download.waiters == 0 and not download.task.done():
                 # Nobody wants the result any more: stop spending requests. The download is
                 # forgotten at once, because ``cancel`` only *requests* cancellation and a new
@@ -162,7 +217,7 @@ class CatalogueStore:
         if text is None and subject_code is None:
             return list((await self.get(progress=progress)).laws)
         query = build_search_query(text=text, subject_code=subject_code, sort_by="published_on")
-        callbacks = [] if progress is None else [progress]
+        callbacks = [] if progress is None else [_Listener.of(progress)]
         # ``ttl=None``: a selection is specific to this request, so the normal 30-minute search
         # lifetime applies rather than the catalogue's day.
         return await self._crawl(query, None, callbacks, "Searching")
@@ -186,16 +241,26 @@ class CatalogueStore:
             # would read it, and asyncio would log "exception was never retrieved".
             task.exception()
 
-    async def _download_all(self, listeners: list[ProgressCallback]) -> Catalogue:
+    async def _download_all(self, listeners: list[_Listener]) -> Catalogue:
         """Download the whole collection and store it as the snapshot."""
+        # The client's disk cache can serve the pages after a restart. Without the stamp the
+        # snapshot would claim to be downloaded now and then be kept another full day.
+        stampable = self._client if isinstance(self._client, StampingClient) else None
+        stamp = await stampable.read_catalogue_stamp() if stampable else None
         # Sorted by publication date, which never changes for a record, unlike the default
         # update-date order: a law updated mid-crawl would otherwise jump between pages
         # (api-notes, "Bulk download").
         query = build_search_query(sort_by="published_on")
         laws = await self._crawl(query, CATALOGUE_TTL, listeners, "Downloading the catalogue")
         updates = [law.updated_at for law in laws if law.updated_at is not None]
+        fetched_at = stamp if stamp is not None else self._clock()
+        if stampable is not None and stamp is None:
+            try:
+                await stampable.write_catalogue_stamp(fetched_at, CATALOGUE_TTL - _STAMP_MARGIN)
+            except Exception:  # a cache that cannot store the stamp must not lose the download
+                _LOG.warning("could not store the catalogue stamp", exc_info=True)
         snapshot = Catalogue(
-            laws=tuple(laws), fetched_at=self._clock(), newest_update=max(updates, default=None)
+            laws=tuple(laws), fetched_at=fetched_at, newest_update=max(updates, default=None)
         )
         # Set only when the whole download succeeded, so a failure or cancellation leaves the
         # previous state (no snapshot) and the next caller retries.
@@ -203,7 +268,7 @@ class CatalogueStore:
         return snapshot
 
     async def _crawl(
-        self, query: str | None, ttl: float | None, listeners: list[ProgressCallback], label: str
+        self, query: str | None, ttl: float | None, listeners: list[_Listener], label: str
     ) -> list[LawSummary]:
         """Page through ``query`` until a short page; return the laws without duplicates.
 

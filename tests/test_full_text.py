@@ -1,4 +1,4 @@
-"""Contract tests for the full-text parsing of ``textparse`` (spec A1) and ``Block.expires_on``.
+"""Contract tests for the full-text parsing of ``textparse`` and ``Block.expires_on``.
 
 Covers ``parse_full_text`` (the body of ``GET legislacion-consolidada/id/{id}/texto``), and the two
 fields ``parse_block`` now fills: ``expires_on`` and ``expired_marker`` (the ``fecha_caducidad``
@@ -139,7 +139,8 @@ def test_any_non_date_value_has_no_date_but_sets_the_marker_and_does_not_raise(
 
 
 def test_expiry_date_is_independent_of_the_version_dates() -> None:
-    # Known data oddity (FINDINGS D.4): versions may start after the expiry date.
+    # Known data oddity (api-notes, third probe, "Text structure"): versions may start after the
+    # expiry date.
     block = parse_one(caducidad="19810720", versions=(version_xml(effective="19990101"),))
     assert block.expires_on == date(1981, 7, 20)
     assert block.versions[0].effective_from == date(1999, 1, 1)

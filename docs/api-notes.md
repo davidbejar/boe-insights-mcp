@@ -246,7 +246,7 @@ All return `{"status":..., "data": {"<code>": "<text>"}}`: an object, code to te
 
 ## Verified after the third probe (2026-11-21)
 
-56 requests, >= 1.5 s apart, no 429. Bodies and the full evidence are in the probe working folder (`FINDINGS.md`); selected fixtures are chosen separately.
+56 requests, >= 1.5 s apart, no 429. The raw bodies were kept outside the repository; every fact that the code relies on is recorded below and the selected fixtures are in `tests/fixtures/boe/`.
 
 ### Bulk download of the catalogue
 
@@ -271,8 +271,36 @@ All return `{"status":..., "data": {"<code>": "<text>"}}`: an object, code to te
 * Heading classes inside `encabezado` versions: `libro_num`+`libro_tit`, `titulo_num`+`titulo_tit`, `capitulo_num`+`capitulo_tit`, single `seccion` (number and title in one paragraph: `Sección 1.ª De los órganos administrativos`), single `subseccion`, `anexo`, and a single-paragraph `capitulo` (`CAPÍTULO ÚNICO`, `DISPOSICIONES ADICIONALES`). Nesting is not in the XML: blocks are a flat list and the hierarchy is implied by order. Irregular headings exist (number only, title only, `titulo_num` + `seccion` in one block, a "Téngase en cuenta" `parrafo` inside a heading block). Other `p` classes: `sangrado`, `sangrado_2`, `sangrado_articulo`, `cita`, `firma_ministro`, `firma_rey`, and a `<p>` without class.
 * Articles: `<p class="articulo">Artículo 1. Objeto.</p>`; modern laws carry the heading (Asturias 134 of 148 preceptos, Ley 40/2015 166 of 219). Disposiciones are `precepto` blocks whose first paragraph is also `class="articulo"` with a heading after the ordinal (`Disposición adicional primera. Cobertura de puestos...`), although the index title is only the ordinal. The Código Civil has bare `Artículo 1.` in 1 979 of 2 022 articles and suffixes such as `(Derogado)` or `(Sin contenido)` appear on the heading line.
 * Headings change between versions (Código Civil: 20 multi-version `encabezado` blocks, 51 articles whose `articulo` line differs; e.g. `tpreliminar` 1889 `De las Leyes, de sus efectos...` vs 1974 `De las normas jurídicas, su aplicación y eficacia`; `art307` `Artículo 307.` vs 1983 `Artículo 307. (Sin contenido)`). The `titulo` attribute can differ from the `*_num` text (`TÍTULO PRIMERO` vs `TÍTULO I`; 40 blocks in the Código Civil).
-* `<bloque>` can carry `fecha_caducidad` (`yyyymmdd`; 167 blocks in the Código Civil, all in the past, one sentinel `00000001`). It marks a block that no longer exists in the consolidated text. `/texto/indice` still lists those blocks (index and `/texto` both have 2 444 blocks), and 40 of them have a version starting after the caducidad date. This is a block attribute; versions still have none.
+* `<bloque>` can carry `fecha_caducidad` (`yyyymmdd`). It marks a block that no longer exists in the consolidated text; what the date means is under "What `fecha_caducidad` means" below. This is a block attribute; versions have none. `/texto/indice` still lists those blocks (index and `/texto` both have 2 444 blocks in the Código Civil).
+* Some `precepto` blocks are headings, not articles: they have no `articulo` paragraph but a `seccion`, `titulo_num`+`titulo_tit` (or another heading class) paragraph. The Código Civil has 55 (`sprimera-2` "Sección 1.ª Disposiciones generales", `tx` "TÍTULO X", `disposicionpreliminar`). Article labels written `Art`, `Art.`, `Arts` or `Arts.` (with or without the period) occur in the same code.
 * Block order in `/texto` is not always document order (Código Civil starts with `preambulo` and `fi` before `codigocivil`); block ids repeat with `-N` counters, so key on `id`, never on `titulo`.
+
+### What `fecha_caducidad` means
+
+* Measured on the Código Civil: 167 blocks carry the attribute, 164 with a real date and 3 without a usable one (one is the sentinel `00000001`). For 37 of the 164 the last version starts after the date (gaps from 92 days to almost 10 years, median 366 days), for example `a325` (caducidad 2011-07-22, last version 2021-04-30) and `art301` (caducidad 2021-06-03, last version 2021-09-03).
+* Reading: the date is the publication date of the law that removes the block, not the day the removal takes effect, and the text keeps its last version until then. Treating the date as the removal day dropped 74 to 107 articles that were in force on the dates between 2001 and 2021 that were checked.
+* Rule used by `get_law_structure`: a block with a marker is absent from the later of `fecha_caducidad` and the start of its latest version on; before that day it is listed with its normal state. With the sentinel (no usable date) it is absent from the start of its latest version on; with no start date either it is absent always. Today's table of contents of Ley 40/2015, the Asturias law and the Código Civil is the same under the old and the new rule (all markers are in the past and every later version has started).
+
+### Coverage of the collection by year
+
+The collection does not hold every law of a year, and how much it holds varies. Laws present in the catalogue (12 477 records) against the highest official number "N/YYYY" seen that year, state laws:
+
+| Rank | Year: present / highest number |
+|---|---|
+| Real Decreto-ley | 1993: 2/22, 1997: 1/15, 2005: 2/12, 2012: 25/29, 2020: 38/39, 2025: 4/16, 2026: 27/35 |
+| Ley | 1980: 18/75, 1997: 18/66, 2003: 47/62, 2022: 38/39 |
+
+* Coverage is thin before about 2010 and for the most recent year or two, and nearly complete in between (the highest number is a lower bound of the laws enacted, so the true shortfall is at least this). A count per year of a rank is therefore not a measure of how much was legislated.
+* `highest_number` in `legislation_over_time` is this figure, computed from the downloaded catalogue (state laws of one rank whose `numero_oficial` is "N/YYYY" with that year); it is only reported for the ranks numbered afresh every year (Ley, Ley Orgánica, Real Decreto-ley, Real Decreto Legislativo). Regional laws also have the rank Ley (Ley 2015: 155 laws of every scope against a highest state number of 48), so for Ley it is only reported with the state scope; the other three ranks exist only at state level.
+
+### Publication lag after enactment
+
+* From `fecha_disposicion` to `fecha_publicacion` (2015 on): state laws median 2 days, 90th percentile 15, 99th 61; regional laws median 32 days, 90th 74, 99th 168 (up to 1 900 days for reprints).
+* Of the laws enacted in 2023-2025, 36% were published after the end of their month (10% more than 30 days after), and 53% of regional laws after the end of their quarter. Counting by enactment date therefore leaves the last months incomplete; 90 days is used as the settling time.
+
+### Departments that changed code
+
+* One institution can appear under two department codes: Comunitat Valenciana is `8161` "Comunidad Valenciana" (94 laws, 1984-01-11 to 2006-02-21) and `8162` "Comunitat Valenciana" (173 laws, 2006-06-07 to 2026); the Balearic Islands are `8120` "Comunidad Autónoma de las Islas Baleares" (39 laws, 1984-05-09 to 1998-12-15) and `8121` "Comunidad Autónoma de las Illes Balears" (225 laws, 1999-02-04 to 2026). Ministries are also renamed and recoded when governments reorganise, so the code alone does not identify a continuing institution. The trend tools merge these two pairs under the newer code and label.
 
 ### Amendment analysis
 

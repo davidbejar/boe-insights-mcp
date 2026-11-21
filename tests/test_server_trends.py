@@ -122,6 +122,49 @@ async def test_parameter_bounds_are_in_the_schemas(mcp: Client[Any]) -> None:
     assert tools["compare_topics"].input_schema["required"] == ["topics"]
 
 
+def property_descriptions(schema: Any, name: str) -> list[str]:
+    """Every description given to a property called ``name`` anywhere in a JSON schema."""
+    found: list[str] = []
+    if isinstance(schema, dict):
+        properties = schema.get("properties")
+        if isinstance(properties, dict) and isinstance(properties.get(name), dict):
+            found.append(properties[name].get("description", ""))
+        for value in schema.values():
+            found.extend(property_descriptions(value, name))
+    elif isinstance(schema, list):
+        for value in schema:
+            found.extend(property_descriptions(value, name))
+    return found
+
+
+async def test_date_range_and_matching_descriptions_are_the_decided_ones(
+    mcp: Client[Any],
+) -> None:
+    tools: dict[str, Tool] = {tool.name: tool for tool in await mcp.list_tools()}
+
+    def described(tool: str, parameter: str) -> str:
+        return tools[tool].input_schema["properties"][parameter]["description"]
+
+    assert described("most_amended_laws", "from_date") == (
+        "Only laws published on or after this date, ISO format."
+    )
+    assert described("most_amended_laws", "to_date") == (
+        "Only laws published on or before this date, ISO format."
+    )
+    assert "19 years before to_date" in described("legislation_over_time", "from_date")
+    assert "'vivienda' does not match 'viviendas'" in described("explain_spike", "title")
+    assert property_descriptions(tools["compare_topics"].output_schema, "first") == [
+        "First period in the range with a law of the topic."
+    ]
+    # Once for the series and once for each group's series.
+    assert set(
+        property_descriptions(tools["legislation_over_time"].output_schema, "highest_number")
+    ) == {
+        "Highest official number seen that year for this rank: a lower bound of how many were "
+        "enacted, to judge coverage."
+    }
+
+
 # --- legislation_over_time ---------------------------------------------------------------------
 
 
@@ -412,6 +455,6 @@ async def test_most_amended_laws_skips_laws_whose_analysis_is_missing(
     assert (result["examined"], result["failed"], result["complete"]) == (
         0,
         result["candidates"],
-        True,
+        False,  # a law that could not be read leaves the ranking incomplete
     )
     assert result["candidates"] > 0

@@ -8,6 +8,7 @@ end uses the real client with a recorded fixture. Clocks are injected; nothing s
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import json
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
@@ -338,6 +339,139 @@ async def test_a_caller_joining_a_download_that_lost_all_its_callers_starts_a_fr
     assert len(result.laws) == 2
 
 
+async def test_each_caller_gets_progress_from_its_own_context(clock: Clock) -> None:
+    # FastMCP's ``Context.report_progress`` finds its request through a context variable. The
+    # download runs in the task of whoever started it, so a callback called from there would
+    # report to that first caller's request. Each callback must run in its own caller's context.
+    caller: contextvars.ContextVar[str] = contextvars.ContextVar("caller")
+    fake = FakeSearch(laws_numbered(5))
+    fake.gate = asyncio.Event()
+    store = store_for(fake, clock)
+    seen: list[tuple[str, str, int]] = []
+
+    def listener(name: str) -> Callable[[int, int | None, str], asyncio.Future[None]]:
+        async def report(done: int, total: int | None, message: str) -> None:
+            seen.append((name, caller.get(), done))
+
+        return report  # type: ignore[return-value]
+
+    async def call(name: str) -> None:
+        caller.set(name)
+        await store.get(progress=listener(name))
+
+    one = asyncio.create_task(call("a"))
+    await fake.started.wait()
+    two = asyncio.create_task(call("b"))
+    await asyncio.sleep(0)
+    fake.gate.set()
+    await asyncio.gather(one, two)
+
+    assert sorted(seen) == [("a", "a", 3), ("a", "a", 5), ("b", "b", 3), ("b", "b", 5)]
+
+
+# --- get: when the pages were really downloaded -------------------------------------------------
+
+
+class StampingSearch(FakeSearch):
+    """A ``FakeSearch`` that also keeps the download stamp, as ``BoeClient`` does in its cache."""
+
+    def __init__(self, laws: list[LawSummary]) -> None:
+        super().__init__(laws)
+        self.stamp: datetime | None = None
+        self.stamp_ttl: float | None = None
+
+    async def read_catalogue_stamp(self) -> datetime | None:
+        return self.stamp
+
+    async def write_catalogue_stamp(self, when: datetime, ttl: float) -> None:
+        self.stamp, self.stamp_ttl = when, ttl
+
+
+async def test_a_download_leaves_a_stamp_that_expires_before_its_pages(clock: Clock) -> None:
+    fake = StampingSearch(laws_numbered(2))
+
+    result = await store_for(fake, clock).get()
+
+    assert result.fetched_at == START
+    assert fake.stamp == START
+    assert fake.stamp_ttl is not None
+    assert 0 < fake.stamp_ttl < CATALOGUE_TTL  # pages are written first and expire first
+
+
+async def test_after_a_restart_the_snapshot_keeps_the_time_of_the_real_download(
+    clock: Clock,
+) -> None:
+    fake = StampingSearch(laws_numbered(2))
+    await store_for(fake, clock).get()
+
+    clock.now = START + timedelta(hours=20)  # a new process; the pages come from the disk cache
+    restarted = store_for(fake, clock)
+    result = await restarted.get()
+
+    assert result.fetched_at == START
+    # It is only four hours from expiry, not a fresh day.
+    clock.now = START + timedelta(seconds=CATALOGUE_TTL)
+    again = await restarted.get()
+    assert again is not result
+
+
+async def test_a_client_without_stamps_reports_the_time_the_download_finished(
+    clock: Clock,
+) -> None:
+    clock.now = START + timedelta(hours=1)
+
+    result = await store_for(FakeSearch(laws_numbered(2)), clock).get()
+
+    assert result.fetched_at == clock.now
+
+
+# --- get: a failed refresh serves the old snapshot -----------------------------------------------
+
+
+async def test_a_failed_refresh_serves_the_previous_snapshot_with_its_true_age(
+    clock: Clock,
+) -> None:
+    fake = FakeSearch(laws_numbered(2))
+    store = store_for(fake, clock)
+    first = await store.get()
+
+    clock.now = START + timedelta(seconds=CATALOGUE_TTL + 5)
+    fake.fail_with = BoeUnavailableError("down")
+    served = await store.get()
+
+    assert served is first
+    assert served.fetched_at == START
+    # The next call tries again, and a recovered API gives a fresh snapshot.
+    fake.fail_with = None
+    refreshed = await store.get()
+    assert refreshed is not first
+    assert refreshed.fetched_at == clock.now
+
+
+async def test_a_failed_first_download_still_raises(clock: Clock) -> None:
+    fake = FakeSearch(laws_numbered(2))
+    fake.fail_with = BoeUnavailableError("down")
+
+    with pytest.raises(BoeUnavailableError):
+        await store_for(fake, clock).get()
+
+
+async def test_cancelling_a_refresh_is_not_turned_into_the_old_snapshot(clock: Clock) -> None:
+    fake = FakeSearch(laws_numbered(2))
+    store = store_for(fake, clock)
+    await store.get()
+    clock.now = START + timedelta(seconds=CATALOGUE_TTL + 5)
+    fake.gate = asyncio.Event()
+    fake.started.clear()
+    caller = asyncio.create_task(store.get())
+    await fake.started.wait()
+
+    caller.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await caller
+
+
 # --- select ------------------------------------------------------------------------------------
 
 
@@ -440,6 +574,11 @@ async def test_with_the_real_client_the_recorded_page_is_cached_for_a_day(
     assert len({law.identifier for law in result.laws}) == 8
     assert route.call_count == 1
     assert route.calls.last.request.url.params["limit"] == "5000"
-    assert [ttl for _, ttl in cache.sets] == [CATALOGUE_TTL]
+    assert [ttl for _, ttl in cache.sets].count(CATALOGUE_TTL) == 1
     assert CATALOGUE_TTL != SEARCH_TTL
     assert result.newest_update is not None
+    # The stamp is a second, small entry: the pages (a day) and the stamp (a little less).
+    stamp_ttls = [ttl for key, ttl in cache.sets if ttl != CATALOGUE_TTL]
+    assert len(stamp_ttls) == 1 and stamp_ttls[0] is not None
+    assert 0 < stamp_ttls[0] < CATALOGUE_TTL
+    assert await client.read_catalogue_stamp() == result.fetched_at

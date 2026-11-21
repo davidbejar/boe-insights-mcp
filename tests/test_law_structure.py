@@ -19,13 +19,18 @@ import respx
 from boe_insights_mcp.articles import (
     DEFAULT_STRUCTURE_LIMIT,
     MAX_STRUCTURE_LIMIT,
+    _structure_notes,
+    _uniform_state,
     get_law_structure,
 )
 from boe_insights_mcp.cache import MemoryCache
 from boe_insights_mcp.client import BASE_URL, BoeClient
 from boe_insights_mcp.errors import BoeNotFoundError
 from boe_insights_mcp.ratelimit import RateLimiter
+from boe_insights_mcp.repeal import LawRepeal
 from boe_insights_mcp.schemas import LawStructureResult
+from boe_insights_mcp.structure import StructureEntry
+from boe_insights_mcp.versions import ArticleState
 
 NOW = datetime(2026, 11, 21, 12, 0, tzinfo=UTC)
 TODAY = date(2026, 11, 21)
@@ -226,7 +231,7 @@ async def test_as_of_in_the_past_reads_the_text_of_that_day(
     assert old.total_entries != law_today.total_entries
 
 
-async def test_law_not_yet_in_force_says_so_and_marks_every_entry(
+async def test_law_not_yet_in_force_says_so_once_instead_of_marking_every_entry(
     client: BoeClient, law: Callable[..., Law]
 ) -> None:
     law(ASTURIAS, **ASTURIAS_FILES)
@@ -234,12 +239,39 @@ async def test_law_not_yet_in_force_says_so_and_marks_every_entry(
     result = await structure(client, ASTURIAS)
 
     assert result.total_entries == 25
-    assert {e.state for e in result.entries} == {"not_yet_in_force"}
+    assert {e.state for e in result.entries} == {None}
     assert result.note is not None
     assert "not yet in force" in result.note
+    assert "Every entry is not yet in force" in result.note
     assert "2026-11-23" in result.note
     dumped = result.model_dump(mode="json")["entries"]
-    assert all(entry["state"] == "not_yet_in_force" for entry in dumped)
+    assert all("state" not in entry for entry in dumped)
+
+
+def entry(state: ArticleState) -> StructureEntry:
+    return StructureEntry("a1", "article", 1, "Artículo 1", "", state)
+
+
+IN_FORCE_LAW = LawRepeal(repealed=False, on=None, announced=False, unchecked=())
+
+
+def test_entries_that_all_share_a_state_are_described_once_in_the_note() -> None:
+    notes = _structure_notes(
+        [entry("repealed"), entry("repealed")],
+        IN_FORCE_LAW,
+        date(2020, 1, 1),
+        as_of_given=True,
+        effective_from=None,
+    )
+
+    assert notes == ["Every entry is repealed on 2020-01-01."]
+
+
+def test_uniform_state_is_found_only_when_all_entries_agree_and_none_is_in_force() -> None:
+    assert _uniform_state([entry("repealed"), entry("repealed")]) == "repealed"
+    assert _uniform_state([entry("repealed"), entry("in_force")]) is None
+    assert _uniform_state([entry("in_force"), entry("in_force")]) is None
+    assert _uniform_state([]) is None
 
 
 async def test_the_same_law_on_its_effective_date_has_no_note_and_no_states(
@@ -283,6 +315,20 @@ async def test_wholly_repealed_law_gets_the_repeal_note(
     # The entries themselves still describe the last consolidated text: only a block with its
     # own repeal marker (article 40 of the trimmed text) shows a state.
     assert [e.block_id for e in result.entries if e.state] == ["a40"]
+
+
+async def test_the_initial_note_is_found_by_its_kind_whatever_its_id(
+    client: BoeClient, law: Callable[..., Law], load_fixture: Loader
+) -> None:
+    # Ley 40/2015 calls its initial note block ``co`` instead of ``no`` (api-notes, "Text
+    # structure"), so the repeal note must not depend on the id.
+    text = load_fixture(LOPD_FILES["text"]).replace(b'id="no"', b'id="co"')
+    law(LOPD, metadata=LOPD_FILES["metadata"], text=text)
+
+    result = await structure(client, LOPD)
+
+    assert result.note is not None
+    assert "2018-12-07" in result.note
 
 
 async def test_repeal_that_came_after_the_requested_date_is_reported_as_later(

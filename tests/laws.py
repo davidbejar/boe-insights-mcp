@@ -17,6 +17,7 @@ def make_law(
     department: tuple[str, str] | None = ("7723", "Jefatura del Estado"),
     scope: tuple[str, str] | None = ("1", "Estatal"),
     updated_at: datetime | None = None,
+    number: str | None = None,
 ) -> LawSummary:
     """Build a search hit; each coded field is a ``(code, text)`` pair or ``None``."""
 
@@ -32,4 +33,5 @@ def make_law(
         department=coded(department),
         scope=coded(scope),
         updated_at=updated_at,
+        official_number=number,
     )

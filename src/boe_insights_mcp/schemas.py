@@ -113,7 +113,11 @@ class LawBrief(_Output):
     official_number: str | None = Field(default=None, description="Official number, e.g. 40/2015.")
     department: str | None = None
     scope: str | None = Field(default=None, description="'Estatal' (state) or 'Autonómico'.")
-    published_on: date | None = Field(default=None, description="Publication date in the BOE.")
+    published_on: date | None = Field(
+        default=None,
+        description="Publication date in the gazette of record (the BOE, or the regional "
+        "gazette for laws identified by one).",
+    )
     validity_exhausted: bool = Field(
         description="True when the law's effects are spent (e.g. a budget law of a past year)."
     )
@@ -202,7 +206,10 @@ class AmendmentSummary(_Output):
 class FirstPublication(_Output):
     """Where and when a regional law was first published."""
 
-    gazette: str = Field(description="Gazette abbreviation or name, e.g. 'BOPA'.")
+    gazette: str = Field(description="Gazette abbreviation, e.g. 'BOPA'.")
+    gazette_name: str | None = Field(
+        default=None, description="Full name of the gazette, when the BOE gives it."
+    )
     number: str | None = Field(default=None, description="Issue number of the gazette.")
     # ``_Day`` and not ``date``: inside this class the name ``date`` is the field itself.
     date: _Day = Field(description="Publication date in that gazette.")
@@ -531,18 +538,19 @@ class PeriodCount(_Output):
 
     period: str = Field(description="'2020', '2020-Q3' or '2020-03'.")
     count: int
+    # ``exclude_if`` leaves the two optional flags out of the output when they say nothing (most
+    # points), to save space, and unlike a custom serializer keeps them in the output schema.
     partial: bool = Field(
         default=False,
+        exclude_if=lambda value: not value,
         description="True when the period is unfinished or cut by the range; omitted when false.",
     )
-
-    @model_serializer(mode="wrap")
-    def _omit_false_partial(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
-        """Leave ``partial`` out of the output when it is false (most points), to save space."""
-        data: dict[str, object] = handler(self)
-        if not data.get("partial"):
-            data.pop("partial", None)
-        return data
+    highest_number: int | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Highest official number seen that year for this rank: a lower bound of how "
+        "many were enacted, to judge coverage.",
+    )
 
 
 class PeriodSpike(_Output):
@@ -550,7 +558,7 @@ class PeriodSpike(_Output):
 
     period: str
     count: int
-    baseline: float = Field(description="Median count of the other complete periods.")
+    baseline: float = Field(description="Median count of the other complete periods in the range.")
     ratio: float | None = Field(description="count / baseline; null when the baseline is 0.")
 
 
@@ -610,8 +618,8 @@ class TopicSpec(BaseModel):
     name: str = Field(min_length=1, description="Label for the topic, e.g. 'teletrabajo'.")
     title: str | None = Field(
         default=None,
-        description="Words that must all be in the title "
-        "(narrow: use text for laws that treat a topic without naming it).",
+        description="Words that must all be in the title, as exact word forms ('vivienda' does "
+        "not match 'viviendas'); use text for laws that treat a topic without naming it.",
     )
     text: str | None = Field(default=None, description="Words that must all be in the body text.")
     subject_code: str | None = Field(default=None, description="BOE subject (materia) code.")
@@ -626,7 +634,7 @@ class TopicTrend(_Output):
         description="total / all laws in the range under the same rank, scope and department."
     )
     peak: str | None = Field(description="Complete period with the most laws; null if none.")
-    first: str | None = Field(description="First period with a law of the topic.")
+    first: str | None = Field(description="First period in the range with a law of the topic.")
     series: list[PeriodCount]
 
 
@@ -662,10 +670,15 @@ class ExplainSpikeResult(_Output):
     found: bool = Field(description="False when no period stands out (see note).")
     period: str | None
     count: int | None = Field(description="Laws in the period.")
-    baseline: float | None = Field(description="Mean laws per preceding period.")
+    baseline: float | None = Field(
+        description="Mean laws per period over the baseline_periods preceding periods."
+    )
     baseline_periods: int | None = Field(description="Number of preceding periods averaged.")
     contributions: list[SpikeContribution] = Field(description="Largest excess first.")
-    laws: list[LawBrief] = Field(description="Laws of the period, oldest first, up to max_laws.")
+    laws: list[LawBrief] = Field(
+        description="An evenly spaced sample of the period's laws in date order, first and last "
+        "included, up to max_laws."
+    )
     laws_total: int = Field(description="All laws of the period.")
     other_spikes: list[PeriodSpike] = Field(description="Other unusual periods in the range.")
     note: str | None = None
@@ -685,13 +698,13 @@ class AmendedLaw(_Output):
 class MostAmendedLawsResult(_Output):
     """Laws ranked by amendments, among those examined so far."""
 
-    from_date: date
+    from_date: date | None = Field(description="Start of the range; null when there is none.")
     to_date: date
     laws: list[AmendedLaw] = Field(description="Most amended first.")
     candidates: int = Field(description="Matching laws in the range.")
     examined: int = Field(description="Laws whose amendments were counted.")
     failed: int = Field(description="Laws skipped after a BOE error.")
-    complete: bool = Field(description="True when every candidate was examined.")
+    complete: bool = Field(description="True when every candidate was examined successfully.")
     note: str | None = Field(default=None, description="What to do when not complete.")
     coverage: Coverage
     caveats: list[str]

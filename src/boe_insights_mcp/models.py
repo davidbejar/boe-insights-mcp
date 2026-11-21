@@ -298,8 +298,9 @@ class Block(_ApiModel):
     versions: tuple[BlockVersion, ...]
     """Ascending by ``starts_on`` (undated first), document order kept for ties."""
     expires_on: date | None = None
-    """The ``fecha_caducidad`` of the block when it is a real date: from then on the block no
-    longer exists in the consolidated text (api-notes, third probe, "Text structure")."""
+    """The ``fecha_caducidad`` of the block when it is a real date: the publication date of the
+    law that removed it, not the day the removal took effect (api-notes, third probe, "What
+    fecha_caducidad means")."""
     expired_marker: bool = False
     """True when the block carries a ``fecha_caducidad`` at all, a real date or not. It is also
     set for the sentinel ``00000001`` and for any other non-date value, which leave

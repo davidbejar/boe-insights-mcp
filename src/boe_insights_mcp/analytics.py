@@ -13,6 +13,7 @@ therefore ends in a total order (count, then label, then code, or bucket key).
 from __future__ import annotations
 
 import calendar
+import re
 import statistics
 import unicodedata
 from bisect import bisect_right
@@ -47,6 +48,7 @@ __all__ = [
     "explain_bucket",
     "filter_laws",
     "find_spikes",
+    "highest_official_numbers",
     "series_by",
 ]
 
@@ -61,6 +63,13 @@ MAX_BUCKETS = 600
 _MIN_COMPLETE_BUCKETS = 4
 # Label of the aggregated row of ``series_by``.
 _OTHER_LABEL = "other"
+# Two autonomous communities changed their department code when their statute or name changed, so
+# one institution appears under two codes in the catalogue (api-notes, third probe, "Departments
+# that changed code"). Maps the old code to the newer one, which is the code and label reported.
+_RECODED_DEPARTMENTS = {
+    "8161": "8162",  # Comunidad Valenciana until 2006, Comunitat Valenciana since
+    "8120": "8121",  # Islas Baleares until 1998, Illes Balears since
+}
 
 
 @dataclass(frozen=True)
@@ -242,13 +251,27 @@ def _law_date(law: LawSummary, date_field: DateField) -> date | None:
     return law.published_on if date_field == "published_on" else law.enacted_on
 
 
-def _coded(law: LawSummary, dimension: Dimension) -> CodedValue | None:
-    """The law's coded value for the dimension, ``None`` when it has none."""
+def _raw_coded(law: LawSummary, dimension: Dimension) -> CodedValue | None:
+    """The coded value exactly as the catalogue holds it, ``None`` when the law has none."""
     if dimension == "rank":
         return law.rank
     if dimension == "department":
         return law.department
     return law.scope
+
+
+def _canonical_code(dimension: Dimension, code: str) -> str:
+    """The code a value is grouped and filtered under (recoded departments share one)."""
+    return _RECODED_DEPARTMENTS.get(code, code) if dimension == "department" else code
+
+
+def _coded(law: LawSummary, dimension: Dimension) -> CodedValue | None:
+    """The law's coded value for the dimension, under its canonical code; ``None`` if absent."""
+    value = _raw_coded(law, dimension)
+    if value is None:
+        return None
+    code = _canonical_code(dimension, value.code)
+    return value if code == value.code else CodedValue(code=code, text=value.text)
 
 
 def _fold(word: str) -> str:
@@ -301,11 +324,17 @@ def filter_laws(
     occur as whole words, ignoring case, accents (but not ``ñ``) and punctuation.
     """
     wanted_words = _words(title_words) if title_words is not None else []
+    # A department filter names the institution, whichever of its codes the caller knows.
+    wanted_departments = (
+        {_canonical_code("department", code) for code in department_codes}
+        if department_codes is not None
+        else None
+    )
     result: list[LawSummary] = []
     for law in laws:
         if not _in_codes(law.rank, rank_codes):
             continue
-        if not _in_codes(law.department, department_codes):
+        if not _in_codes(_coded(law, "department"), wanted_departments):
             continue
         if not _in_codes(law.scope, scope_codes):
             continue
@@ -343,10 +372,13 @@ def count_over_time(
     period: Period,
     date_field: DateField = "published_on",
     today: date | None = None,
+    settling_days: int = 0,
 ) -> TimeSeries:
     """Count the laws dated in ``[start, end]`` per bucket, zeros included.
 
-    Raises whatever ``bucket_range`` raises for the same range.
+    A bucket that ended fewer than ``settling_days`` days before ``today`` is partial too, for
+    dates that keep being filled in after the fact. Raises whatever ``bucket_range`` raises for
+    the same range.
     """
     buckets = bucket_range(start, end, period)
     per_key: Counter[str] = Counter()
@@ -361,12 +393,14 @@ def count_over_time(
             outside += 1
     # A bucket is not comparable with the others when the range cuts it (only part of it was
     # counted) or when it has not finished (``end >= today``: the day is still going, so the
-    # bucket containing today and every later one is incomplete).
+    # bucket containing today and every later one is incomplete). ``max(.., 1)`` makes a
+    # settling time of zero mean exactly that.
+    wait = timedelta(days=max(settling_days, 1))
     points = tuple(
         SeriesPoint(
             bucket=b,
             count=per_key[b.key],
-            partial=b.start < start or b.end > end or (today is not None and b.end >= today),
+            partial=b.start < start or b.end > end or (today is not None and today - b.end < wait),
         )
         for b in buckets
     )
@@ -395,14 +429,21 @@ def _count_codes(laws: Iterable[LawSummary], dimension: Dimension) -> Counter[st
 
 def _label_codes(laws: Iterable[LawSummary], dimension: Dimension) -> dict[str, str]:
     """The label of each code: its most frequent text; ties go to the text seen first."""
-    texts: dict[str, Counter[str]] = {}
+    # A recoded department is labelled with the text of its newer code; the old code's text is
+    # used only when no law carries the newer one.
+    native: dict[str, Counter[str]] = {}
+    recoded: dict[str, Counter[str]] = {}
     for law in laws:
-        value = _coded(law, dimension)
-        if value is not None:
-            texts.setdefault(value.code, Counter())[value.text] += 1
+        raw = _raw_coded(law, dimension)
+        if raw is not None:
+            code = _canonical_code(dimension, raw.code)
+            (native if code == raw.code else recoded).setdefault(code, Counter())[raw.text] += 1
     # ``Counter`` keeps insertion order and ``max`` returns the first maximum, which is the
     # first-seen rule.
-    return {code: max(counter, key=counter.__getitem__) for code, counter in texts.items()}
+    return {
+        code: max(counter, key=counter.__getitem__)
+        for code, counter in {**recoded, **native}.items()
+    }
 
 
 def _ranked_codes(counts: Counter[str], labels: Mapping[str, str]) -> list[str]:
@@ -453,6 +494,7 @@ def series_by(
     top: int = 5,
     date_field: DateField = "published_on",
     today: date | None = None,
+    settling_days: int = 0,
 ) -> tuple[GroupSeries, ...]:
     """One time series per top group, then an "other" row when it would not be empty.
 
@@ -478,7 +520,13 @@ def series_by(
     def series_of(members: Iterable[LawSummary]) -> TimeSeries:
         """The time series of a subset of laws over the shared range."""
         return count_over_time(
-            members, start=start, end=end, period=period, date_field=date_field, today=today
+            members,
+            start=start,
+            end=end,
+            period=period,
+            date_field=date_field,
+            today=today,
+            settling_days=settling_days,
         )
 
     rows = [
@@ -506,6 +554,34 @@ def series_by(
     if other_series.total:
         rows.append(GroupSeries(code=None, label=_OTHER_LABEL, series=other_series))
     return tuple(rows)
+
+
+# --- coverage ----------------------------------------------------------------------------------
+
+_OFFICIAL_NUMBER = re.compile(r"(\d+)/(\d{4})")
+
+
+def highest_official_numbers(
+    laws: Iterable[LawSummary], *, rank_code: str, scope_code: str
+) -> dict[int, int]:
+    """The highest official number "N/YYYY" seen per year among the laws of one rank and scope.
+
+    The year is the one inside the number, not the publication year. The result is a lower
+    bound of how many laws of that rank were enacted that year, so a caller can compare it with
+    how many the catalogue holds. Laws without a number of that form are ignored.
+    """
+    highest: dict[int, int] = {}
+    for law in laws:
+        if law.rank is None or law.rank.code != rank_code:
+            continue
+        if law.scope is None or law.scope.code != scope_code or law.official_number is None:
+            continue
+        found = _OFFICIAL_NUMBER.fullmatch(law.official_number.strip())
+        if found is None:
+            continue
+        year, number = int(found.group(2)), int(found.group(1))
+        highest[year] = max(highest.get(year, 0), number)
+    return highest
 
 
 # --- spikes -------------------------------------------------------------------------------------
@@ -641,6 +717,7 @@ def compare_topics(
     reference: Iterable[LawSummary] | None = None,
     date_field: DateField = "published_on",
     today: date | None = None,
+    settling_days: int = 0,
 ) -> tuple[TopicSeries, ...]:
     """One ``TopicSeries`` per topic, in the mapping's order; topics are counted independently.
 
@@ -655,7 +732,13 @@ def compare_topics(
     result: list[TopicSeries] = []
     for name, members in topics.items():
         series = count_over_time(
-            members, start=start, end=end, period=period, date_field=date_field, today=today
+            members,
+            start=start,
+            end=end,
+            period=period,
+            date_field=date_field,
+            today=today,
+            settling_days=settling_days,
         )
         # ``peak`` looks only at complete buckets, because a cut or unfinished bucket is low
         # for a reason that is not interest in the topic; ``first`` is about when the topic

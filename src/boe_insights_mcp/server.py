@@ -528,7 +528,10 @@ async def get_article_history(
 
 _TITLE_FILTER = Annotated[
     str | None,
-    Field(description="Words that must all appear in the title, e.g. 'teletrabajo'."),
+    Field(
+        description="Words that must all appear in the title, as exact word forms "
+        "('vivienda' does not match 'viviendas'), e.g. 'teletrabajo'."
+    ),
 ]
 _TEXT_FILTER = Annotated[
     str | None,
@@ -551,7 +554,10 @@ _DEPARTMENT_FILTER = Annotated[
 ]
 _FROM_DATE = Annotated[
     date | None,
-    Field(description="Start of the range, ISO format. Default: 1 January 19 years ago."),
+    Field(
+        description="Start of the range, ISO format. Default: 1 January of the year 19 years "
+        "before to_date."
+    ),
 ]
 _TO_DATE = Annotated[
     date | None, Field(description="End of the range, ISO format. Default: today.")
@@ -742,8 +748,14 @@ async def most_amended_laws(
     rank: _RANK_FILTER = None,
     scope: _SCOPE_FILTER = "any",
     department_code: _DEPARTMENT_FILTER = None,
-    from_date: _FROM_DATE = None,
-    to_date: _TO_DATE = None,
+    from_date: Annotated[
+        date | None,
+        Field(description="Only laws published on or after this date, ISO format."),
+    ] = None,
+    to_date: Annotated[
+        date | None,
+        Field(description="Only laws published on or before this date, ISO format."),
+    ] = None,
     date_basis: _DATE_BASIS = "published",
     limit: Annotated[int, Field(ge=1, le=trends.MAX_AMENDED, description="Laws to return.")] = 10,
     max_laws: Annotated[

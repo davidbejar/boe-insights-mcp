@@ -1,4 +1,4 @@
-"""Contract tests for ``BoeClient.get_full_text`` (spec A1): the whole-law ``/texto`` request.
+"""Contract tests for ``BoeClient.get_full_text``: the whole-law ``/texto`` request.
 
 Runs against the recorded ``texto_full_*`` fixtures through respx; nothing sleeps for real.
 """

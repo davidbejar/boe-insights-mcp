@@ -79,7 +79,8 @@ class GazettePublication:
 _RANKS: dict[EntryKind, int] = {"book": 1, "title": 2, "chapter": 3, "section": 4, "subsection": 5}
 
 # Heading classes that come as a ``*_num`` / ``*_tit`` pair of paragraphs, in precedence order
-# (C4 of the spec): a block that mixes them is read as the outermost one.
+# a block can mix them (api-notes, third probe, "Text structure"), and then it is read as the
+# outermost one.
 _PAIRED_HEADINGS: tuple[tuple[str, EntryKind], ...] = (
     ("libro", "book"),
     ("titulo", "title"),
@@ -115,12 +116,17 @@ _DESIGNATION = re.compile(
 # a number ("Artículo 1.902. Culpa") is followed by a digit and so does not end it.
 _DESIGNATION_END = re.compile(r"\.(?:\s+|$)")
 _ABBREVIATED_ARTICLE = re.compile(r"arts?\.\s*", re.IGNORECASE)
+# What an article's label starts with: "Artículo", "Artículos", and the Código Civil's "Art",
+# "Art.", "Arts" and "Arts." (with or without the period; api-notes, "Index title patterns").
+_ARTICLE_LABEL = re.compile(r"(?:art[íi]culos?|arts?\.?)(?![^\W\d_])", re.IGNORECASE)
 
 # "Publicada en el BOPA núm. 206, de 23 de octubre de 2026." (api-notes, third probe, "Regional
-# laws and publication dates"). Only the abbreviation is case-sensitive: it must be written in
-# capitals, so that a stray lower-case word is not taken for a gazette.
+# laws and publication dates"). Only the abbreviation is case-sensitive: it starts with a capital
+# and has at least two, so that a stray word ("Bopa", "bopa") is not taken for a gazette but
+# "BOCyL" is. The issue number may have a thousands dot ("7.345") and is kept as written.
 _PUBLICATION = re.compile(
-    r"(?i:publicada\s+en\s+el)\s+(?P<gazette>[A-Z]+)\s+(?i:n[úu]m(?:ero)?\.?)\s*(?P<number>\d+)\s*,"
+    r"(?i:publicada\s+en\s+el)\s+(?P<gazette>(?=[A-Z][a-z]*[A-Z])[A-Z][A-Za-z]*)\s+"
+    r"(?i:n[úu]m(?:ero)?\.?)\s*(?P<number>\d+(?:\.\d+)*)\s*,"
     r"\s*(?i:de)\s+(?P<day>\d{1,2})\s+(?i:de)\s+(?P<month>[^\W\d_]+)\s+(?i:de)\s+(?P<year>\d{4})"
     r"(?!\d)"
 )
@@ -129,8 +135,8 @@ _PUBLICATION = re.compile(
 def build_structure(blocks: Sequence[Block], on: date) -> list[StructureEntry]:
     """The table of contents of a law as it stands on ``on``, in reading order.
 
-    One entry per block that exists on that date (see the rules in the module's tests and the
-    spec): signatures and initial notes are left out, so are blocks that had no text yet or
+    One entry per block that exists on that date (see the rules in the module's tests):
+    signatures and initial notes are left out, so are blocks that had no text yet or
     that have expired; preambles come first. Never raises for odd blocks. Runs in one pass over
     the blocks, so a code with thousands of them is cheap.
     """
@@ -158,7 +164,7 @@ def build_structure(blocks: Sequence[Block], on: date) -> list[StructureEntry]:
             preambles.append(StructureEntry(block.block_id, "preamble", 1, label, "", state))
             continue
 
-        if block.kind == "encabezado":
+        if block.kind == "encabezado" or (block.kind == "precepto" and _is_heading(version)):
             kind, label, heading = _read_heading(block, version)
             if kind in _RANKS:
                 rank = _RANKS[kind]
@@ -192,13 +198,21 @@ def build_structure(blocks: Sequence[Block], on: date) -> list[StructureEntry]:
 
 def _has_expired(block: Block, on: date) -> bool:
     """Whether the block no longer exists on ``on`` according to its ``fecha_caducidad``."""
-    # Dated: gone from that day on. Undated marker (the sentinel ``00000001``): gone, but since
-    # when is unknown, so it is skipped for every date. Versions dated after the expiry are
-    # ignored on purpose: 40 such blocks exist in the Código Civil (api-notes, "Text structure")
-    # and they say nothing about whether the block is alive.
+    if not block.expired_marker:
+        return False
+    # ``fecha_caducidad`` is the publication date of the law that removed the block, not the day
+    # the removal took effect, so it can lie years before the last version starts (api-notes,
+    # third probe, "What fecha_caducidad means"). Until that last version starts the block still
+    # applies; from the later of the two dates it is gone. The Código Civil has 91 such blocks
+    # that were still in force in 2015. The sentinel ``00000001`` gives no date at all, and the
+    # last version's start is then the only evidence there is; with no start either, the block is
+    # skipped for every date.
+    last_start = max((v.starts_on for v in block.versions if v.starts_on is not None), default=None)
     if block.expires_on is not None:
-        return block.expires_on <= on
-    return block.expired_marker
+        gone = max(block.expires_on, last_start) if last_start is not None else block.expires_on
+    else:
+        gone = last_start if last_start is not None else date.min
+    return gone <= on
 
 
 def _below(last_heading: tuple[EntryKind, int] | None) -> int:
@@ -216,6 +230,31 @@ def _precept_level(kind: EntryKind, label: str, last_heading: tuple[EntryKind, i
             return last_heading[1] + 1
         return 1
     return _below(last_heading)
+
+
+# Paragraph classes that make a block a heading when no ``articulo`` paragraph is present.
+_HEADING_CLASSES = frozenset(
+    {
+        "seccion",
+        "subseccion",
+        "capitulo",
+        "capitulo_num",
+        "capitulo_tit",
+        "titulo_num",
+        "titulo_tit",
+        "libro_num",
+        "libro_tit",
+    }
+)
+
+
+def _is_heading(version: BlockVersion) -> bool:
+    """Whether a ``precepto`` block is really a heading: heading paragraphs, no ``articulo``."""
+    # The Código Civil types headings such as ``sprimera-2`` ("Sección 1.ª ...") and ``tx``
+    # ("TÍTULO X") as ``precepto`` (api-notes, third probe, "Text structure"). Without this they
+    # would be listed as provisions and break the nesting of everything after them.
+    kinds = {p.kind for p in version.paragraphs}
+    return "articulo" not in kinds and not kinds.isdisjoint(_HEADING_CLASSES)
 
 
 def _first_text(version: BlockVersion) -> str:
@@ -283,8 +322,7 @@ def _read_precept(block: Block, version: BlockVersion) -> tuple[EntryKind, str, 
         label, heading = block.title or block.block_id, ""
     else:
         label, heading = _split_article(paragraph.text.strip())
-    is_article = label.casefold().startswith(("artículo", "articulo", "art.", "arts."))
-    return ("article" if is_article else "provision"), label, heading
+    return ("article" if _ARTICLE_LABEL.match(label) else "provision"), label, heading
 
 
 def _split_article(text: str) -> tuple[str, str]:

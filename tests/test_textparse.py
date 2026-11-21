@@ -763,7 +763,7 @@ def test_models_are_frozen(make: Callable[[], Any], attribute: str, value: str) 
         setattr(model, attribute, value)
 
 
-# === Version ordering by start date: effective_from, else published_on (spec section 8) ==========
+# === Version ordering by start date: effective_from, else published_on ==========
 
 
 def test_version_with_an_empty_effective_date_is_ordered_by_its_publication_date() -> None:

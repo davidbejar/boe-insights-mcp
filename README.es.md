@@ -53,11 +53,14 @@ explain_spike(rank="real_decreto_ley", period_key="2020", from_date="2010-01-01"
 
 | Año | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 |
 |---|---|---|---|---|---|---|
-| Reales decretos-leyes | 19 | 12 | **38** | 28 | 20 | 8 |
+| Reales decretos-leyes en la colección (`count`) | 19 | 12 | **38** | 28 | 20 | 8 |
+| Número oficial más alto visto (`highest_number`) | 28 | 18 | **39** | 32 | 20 | 8 |
 
 - De 2010 a 2025 hay 230; 2020 es el pico más fuerte: 38 frente a una referencia de 11.0 (ratio 3.45).
-- `explain_spike` para 2020 fija la referencia en 10.2 (los 5 años anteriores) y atribuye todo el exceso a la Jefatura del Estado (ámbito estatal): 38 normas frente a 10.2 esperadas.
-- Su lista de normas empieza con el Real Decreto-ley 1/2020 (pensiones) y el 2/2020 (retribuciones del sector público), y sigue con: "Real Decreto-ley 6/2020, de 10 de marzo, … medidas urgentes en el ámbito económico y para la protección de la salud pública", "Real Decreto-ley 7/2020, de 12 de marzo, … para responder al impacto económico del COVID-19" y "Real Decreto-ley 8/2020, de 17 de marzo, de medidas urgentes extraordinarias para hacer frente al impacto económico y social del COVID-19".
+- La colección no contiene todas las normas de un año, por eso este resultado incluye también `highest_number`: el número oficial más alto visto ese año, una cota inferior de cuántas se aprobaron. 2020 contiene 38 de al menos 39. Los años vecinos están más incompletos (2019: 12 de al menos 18; 2018: 19 de 28; 2021: 28 de 32), mientras que 2022 y 2023 parecen completos (20 de 20, 8 de 8).
+- La conclusión se sostiene con esa cobertura: 2020 tiene más decretos-leyes que cualquier otro año de 2010 a 2025, tanto por las normas que contiene (38) como por el número más alto visto (39; el siguiente es 32, en 2021). Los años recientes están incompletos (2025 contiene 4 de al menos 16), así que no conviene leer el descenso desde 2023 como una tendencia.
+- `explain_spike` para 2020 fija la referencia en 10.2 (los 5 años anteriores). Su desglose (`contributions`) está vacío aquí: las 38 normas son leyes estatales de la Jefatura del Estado, y una dimensión con un único valor no se informa.
+- `laws` es una muestra equiespaciada de las 38 por orden de fecha (`max_laws=8`, con la primera y la última): Real Decreto-ley 1/2020 (pensiones), 7/2020 (impacto económico del COVID-19), 13/2020 (empleo agrario), 18/2020 (medidas sociales en defensa del empleo), 23/2020 (energía y reactivación económica), 28/2020 (trabajo a distancia), 34/2020 (solvencia empresarial, sector energético y materia tributaria) y 36/2020 (modernización de la Administración Pública y Plan de Recuperación).
 - La herramienta cuenta y lista normas; la relación entre el pico y la pandemia la lee el usuario en los títulos.
 
 ### 4. Normas más modificadas
@@ -65,11 +68,11 @@ explain_spike(rank="real_decreto_ley", period_key="2020", from_date="2010-01-01"
 *"¿Qué normas de protección de datos se han modificado más?"*
 
 ```text
-most_amended_laws(title="protección de datos", limit=5, max_laws=10)   -> complete false
-most_amended_laws(title="protección de datos", limit=5, max_laws=10)   -> complete true
+most_amended_laws(title="protección de datos", from_date="2007-01-01", limit=5, max_laws=10)   -> complete false
+most_amended_laws(title="protección de datos", from_date="2007-01-01", limit=5, max_laws=10)   -> complete true
 ```
 
-Cada llamada consulta los datos de modificaciones de como máximo `max_laws` normas, una petición por norma. Aquí coinciden 14 normas; la primera llamada examinó 10 (`complete` false, con una nota que pide repetir la llamada) y la segunda continuó desde la caché y examinó las 14 (`complete` true). Resultado de la segunda llamada, normas publicadas desde 2007:
+Cada llamada tiene un presupuesto de 40 segundos (contados desde el inicio de la llamada, así que la primera incluye la descarga del catálogo) y consulta los datos de modificaciones de como máximo `max_laws` normas, una petición por norma. Esta herramienta no tiene límite inferior de fechas por defecto: aquí se añadió `from_date="2007-01-01"` a las llamadas anteriores, con lo que coinciden 14 normas (sin él, coinciden 28). Con la caché vacía, la primera llamada examinó 9 (`complete` false, con una nota que pide repetir la llamada) y la segunda continuó desde la caché y examinó las 14 (`complete` true). Resultado de la segunda llamada, normas publicadas desde 2007:
 
 | Modificaciones | Norma |
 |---|---|
@@ -112,9 +115,9 @@ También se probaron "cambio climático" (9 normas, 8 comunidades) y "turismo" (
 ### Conviene saber
 
 - **Las búsquedas coinciden con palabras exactas, así que la formulación importa.** En un título, "fumar" no encuentra nada desde 2020, mientras que "tabaco" encuentra 8 (verificado el 2026-11-21).
-- **La cobertura es la colección de legislación consolidada del BOE**, no todo lo publicado en el BOE. Los recuentos lo indican en sus `caveats`.
-- **La cobertura autonómica son leyes, no decretos ni órdenes autonómicos**, que están en el diario oficial de cada comunidad.
-- **Las leyes autonómicas se fechan por su reproducción en el BOE** (que puede llegar semanas o años después de la publicación autonómica), salvo que pases `date_basis="enacted"`.
+- **La cobertura es la colección de legislación consolidada del BOE**, no todo lo publicado en el BOE, y contiene solo una parte de las normas de cada año, una parte variable (más escasa antes de 2010 aproximadamente y en el último año o dos). Un cambio en un recuento no es por sí mismo un cambio en cuánto se legisló. Al contar un rango (Ley con `scope="state"`, Ley Orgánica, Real Decreto-ley o Real Decreto Legislativo) por años, `legislation_over_time` añade `highest_number` para que puedas valorar la cobertura. Los recuentos lo indican en sus `caveats`.
+- **La cobertura autonómica son leyes y decretos-leyes con rango de ley**, no decretos ni órdenes autonómicos, que están en el diario oficial de cada comunidad.
+- **Las leyes autonómicas se fechan por su reproducción en el BOE** (que puede llegar semanas o años después de la publicación autonómica), salvo que pases `date_basis="enacted"`; con `enacted` los últimos tres meses están incompletos, porque las normas se publican semanas después de aprobarse.
 - **Los textos consolidados son informativos y carecen de valor jurídico oficial.** Consulta el [aviso legal](#fuente-de-los-datos-atribución-y-aviso-legal).
 
 ## Herramientas
@@ -156,7 +159,7 @@ Las catorce herramientas son de solo lectura. `resolve_reference` devuelve `reso
 | `explain_spike` | ¿Por qué este periodo tiene tantas normas? | los mismos filtros, más `period_key` (`2020`, `2020-Q2` o `2020-03`), `period`, `baseline_periods`, `max_laws` |
 | `most_amended_laws` | ¿Qué normas sobre X han sido modificadas más veces por normas posteriores? | los mismos filtros, más `limit`, `max_laws` (normas examinadas por llamada) |
 
-Las herramientas de tendencias cuentan sobre una copia local de toda la colección consolidada (véase [Cómo funciona](#cómo-funciona)); la primera tarda unos treinta segundos. `from_date` es por defecto el 1 de enero de hace 19 años y `to_date` hoy. `date_basis` es `published` (publicación en el BOE, por defecto) o `enacted`. `most_amended_laws` consulta los datos de modificaciones de una norma por petición, así que cada llamada examina como máximo `max_laws` normas: mientras `complete` sea false, repite la llamada con los mismos argumentos para continuar desde la caché.
+Las herramientas de tendencias cuentan sobre una copia local de toda la colección consolidada (véase [Cómo funciona](#cómo-funciona)); la primera tarda unos treinta segundos. `from_date` es por defecto el 1 de enero del año 19 años anterior a `to_date` (`most_amended_laws` no tiene límite inferior por defecto) y `to_date` hoy. Se rechaza un resultado de más de 1.500 puntos (series por periodos) con el consejo de usar un periodo más grueso, un rango más corto o menos grupos. `date_basis` es `published` (publicación en el BOE, por defecto) o `enacted`. `most_amended_laws` consulta los datos de modificaciones de una norma por petición, así que cada llamada examina como máximo `max_laws` normas: mientras `complete` sea false, repite la llamada con los mismos argumentos para continuar desde la caché.
 
 Cada resultado incluye un bloque `provenance`. Salida abreviada de `compare_article_versions` para el artículo 48 de `BOE-A-2015-10566` entre el 2016-10-02 y el 2026-11-21 (fixtures de pruebas grabados, sin peticiones reales). Las cadenas largas (`inline`, `unified_diff`) se acortan aquí con `…`. `[-antes-] {+después+}` marca una reformulación dentro de un párrafo: un párrafo reformulado se devuelve solo como `inline` (`old_text` y `new_text` son `null`), salvo las tablas, que devuelven ambos textos y no `inline`. Los textos de las claves y de las notas se mantienen tal como los devuelve la herramienta:
 

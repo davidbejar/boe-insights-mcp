@@ -724,8 +724,11 @@ def _first_publication(metadata: LawMetadata, analysis: LawAnalysis) -> FirstPub
     if not metadata.identifier.startswith("BOE-"):
         if metadata.gazette is None or metadata.published_on is None:
             return None
+        # The abbreviation is the identifier's own prefix (``BOJA-b-2021-90434`` is the BOJA);
+        # the metadata only carries the full name.
         return FirstPublication(
-            gazette=metadata.gazette,
+            gazette=metadata.identifier.partition("-")[0],
+            gazette_name=metadata.gazette,
             number=metadata.gazette_number,
             date=metadata.published_on,
         )

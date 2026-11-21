@@ -685,6 +685,20 @@ async def _fetch_structure_inputs(
     return text_task.result(), repeal_task.result()
 
 
+def _uniform_state(entries: list[StructureEntry]) -> ArticleState | None:
+    """The one state every entry has when it is not "in force", else ``None``.
+
+    The entries then say nothing individually and the result's note says it once, which saves a
+    repeated ``state`` on every line of a large law.
+    """
+    states = {e.state for e in entries}
+    if len(states) == 1:
+        (only,) = states
+        if only in ("repealed", "not_yet_in_force"):
+            return only
+    return None
+
+
 def _structure_notes(
     entries: list[StructureEntry],
     repeal: LawRepeal,
@@ -706,13 +720,15 @@ def _structure_notes(
         )
         notes.append(
             f"On {on.isoformat()} this law was published but is not yet in force{takes_effect}. "
-            "Every entry shows the upcoming text."
+            "Every entry is not yet in force and shows the upcoming text."
         )
     elif upcoming:
         notes.append(
             f"{upcoming} of {len(entries)} entries are published but not yet in force on "
             f"{on.isoformat()}."
         )
+    elif _uniform_state(entries) == "repealed":
+        notes.append(f"Every entry is repealed on {on.isoformat()}.")
     # A repealed law's articles carry no repeal marker (api-notes, "Initial note"), so every
     # entry reads "in force" and only this sentence tells the reader. Putting ``repealed`` on each
     # entry instead would defeat the compact output.
@@ -760,13 +776,16 @@ async def get_law_structure(
     blocks, inputs = await _fetch_structure_inputs(client, law_id)
     # The initial note is block ``no`` of the text we already hold, so the repeal assessment needs
     # no request of its own (``articles._load`` has to ask for it because it only has an index).
-    note_block = next((block for block in blocks if block.block_id == "no"), None)
+    # Found by its kind, not its id: Ley 40/2015 calls it ``co`` (api-notes, third probe, "Text
+    # structure").
+    note_block = next((block for block in blocks if block.kind == "nota_inicial"), None)
     repeal = assess_repeal(
         RepealInputs(inputs.metadata, note_block, note_checked=True),
         today=madrid_today(moment, today),
     )
 
     entries = build_structure(blocks, on)
+    uniform = _uniform_state(entries) is not None
     shown = entries if detail == "all" else [e for e in entries if e.kind not in _PRECEPT_KINDS]
     if offset > len(shown):
         raise ValueError(f"offset is beyond the end of the structure ({len(shown)} entries)")
@@ -785,8 +804,11 @@ async def get_law_structure(
                 label=e.label,
                 heading=e.heading,
                 # ``in_force`` is the norm and is left out; ``did_not_exist`` never reaches here
-                # because ``build_structure`` skips such blocks.
-                state=e.state if e.state in ("repealed", "not_yet_in_force") else None,  # type: ignore[arg-type]
+                # because ``build_structure`` skips such blocks. A state shared by every entry
+                # is left to the note.
+                state=None
+                if uniform or e.state not in ("repealed", "not_yet_in_force")
+                else e.state,  # type: ignore[arg-type]
             )
             for e in page
         ],

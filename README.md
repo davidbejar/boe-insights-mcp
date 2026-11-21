@@ -53,11 +53,14 @@ explain_spike(rank="real_decreto_ley", period_key="2020", from_date="2010-01-01"
 
 | Year | 2018 | 2019 | 2020 | 2021 | 2022 | 2023 |
 |---|---|---|---|---|---|---|
-| Real decretos-leyes | 19 | 12 | **38** | 28 | 20 | 8 |
+| Real decretos-leyes in the collection (`count`) | 19 | 12 | **38** | 28 | 20 | 8 |
+| Highest official number seen (`highest_number`) | 28 | 18 | **39** | 32 | 20 | 8 |
 
 - 2010-2025 has 230 of them; 2020 is the strongest spike, 38 against a baseline of 11.0 (ratio 3.45).
-- `explain_spike` for 2020 puts the baseline at 10.2 (the 5 preceding years) and attributes the whole excess to Jefatura del Estado (state scope): 38 laws against 10.2 expected.
-- Its list of laws opens with Real Decreto-ley 1/2020 (pensions) and 2/2020 (public-sector pay), then: "Real Decreto-ley 6/2020, de 10 de marzo, … medidas urgentes en el ámbito económico y para la protección de la salud pública", "Real Decreto-ley 7/2020, de 12 de marzo, … para responder al impacto económico del COVID-19" and "Real Decreto-ley 8/2020, de 17 de marzo, de medidas urgentes extraordinarias para hacer frente al impacto económico y social del COVID-19".
+- The collection does not hold every law of a year, which is why this result also carries `highest_number`: the highest official number seen that year, a lower bound of how many were enacted. 2020 holds 38 of at least 39. The neighbouring years are thinner (2019: 12 of at least 18; 2018: 19 of 28; 2021: 28 of 32), while 2022 and 2023 look complete (20 of 20, 8 of 8).
+- The conclusion holds given that coverage: 2020 has the most decree-laws of any year in 2010-2025, both by the laws held (38) and by the highest number seen (39; the next is 32, in 2021). Recent years are thin (2025 holds 4 of at least 16), so do not read the fall since 2023 as a trend.
+- `explain_spike` for 2020 puts the baseline at 10.2 (the 5 preceding years). Its breakdown (`contributions`) is empty here: all 38 laws are state laws of Jefatura del Estado, and a dimension with a single value is not reported.
+- `laws` is an evenly spaced sample of the 38 in date order (`max_laws=8`, first and last included): Real Decreto-ley 1/2020 (pensions), 7/2020 (impact of COVID-19 on the economy), 13/2020 (agrarian employment), 18/2020 (social measures in defence of employment), 23/2020 (energy and economic reactivation), 28/2020 (remote work), 34/2020 (business solvency, energy and taxation) and 36/2020 (modernisation of the public administration and the Recovery Plan).
 - The tool lists laws and counts; the link between the spike and the pandemic is something you read from the titles.
 
 ### 4. Most-amended laws
@@ -65,11 +68,11 @@ explain_spike(rank="real_decreto_ley", period_key="2020", from_date="2010-01-01"
 *"Which data protection laws have been amended most?"*
 
 ```text
-most_amended_laws(title="protección de datos", limit=5, max_laws=10)   -> complete false
-most_amended_laws(title="protección de datos", limit=5, max_laws=10)   -> complete true
+most_amended_laws(title="protección de datos", from_date="2007-01-01", limit=5, max_laws=10)   -> complete false
+most_amended_laws(title="protección de datos", from_date="2007-01-01", limit=5, max_laws=10)   -> complete true
 ```
 
-Each call reads the amendment data of at most `max_laws` laws, one request each. Here 14 laws match; the first call examined 10 (`complete` false, with a note to call again) and the second continued from the cache and examined all 14 (`complete` true). Result of the second call, laws published since 2007:
+Each call has a 40-second budget (counted from the start of the call, so the first one includes downloading the catalogue) and reads the amendment data of at most `max_laws` laws, one request each. This tool has no default lower bound on dates: here `from_date="2007-01-01"` was added to the calls above, which leaves 14 matching laws (without it, 28 match). Run on an empty cache, the first call examined 9 (`complete` false, with a note to call again) and the second continued from the cache and examined all 14 (`complete` true). Result of the second call, laws published since 2007:
 
 | Amendments | Law |
 |---|---|
@@ -112,9 +115,9 @@ The 2 remaining communities (3 laws) are grouped as "other". (The `search_legisl
 ### Good to know
 
 - **Searches match exact words, so wording matters.** In a title, "fumar" finds nothing since 2020, while "tabaco" finds 8 (verified on 2026-11-21).
-- **Coverage is the BOE's consolidated legislation collection**, not every item printed in the BOE. Counts say so in their `caveats`.
-- **Regional coverage is laws, not regional decrees or orders**, which live in each community's own gazette.
-- **Regional laws are dated by their BOE reprint** (which can come weeks or years after the regional publication) unless you pass `date_basis="enacted"`.
+- **Coverage is the BOE's consolidated legislation collection**, not every item printed in the BOE, and it holds only part of each year's laws, a varying part (thinner before about 2010 and for the most recent year or two). A change in a count is not by itself a change in how much was legislated. Counting one rank (Ley with `scope="state"`, Ley Orgánica, Real Decreto-ley or Real Decreto Legislativo) by year, `legislation_over_time` adds `highest_number` so you can judge the coverage. Counts say so in their `caveats`.
+- **Regional coverage is laws and decree-laws with the rank of law**, not regional decrees or orders, which live in each community's own gazette.
+- **Regional laws are dated by their BOE reprint** (which can come weeks or years after the regional publication) unless you pass `date_basis="enacted"`; under `enacted` the last three months are incomplete, because laws are published weeks after being enacted.
 - **Consolidated texts are informational and have no official legal value.** See the [legal notice](#data-source-attribution-and-legal-notice).
 
 ## Tools
@@ -156,7 +159,7 @@ All fourteen tools are read-only. `resolve_reference` returns `resolved`, `ambig
 | `explain_spike` | Why does this period have unusually many laws? | the same filters, plus `period_key` (`2020`, `2020-Q2` or `2020-03`), `period`, `baseline_periods`, `max_laws` |
 | `most_amended_laws` | Which laws on X have been amended most by later laws? | the same filters, plus `limit`, `max_laws` (laws examined per call) |
 
-The trend tools count over a local snapshot of the whole consolidated collection (see [How it works](#how-it-works)); the first one takes about half a minute. `from_date` defaults to 1 January 19 years ago and `to_date` to today. `date_basis` is `published` (BOE publication, the default) or `enacted`. `most_amended_laws` reads one law's amendment data per request, so each call examines at most `max_laws` laws: while `complete` is false, call again with the same arguments to continue from the cache.
+The trend tools count over a local snapshot of the whole consolidated collection (see [How it works](#how-it-works)); the first one takes about half a minute. `from_date` defaults to 1 January of the year 19 years before `to_date` (`most_amended_laws` has no default lower bound) and `to_date` to today. A result of more than 1,500 points (series times periods) is refused with advice to use a coarser period, a shorter range or fewer groups. `date_basis` is `published` (BOE publication, the default) or `enacted`. `most_amended_laws` reads one law's amendment data per request, so each call examines at most `max_laws` laws: while `complete` is false, call again with the same arguments to continue from the cache.
 
 Every result carries a `provenance` block. Trimmed output of `compare_article_versions` for article 48 of `BOE-A-2015-10566` between 2016-10-02 and 2026-11-21 (recorded test fixtures, no live request). Long strings (`inline`, `unified_diff`) are shortened here with `…`. `[-old-] {+new+}` marks a rewording inside a paragraph: a reworded paragraph is returned as `inline` alone (`old_text` and `new_text` are `null`), except tables, which return both texts and no `inline`:
 

@@ -773,7 +773,7 @@ def test_fixture_future_version_is_not_yet_in_force(load_fixture: Loader) -> Non
     assert version_on(block, date(2026, 11, 21)) is None
 
 
-# === Start date: ``starts_on = effective_from or published_on`` (spec section 8) ==============
+# === Start date: ``starts_on = effective_from or published_on`` ==============
 
 
 @pytest.mark.parametrize(
@@ -956,7 +956,7 @@ def test_fixture_ley30_note_history_starts_with_the_original_correction_note(
     assert events[0].kind == "original"
 
 
-# === repeal_note (spec section 7) ================================================================
+# === repeal_note ================================================================
 
 
 def repeal_note(note: Block | None) -> BlockVersion | None:

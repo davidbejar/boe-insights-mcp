@@ -2,8 +2,8 @@
 
 Everything under test is pure logic over ``LawSummary`` records, so the tests build those records
 directly with the small factories below. No network, no clock (``today`` is always passed in) and
-no unseeded randomness. Tests that rest on a reading of an ambiguous spec rule carry a comment
-``SPEC AMBIGUITY`` that names the section, so they are easy to find and revisit.
+no unseeded randomness. Tests that rest on a reading of an ambiguous rule carry a comment
+``AMBIGUOUS RULE`` that names the function, so they are easy to find and revisit.
 """
 
 from __future__ import annotations
@@ -39,6 +39,7 @@ from boe_insights_mcp.analytics import (
     explain_bucket,
     filter_laws,
     find_spikes,
+    highest_official_numbers,
     series_by,
 )
 from boe_insights_mcp.models import CodedValue, LawSummary
@@ -64,6 +65,7 @@ def make_law(
     rank: Coded = None,
     department: Coded = None,
     scope: Coded = None,
+    number: str | None = None,
 ) -> LawSummary:
     return LawSummary(
         identifier=identifier,
@@ -73,6 +75,7 @@ def make_law(
         rank=coded(rank),
         department=coded(department),
         scope=coded(scope),
+        official_number=number,
     )
 
 
@@ -1087,7 +1090,7 @@ def test_series_by_per_bucket_sum_equals_count_over_time() -> None:
 
 
 def test_series_by_ties_for_the_last_top_place_use_the_count_by_order() -> None:
-    # SPEC AMBIGUITY (section 4, series_by): the tie rule for choosing the top groups is not stated.
+    # AMBIGUOUS RULE (series_by): the tie rule for choosing the top groups is not stated.
     # These tests assume the same order as ``count_by``: count descending, then label, then code.
     laws = [
         dated("1", date(2020, 1, 1), CodedValue(code="9", text="Alpha")),
@@ -1688,7 +1691,7 @@ def test_compare_topics_first_is_the_earliest_non_zero_bucket() -> None:
 
 
 def test_compare_topics_first_may_be_a_partial_bucket() -> None:
-    # SPEC AMBIGUITY (section 6): "first" does not say "complete", so a partial bucket counts.
+    # AMBIGUOUS RULE (compare_topics): "first" does not say "complete", so a partial bucket counts.
     laws = laws_on(date(2020, 1, 20), date(2020, 5, 1))
     (entry,) = compare_topics(
         {"t": laws}, start=date(2020, 1, 15), end=date(2020, 6, 30), period="quarter"
@@ -1881,3 +1884,34 @@ def test_results_do_not_depend_on_input_order_when_ties_are_broken_by_the_rules(
     assert [(r.code, r.label, counts_of(r.series)) for r in forward] == [
         (r.code, r.label, counts_of(r.series)) for r in backward
     ]
+
+
+# --- highest official number per year -----------------------------------------------------------
+
+
+def test_highest_official_number_per_year_of_one_state_rank() -> None:
+    laws = [
+        make_law("A", rank="1320", scope="1", number="2/2020"),
+        make_law("B", rank="1320", scope="1", number="38/2020"),
+        make_law("C", rank="1320", scope="1", number="9/2020"),
+        make_law("D", rank="1320", scope="1", number="4/2019"),
+    ]
+
+    assert highest_official_numbers(laws, rank_code="1320", scope_code="1") == {2020: 38, 2019: 4}
+
+
+def test_highest_official_number_ignores_other_ranks_regional_laws_and_odd_numbers() -> None:
+    laws = [
+        make_law("A", rank="1320", scope="1", number="5/2020"),
+        make_law("B", rank="1300", scope="1", number="90/2020"),  # another rank
+        make_law("C", rank="1320", scope="2", number="70/2020"),  # regional
+        make_law("D", rank="1320", scope="1", number="EFD/80/2020"),  # not N/YYYY
+        make_law("E", rank="1320", scope="1", number=None),
+        make_law("F", rank="1320", scope="1", number="12/20"),  # not a four-digit year
+    ]
+
+    assert highest_official_numbers(laws, rank_code="1320", scope_code="1") == {2020: 5}
+
+
+def test_highest_official_number_is_empty_without_numbers() -> None:
+    assert highest_official_numbers([], rank_code="1320", scope_code="1") == {}

@@ -165,7 +165,7 @@ async def test_paging_and_headings_through_the_tool(
     }
 
 
-async def test_a_law_not_yet_in_force_is_marked_state_by_state_and_in_the_note(
+async def test_a_law_not_yet_in_force_is_described_once_in_the_note(
     mcp: Client[Any], serve: Callable[..., None]
 ) -> None:
     serve(
@@ -177,8 +177,8 @@ async def test_a_law_not_yet_in_force_is_marked_state_by_state_and_in_the_note(
     content = await call(mcp, "get_law_structure", law_id=ASTURIAS, as_of="2026-11-21")
 
     assert content["as_of"] == "2026-11-21"
-    assert all(e["state"] == "not_yet_in_force" for e in content["entries"])
-    assert "not yet in force" in content["note"]
+    assert all("state" not in e for e in content["entries"])
+    assert "Every entry is not yet in force" in content["note"]
 
 
 async def test_as_of_in_the_past_through_the_tool(
@@ -261,6 +261,7 @@ async def test_regional_law_reprinted_in_the_boe_gets_the_gazette_from_the_note(
         overview.first_published.number,
         overview.first_published.date,
     ) == ("BOPA", "206", date(2026, 10, 23))
+    assert overview.first_published.gazette_name is None  # the note gives only the abbreviation
 
 
 async def test_law_with_a_regional_gazette_identifier_is_its_own_first_publication(
@@ -275,7 +276,8 @@ async def test_law_with_a_regional_gazette_identifier_is_its_own_first_publicati
     content = await call(mcp, "get_law_overview", law_id=DOGC)
 
     assert content["first_published"] == {
-        "gazette": "Diari Oficial de la Generalitat de Catalunya",
+        "gazette": "DOGC",
+        "gazette_name": "Diari Oficial de la Generalitat de Catalunya",
         "number": "7426",
         "date": "2017-08-03",
     }
@@ -338,6 +340,19 @@ async def test_field_descriptions_of_the_publication_dates(mcp: Client[Any]) -> 
         schema = tools[name].output_schema
         assert schema is not None
         assert version_text in published_on_descriptions(schema), name
+
+
+async def test_a_law_brief_says_which_gazette_its_publication_date_is_from(
+    mcp: Client[Any],
+) -> None:
+    tools = {t.name: t for t in await mcp.list_tools()}
+    schema = tools["search_legislation"].output_schema
+    assert schema is not None
+
+    assert (
+        "Publication date in the gazette of record (the BOE, or the regional gazette for laws "
+        "identified by one)."
+    ) in published_on_descriptions(schema)
 
 
 def published_on_descriptions(schema: Any) -> list[str]:
