@@ -15,7 +15,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
 
 from boe_insights_mcp.structure import EntryKind
 from boe_insights_mcp.versions import ArticleState
@@ -37,10 +37,15 @@ __all__ = [
     "CompareArticleVersionsResult",
     "CompareTopicsResult",
     "Coverage",
+    "DailySummaryResult",
+    "DayMatches",
     "DepartmentCount",
     "ExplainSpikeResult",
     "FindCodesResult",
     "FirstPublication",
+    "GazetteCount",
+    "GazetteEntry",
+    "GazetteIssueInfo",
     "GroupSeries",
     "LawBrief",
     "LawOverview",
@@ -55,6 +60,8 @@ __all__ = [
     "ReferenceBrief",
     "RelationCount",
     "ResolveReferenceResult",
+    "ScanGazetteResult",
+    "ScannedEntry",
     "SearchLegislationResult",
     "SpikeContribution",
     "StructureItem",
@@ -705,4 +712,93 @@ class MostAmendedLawsResult(_Output):
     note: str | None = Field(default=None, description="What to do when not complete.")
     coverage: Coverage
     caveats: list[str]
+    provenance: Provenance
+
+
+class GazetteIssueInfo(_Output):
+    """One issue of the gazette."""
+
+    number: str = Field(description="Issue number, e.g. 67.")
+    identifier: str = Field(description="Summary identifier, e.g. BOE-S-2020-67.")
+
+
+class GazetteCount(_Output):
+    """A section or department and how many items it has."""
+
+    code: str | None = Field(description="Section or department code; null when the BOE has none.")
+    name: str | None
+    items: int
+
+
+class GazetteEntry(_Output):
+    """One item the BOE published."""
+
+    identifier: str = Field(description="BOE-A-... (dispositions) or BOE-B-... (announcements).")
+    title: str = Field(description="Title in Spanish, cut at 300 characters.")
+    section: str = Field(description="Section code, e.g. 1, 2A, 3, 5B.")
+    department: str | None
+    heading: str | None = Field(default=None, description="Heading the item sits under, if any.")
+    url: str | None = Field(description="Link to the text on boe.es.")
+
+    # Why a serializer: ``heading`` is left out of the output when there is none, which saves a
+    # null on most items of a page of up to 100 that the model reads in full.
+    @model_serializer(mode="wrap")
+    def _omit_empty_heading(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Serialise as usual, then drop ``heading`` when it is ``None``."""
+        data: dict[str, object] = handler(self)
+        if data.get("heading") is None:
+            data.pop("heading", None)
+        return data
+
+
+class DailySummaryResult(_Output):
+    """What the BOE published on one day."""
+
+    date: _Day = Field(description="The day shown.")
+    published: bool = Field(description="False when there was no issue that day.")
+    issues: list[GazetteIssueInfo]
+    total_items: int = Field(description="Items of the whole day.")
+    sections: list[GazetteCount] = Field(description="Whole day, in order of appearance.")
+    departments: list[GazetteCount] = Field(
+        description="The 15 with most items among the matching items."
+    )
+    matched: int = Field(description="Items that match the filters.")
+    items: list[GazetteEntry] = Field(description="This page of the matching items.")
+    returned: int = Field(description="Number of items in this page.")
+    has_more: bool
+    next_offset: int | None = Field(description="Offset for the next page; null when none.")
+    note: str | None = None
+    provenance: Provenance
+
+
+class ScannedEntry(GazetteEntry):
+    """A matching item with its day."""
+
+    date: _Day
+
+
+class DayMatches(_Output):
+    """How many items matched on one day."""
+
+    date: _Day
+    matches: int
+
+
+class ScanGazetteResult(_Output):
+    """Items found over a range of days, among the days scanned so far."""
+
+    from_date: _Day
+    to_date: _Day
+    days_scanned: int = Field(description="Days read so far.")
+    days_with_issue: int = Field(description="Scanned days on which the BOE had an issue.")
+    days_pending: int = Field(description="Days not yet read; the oldest ones.")
+    days_failed: int = Field(description="Days skipped after an error that retrying cannot fix.")
+    complete: bool = Field(description="True when no day is pending.")
+    matched: int = Field(description="Matches in the scanned days.")
+    items: list[ScannedEntry] = Field(description="This page of the matches, newest day first.")
+    returned: int = Field(description="Number of items in this page.")
+    has_more: bool
+    next_offset: int | None = Field(description="Offset for the next page; null when none.")
+    by_day: list[DayMatches] = Field(description="Days with matches, newest first.")
+    note: str | None = Field(default=None, description="What to do when not complete.")
     provenance: Provenance

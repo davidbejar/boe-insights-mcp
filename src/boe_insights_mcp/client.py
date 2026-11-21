@@ -44,6 +44,7 @@ from boe_insights_mcp.errors import (
 from boe_insights_mcp.identifiers import LAW_ID
 from boe_insights_mcp.models import (
     Block,
+    DailySummary,
     IndexEntry,
     LawAnalysis,
     LawMetadata,
@@ -52,6 +53,7 @@ from boe_insights_mcp.models import (
     as_list,
 )
 from boe_insights_mcp.ratelimit import RateLimiter
+from boe_insights_mcp.summaries import parse_summary
 from boe_insights_mcp.textparse import parse_block, parse_full_text
 
 __all__ = [
@@ -61,10 +63,13 @@ __all__ = [
     "BASE_URL",
     "DEFAULT_MAX_RESPONSE_BYTES",
     "DEFAULT_USER_AGENT",
+    "FIRST_SUMMARY_DAY",
     "FULL_TEXT_TTL",
     "INITIAL_NOTE_TTL",
     "METADATA_TTL",
     "SEARCH_TTL",
+    "SUMMARY_PAST_TTL",
+    "SUMMARY_TODAY_TTL",
     "TEXT_BLOCK_TTL",
     "TEXT_BLOCK_VERSIONED_TTL",
     "TEXT_INDEX_TTL",
@@ -101,6 +106,13 @@ INITIAL_NOTE_TTL = 6 * 3600.0
 # from. Like the other per-law data it can change when the law is amended, so it gets the same
 # six hours; there is no per-block revision date to key it on.
 FULL_TEXT_TTL = 6 * 3600.0
+# A daily summary of a past day never changes again, so it and a remembered "no issue" are kept
+# for a month; today's summary can still gain an issue or be corrected, so it only lives an hour.
+SUMMARY_PAST_TTL = 30 * 24 * 3600.0
+SUMMARY_TODAY_TTL = 3600.0
+# The first day the BOE summary endpoint answers; every earlier date is a 404 (api-notes, fourth
+# probe, "Daily summaries").
+FIRST_SUMMARY_DAY = date(1960, 9, 1)
 # The largest response body accepted. The biggest real one seen is the 763 KB Código Civil index
 # (api-notes 6.1); a whole-law ``/texto`` can reach several MB, so the limit is generous. It
 # exists so that a hostile or broken server cannot make us hold an unbounded body in memory.
@@ -136,6 +148,10 @@ _NO_NOTE = b"boe-insights-mcp: no initial note"
 # fail to parse it and drop it.
 _ANALYSIS_NOT_FOUND = b"boe-insights-mcp: analysis not found"
 _ANALYSIS_UNREADABLE = b"boe-insights-mcp: analysis unreadable"
+# Cached in place of a daily summary to remember that the API answered 404 for a past day (no
+# issue was printed: a Sunday, or a date outside the archive). Not XML, so a reader that mistook
+# it for a summary would fail to parse it and drop it.
+_NO_SUMMARY = b"boe-insights-mcp: no summary that day"
 # Retry-After is honoured but capped; the total time budget of one call (``total_timeout``) can
 # still cut it short.
 _MAX_RETRY_AFTER = 60.0
@@ -501,6 +517,57 @@ class BoeClient:
         """
         path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/texto"
         return await self._get(path, None, FULL_TEXT_TTL, parse_full_text, accept=_XML)
+
+    async def get_daily_summary(self, day: date, *, today: date) -> DailySummary | None:
+        """Return everything the BOE printed on ``day``, or ``None`` when it printed no issue.
+
+        ``today`` is the current Madrid date, passed in by the caller. ``None`` means the API
+        answered 404: no issue that day (most Sundays), or not yet published. Raises
+        ``ValueError`` before any request when ``day`` is before ``FIRST_SUMMARY_DAY`` or after
+        ``today``; other errors are the usual ``BoeError`` subclasses.
+        """
+        if day < FIRST_SUMMARY_DAY or day > today:
+            raise ValueError(
+                f"date must be between {FIRST_SUMMARY_DAY.isoformat()} and "
+                f"{today.isoformat()}, got {day.isoformat()}"
+            )
+        # Why ``today`` is a parameter: the client never reads the clock (the use cases own it,
+        # which is how tests fix time), and the cache lifetime below depends on the answer.
+        path = f"boe/sumario/{day:%Y%m%d}"
+        key = self._cache_key(path, None, _XML, None)
+        cached = await self._cache.get(key)
+        if cached == _NO_SUMMARY:
+            self._cache_hits += 1
+            return None
+        # Why the two lifetimes: a day before today is final, so both the summary and the
+        # remembered 404 can live a month. Today's issue is still being completed and may appear
+        # after our first look, so its summary lives an hour and its 404 is not remembered at all.
+        final = day < today
+        try:
+            return await self._resolve(
+                cached,
+                key,
+                f"{self._base_url}{path}",
+                None,
+                SUMMARY_PAST_TTL if final else SUMMARY_TODAY_TTL,
+                lambda body: parse_summary(body, day),
+                _XML,
+            )
+        except BoeNotFoundError:
+            # Sunday, holiday and future date all answer 404 and cannot be told apart (api-notes,
+            # fourth probe). Only a past day's absence is permanent.
+            if final:
+                await self._cache.set(key, _NO_SUMMARY, SUMMARY_PAST_TTL)
+            return None
+
+    async def has_cached_summary(self, day: date) -> bool:
+        """Whether the summary of ``day`` (or its remembered absence) is cached; sends no request.
+
+        ``gazette.scan_gazette`` uses it to read already-cached days without spending its time
+        budget. Only presence is checked, like ``has_cached_analysis``.
+        """
+        path = f"boe/sumario/{day:%Y%m%d}"
+        return await self._cache.get(self._cache_key(path, None, _XML, None)) is not None
 
     async def get_initial_note(self, law_id: str) -> Block | None:
         """Return the law's initial note (block ``no``), or ``None`` when it has none.

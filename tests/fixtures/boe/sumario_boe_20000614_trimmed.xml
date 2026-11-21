@@ -1,0 +1,302 @@
+<?xml version='1.0' encoding='utf-8'?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <sumario>
+      <metadatos>
+        <publicacion>BOE</publicacion>
+        <fecha_publicacion>20000614</fecha_publicacion>
+      </metadatos>
+      <diario numero="142">
+        <sumario_diario>
+          <identificador>BOE-S-2000-142</identificador>
+          <url_pdf szBytes="145247" szKBytes="142">https://www.boe.es/boe/dias/2000/06/14/pdfs/BOE-S-2000-142.pdf</url_pdf>
+        </sumario_diario>
+        <seccion codigo="1" nombre="I. Disposiciones generales">
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <item>
+              <identificador>BOE-A-2000-11120</identificador>
+              <titulo>Orden de 6 de junio de 2000 por la que se dictan normas para la ejecución del Real Decreto 398/2000, de 24 de marzo, por el que se modifica la demarcación y capitalidad de determinados Registros de la Propiedad y Mercantiles.</titulo>
+              <url_pdf szBytes="21757" szKBytes="21" pagina_inicial="20982" pagina_final="20983">https://www.boe.es/boe/dias/2000/06/14/pdfs/A20982-20983.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11120</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11120</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <item>
+              <identificador>BOE-A-2000-11121</identificador>
+              <titulo>Real Decreto Legislativo 1/2000, de 9 de junio, por el que se aprueba el texto refundido de la Ley sobre Seguridad Social de las Fuerzas Armadas.</titulo>
+              <url_pdf szBytes="67893" szKBytes="66" pagina_inicial="20983" pagina_final="20991">https://www.boe.es/boe/dias/2000/06/14/pdfs/A20983-20991.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11121</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11121</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="4220" nombre="MINISTERIO DE EDUCACIÓN, CULTURA Y DEPORTE">
+            <item>
+              <identificador>BOE-A-2000-11122</identificador>
+              <titulo>Orden de 17 de mayo de 2000 de corrección de errores de la de 5 de abril, por la que se aprueba el currículo integrado para la Educación Infantil y la Educación Primaria previsto en el Convenio entre el Ministerio de Educación y Cultura y el Consejo Británico en España.</titulo>
+              <url_pdf szBytes="14114" szKBytes="14" pagina_inicial="20991" pagina_final="20991">https://www.boe.es/boe/dias/2000/06/14/pdfs/A20991-20991.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11122</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11122</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="2A" nombre="II. Autoridades y personal. - A. Nombramientos, situaciones e incidencias">
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <item>
+              <identificador>BOE-A-2000-11125</identificador>
+              <titulo>Resolución de 30 de mayo de 2000, de la Secretaría de Estado de Justicia, por la que, en cumplimiento de sentencia judicial, se procede a rectificar las Resoluciones de 29 de julio y 30 de octubre de 1998, por las que se hizo pública la relación definitiva de aspirantes que superaron las pruebas selectivas de ingreso en el Cuerpo de Oficiales de la Administración de Justicia, turno promoción interna, y se nombraron funcionarios, respectivamente.</titulo>
+              <url_pdf szBytes="30902" szKBytes="30" pagina_inicial="20998" pagina_final="20998">https://www.boe.es/boe/dias/2000/06/14/pdfs/A20998-20998.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11125</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11125</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <item>
+              <identificador>BOE-A-2000-11126</identificador>
+              <titulo>Corrección de errores del Real Decreto 1013/2000, de 2 de junio, por el que se promueve al empleo de General de Brigada del Cuerpo General de las Armas del Ejército de Tierra al Coronel don Luis Gómez-Hortigüela Amillo.</titulo>
+              <url_pdf szBytes="30902" szKBytes="30" pagina_inicial="20998" pagina_final="20998">https://www.boe.es/boe/dias/2000/06/14/pdfs/A20998-20998.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11126</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11126</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="7210" nombre="MINISTERIO DE ADMINISTRACIONES PÚBLICAS">
+            <item>
+              <identificador>BOE-A-2000-11127</identificador>
+              <titulo>Resolución de 6 de junio de 2000, de la Secretaría de Estado para la Administración Pública, por la que se nombran funcionarios de carrera de la Escala Técnica de Gestión de Organismos Autónomos.</titulo>
+              <url_pdf szBytes="42495" szKBytes="41" pagina_inicial="20998" pagina_final="20999">https://www.boe.es/boe/dias/2000/06/14/pdfs/A20998-20999.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11127</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11127</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="2B" nombre="II. Autoridades y personal. - B. Oposiciones y concursos">
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <item>
+              <identificador>BOE-A-2000-11137</identificador>
+              <titulo>Orden de 9 de junio de 2000 por la que se convoca concurso para provisión de destinos en la Carrera Fiscal.</titulo>
+              <url_pdf szBytes="58129" szKBytes="57" pagina_inicial="21003" pagina_final="21006">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21003-21006.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11137</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11137</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-A-2000-11138</identificador>
+              <titulo>Resolución de 31 de mayo de 2000, de la Secretaría de Estado de Justicia, por la que se aprueba y publica la relación definitiva de aspirantes que han superado las pruebas selectivas para ingreso en el Cuerpo de Agentes de la Administración de Justicia, convocadas por Orden de 19 de noviembre de 1998.</titulo>
+              <url_pdf szBytes="63994" szKBytes="62" pagina_inicial="21007" pagina_final="21013">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21007-21013.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11138</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11138</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <item>
+              <identificador>BOE-A-2000-11139</identificador>
+              <titulo>Resolución 452/38260/2000, de 2 de junio, de la Dirección General de Reclutamiento y Enseñanza Militar, por la que se hace pública la relación de seleccionados para prestar el servicio militar en la modalidad de Servicio para la Formación de Cuadros de Mando para la Reserva del Servicio Militar en la Armada.</titulo>
+              <url_pdf szBytes="33564" szKBytes="33" pagina_inicial="21014" pagina_final="21014">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21014-21014.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11139</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11139</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-A-2000-11140</identificador>
+              <titulo>Resolución 452/38261/2000, de 5 de junio, de la Dirección General de Reclutamiento y Enseñanza Militar, por la que se amplía el desarrollo del apartado 3.3 de la Resolución 452/38084/2000, por la que se convocan pruebas selectivas para el ingreso en los centros docentes militares de formación, acceso a la Escala Técnica de Oficiales del Cuerpo de Ingenieros de los Ejércitos.</titulo>
+              <url_pdf szBytes="34496" szKBytes="34" pagina_inicial="21015" pagina_final="21015">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21015-21015.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11140</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11140</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="4220" nombre="MINISTERIO DE EDUCACIÓN, CULTURA Y DEPORTE">
+            <item>
+              <identificador>BOE-A-2000-11143</identificador>
+              <titulo>Orden de 31 de mayo de 2000 por la que se modifica la de 6 de septiembre de 1999, por la que se publicó la relación de aspirantes seleccionados en el concurso-oposición para ingreso en el Cuerpo de Maestros, convocado por Orden de 26 de abril de 1999 y se nombró funcionarios en prácticas a los mismos, en lo referente a la puntuación asignada a las aspirantes seleccionadas que se indica.</titulo>
+              <url_pdf szBytes="40767" szKBytes="40" pagina_inicial="21016" pagina_final="21017">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21016-21017.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11143</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11143</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-A-2000-11144</identificador>
+              <titulo>Resolución de 29 de mayo de 2000, de la Secretaría de Estado de Cultura, por la que se convoca concurso específico (2/00) para la provisión de puestos de trabajo en esta Secretaría de Estado, correspondientes a los grupos A, B y C.</titulo>
+              <url_pdf szBytes="616646" szKBytes="602" pagina_inicial="21017" pagina_final="21033">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21017-21033.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11144</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11144</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="3" nombre="III. Otras disposiciones">
+          <departamento codigo="7110" nombre="MINISTERIO DE ASUNTOS EXTERIORES">
+            <item>
+              <identificador>BOE-A-2000-11175</identificador>
+              <titulo>Resolución de 18 de mayo de 2000, de la Secretaría de Estado para la Cooperación Internacional y para Iberoamérica, por la que se publica la relación de subvenciones concedidas según convocatoria de 16 de diciembre de 1999.</titulo>
+              <url_pdf szBytes="30627" szKBytes="30" pagina_inicial="21040" pagina_final="21040">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21040-21040.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11175</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11175</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="5140" nombre="MINISTERIO DE HACIENDA">
+            <item>
+              <identificador>BOE-A-2000-11176</identificador>
+              <titulo>Resolución de 12 de junio de 2000, de Loterías y Apuestas del Estado, por la que se hace público la combinación ganadora, el número complementario y el número del reintegro de los sorteos de la Lotería Primitiva celebrados los días 8 y 10 de junio de 2000 y se anuncia la fecha de celebración de los próximos sorteos.</titulo>
+              <url_pdf szBytes="30191" szKBytes="29" pagina_inicial="21041" pagina_final="21041">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21041-21041.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11176</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11176</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-A-2000-11177</identificador>
+              <titulo>Resolución de 24 de mayo de 2000, del Departamento de Recursos Humanos y Administración Económica de la Agencia Estatal de Administración Tributaria, por la que se emplaza a los interesados en el recurso contencioso-administrativo número 110/2000, interpuesto ante el Juzgado Central de lo Contencioso-Administrativo número 1 de Madrid.</titulo>
+              <url_pdf szBytes="30191" szKBytes="29" pagina_inicial="21041" pagina_final="21041">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21041-21041.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11177</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11177</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="4220" nombre="MINISTERIO DE EDUCACIÓN, CULTURA Y DEPORTE">
+            <item>
+              <identificador>BOE-A-2000-11178</identificador>
+              <titulo>Resolución de 25 de mayo de 2000, del Instituto Nacional de las Artes Escénicas y de la Música, por la que se desarrolla la Orden de 22 de junio de 1995, modificada por la Orden de 15 de julio de 1998, reguladora de los Premios Nacionales y la Orden de 2 de febrero de 2000, modificada por la Orden de 25 de abril de 2000, de convocatoria de dichos premios, para la concesión de los Premios Nacionales de Danza, correspondientes al año 2000.</titulo>
+              <url_pdf szBytes="30191" szKBytes="29" pagina_inicial="21041" pagina_final="21041">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21041-21041.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11178</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11178</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-A-2000-11179</identificador>
+              <titulo>Resolución de 25 de mayo de 2000, del Instituto Nacional de las Artes Escénicas y de la Música, por la que se desarrolla la Orden de 22 de junio de 1995, modificada por la Orden de 15 de julio de 1998, reguladora de los Premios Nacionales y la Orden de 2 de febrero de 2000, modificada por la Orden de 25 de abril de 2000, de convocatoria de dichos premios, para la concesión del Premio Nacional de Circo, correspondiente al año 2000.</titulo>
+              <url_pdf szBytes="28645" szKBytes="28" pagina_inicial="21042" pagina_final="21042">https://www.boe.es/boe/dias/2000/06/14/pdfs/A21042-21042.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2000-11179</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2000-11179</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="4" nombre="IV. Administración de Justicia">
+          <departamento codigo="9546" nombre="JUZGADOS DE PRIMERA INSTANCIA E INSTRUCCIÓN">
+            <item>
+              <identificador>BOE-B-2000-642000</identificador>
+              <titulo>AGUILAR DE LA FRONTERA</titulo>
+              <url_pdf szBytes="25547" szKBytes="25" pagina_inicial="7830" pagina_final="7830">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07830-07830.pdf</url_pdf>
+            </item>
+            <item>
+              <identificador>BOE-B-2000-642001</identificador>
+              <titulo>ARENYS DE MAR</titulo>
+              <url_pdf szBytes="36067" szKBytes="35" pagina_inicial="7830" pagina_final="7831">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07830-07831.pdf</url_pdf>
+            </item>
+          </departamento>
+          <departamento codigo="9545" nombre="REQUISITORIAS">
+            <item>
+              <identificador>BOE-B-2000-642089</identificador>
+              <titulo>Juzgados militares</titulo>
+              <url_pdf szBytes="31230" szKBytes="30" pagina_inicial="7862" pagina_final="7862">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07862-07862.pdf</url_pdf>
+            </item>
+            <item>
+              <identificador>BOE-B-2000-642090</identificador>
+              <titulo>Juzgados militares</titulo>
+              <url_pdf szBytes="31230" szKBytes="30" pagina_inicial="7862" pagina_final="7862">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07862-07862.pdf</url_pdf>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5A" nombre="V. Anuncios. - A. Subastas y concursos de obras y servicios">
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <item>
+              <identificador>BOE-B-2000-142000</identificador>
+              <titulo>Resolución de la Comandancia Central de Obras por la que se declara desierta la adjudicación de un contrato de obras.</titulo>
+              <url_pdf szBytes="25317" szKBytes="25" pagina_inicial="7863" pagina_final="7863">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07863-07863.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142000</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142000</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2000-142001</identificador>
+              <titulo>Resolución del Estado Mayor del Ejército por la que se hace pública la adjudicación del concurso que se cita.</titulo>
+              <url_pdf szBytes="25317" szKBytes="25" pagina_inicial="7863" pagina_final="7863">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07863-07863.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142001</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142001</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="5130" nombre="MINISTERIO DE ECONOMÍA Y HACIENDA">
+            <item>
+              <identificador>BOE-B-2000-142003</identificador>
+              <titulo>Resolución de la Junta de Contratación del Ministerio de Economía y Hacienda por la que se anuncia la adjudicación de la contratación de nuevos trabajos para la consolidación del sistema de calidad turística española.</titulo>
+              <url_pdf szBytes="30611" szKBytes="30" pagina_inicial="7863" pagina_final="7864">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07863-07864.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142003</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142003</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2000-142004</identificador>
+              <titulo>Resolución de la Agencia Estatal de Administración Tributaria por la que se anuncia la adjudicación del servicio que se cita.</titulo>
+              <url_pdf szBytes="23544" szKBytes="23" pagina_inicial="7864" pagina_final="7864">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07864-07864.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142004</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142004</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="5140" nombre="MINISTERIO DE HACIENDA">
+            <item>
+              <identificador>BOE-B-2000-142005</identificador>
+              <titulo>Resolución de la Agencia Estatal de Administración Tributaria por la que se anuncia la adjudicación del suministro que se cita.</titulo>
+              <url_pdf szBytes="23544" szKBytes="23" pagina_inicial="7864" pagina_final="7864">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07864-07864.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142005</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142005</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2000-142006</identificador>
+              <titulo>Resolución de la Agencia Estatal de Administración Tributaria por la que se anuncia la adjudicación de las obras que se citan.</titulo>
+              <url_pdf szBytes="23544" szKBytes="23" pagina_inicial="7864" pagina_final="7864">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07864-07864.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142006</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142006</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5B" nombre="V. Anuncios. - B. Otros anuncios oficiales">
+          <departamento codigo="3210" nombre="MINISTERIO DE FOMENTO">
+            <item>
+              <identificador>BOE-B-2000-142104</identificador>
+              <titulo>Anuncio de la Demarcación de Carreteras del Estado en Madrid sobre notificación de actos administrativos.</titulo>
+              <url_pdf szBytes="28529" szKBytes="28" pagina_inicial="7889" pagina_final="7889">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07889-07889.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142104</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142104</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="4430" nombre="MINISTERIO DE TRABAJO Y ASUNTOS SOCIALES">
+            <item>
+              <identificador>BOE-B-2000-142105</identificador>
+              <titulo>Anuncio de la Dirección General de Trabajo, Subdirección General de Programación y Actuación Administrativa, de depósito de la modificación de Estatutos de la organización patronal Asociación Española de Gerencia de Riesgos y Seguros (expediente 3.106).</titulo>
+              <url_pdf szBytes="28529" szKBytes="28" pagina_inicial="7889" pagina_final="7889">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07889-07889.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142105</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142105</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2000-142106</identificador>
+              <titulo>Anuncio del depósito del acta de modificación de la organización sindical Confederación de Sindicatos Independientes y Sindical de Funcionarios (expediente número 4.545).</titulo>
+              <url_pdf szBytes="28529" szKBytes="28" pagina_inicial="7889" pagina_final="7889">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07889-07889.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142106</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142106</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="4310" nombre="MINISTERIO DE SANIDAD Y CONSUMO">
+            <item>
+              <identificador>BOE-B-2000-142107</identificador>
+              <titulo>Resolución del Director provincial del Instituto Nacional de la Salud de Cuenca por la que se emplaza a los interesados en el procedimiento abreviado número 67/2000.</titulo>
+              <url_pdf szBytes="32360" szKBytes="32" pagina_inicial="7890" pagina_final="7890">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07890-07890.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142107</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142107</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5C" nombre="V. Anuncios. - C. Anuncios particulares">
+          <departamento codigo="9202" nombre="Anuncios particulares">
+            <item>
+              <identificador>BOE-B-2000-142117</identificador>
+              <titulo>BBVA GESTIÓN, S. A. Sociedad gestora de instituciones de inversión colectiva</titulo>
+              <url_pdf szBytes="28919" szKBytes="28" pagina_inicial="7893" pagina_final="7893">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07893-07893.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142117</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142117</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2000-142118</identificador>
+              <titulo>CINTURÓN VERDE DE OVIEDO, SOCIEDAD ANÓNIMA</titulo>
+              <url_pdf szBytes="28919" szKBytes="28" pagina_inicial="7893" pagina_final="7893">https://www.boe.es/boe/dias/2000/06/14/pdfs/B07893-07893.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2000-142118</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2000-142118</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+      </diario>
+    </sumario>
+  </data>
+</response>

@@ -7,10 +7,10 @@ or :mod:`boe_insights_mcp.articles` and turns client errors into messages the mo
 (``search_legislation``, ``resolve_reference``, ``get_law_overview``, ``find_codes``,
 ``get_amendment_history``, ``read_article``, ``compare_article_versions``,
 ``get_article_history``, ``get_law_structure``, and the trend tools ``legislation_over_time``,
-``top_departments``, ``compare_topics``, ``explain_spike`` and ``most_amended_laws``); ``main``
-runs it over stdio.
-Layering: tool functions here -> use cases in ``legislation``, ``articles`` and ``trends`` ->
-``client`` (and ``catalogue`` for the trend tools).
+``top_departments``, ``compare_topics``, ``explain_spike`` and ``most_amended_laws``, and the
+gazette tools ``get_daily_summary`` and ``scan_gazette``); ``main`` runs it over stdio.
+Layering: tool functions here -> use cases in ``legislation``, ``articles``, ``trends`` and
+``gazette`` -> ``client`` (and ``catalogue`` for the trend tools).
 This is also where the cache, rate limiter, client and catalogue store are created, in the
 lifespan. The tool
 docstrings, ``Field`` descriptions and ``_INSTRUCTIONS`` are sent to the language model, so they
@@ -31,7 +31,7 @@ from fastmcp.server.lifespan import lifespan
 from mcp.types import ToolAnnotations
 from pydantic import Field, ValidationError
 
-from boe_insights_mcp import articles, legislation, trends
+from boe_insights_mcp import articles, gazette, legislation, trends
 from boe_insights_mcp.analytics import Period
 from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
 from boe_insights_mcp.catalogue import CatalogueStore
@@ -51,6 +51,7 @@ from boe_insights_mcp.schemas import (
     ArticleHistoryResult,
     CompareArticleVersionsResult,
     CompareTopicsResult,
+    DailySummaryResult,
     ExplainSpikeResult,
     FindCodesResult,
     LawOverview,
@@ -59,6 +60,7 @@ from boe_insights_mcp.schemas import (
     MostAmendedLawsResult,
     ReadArticleResult,
     ResolveReferenceResult,
+    ScanGazetteResult,
     SearchLegislationResult,
     TopDepartmentsResult,
     TopicSpec,
@@ -83,7 +85,9 @@ _INSTRUCTIONS = (
     "explain_spike and most_amended_laws count laws from a downloaded copy of the collection "
     "(the first call can take about 30 seconds); most_amended_laws examines a limited number of "
     "laws per call, so repeat it while complete is false. The status of a law is derived from "
-    "BOE flags and amendment references, so treat it as an indication. When quoting results, "
+    "BOE flags and amendment references, so treat it as an indication. get_daily_summary and "
+    "scan_gazette read the daily BOE issues (everything published, since 1960), which the other "
+    "tools do not cover. When quoting results, "
     "pass on the attribution 'Basado en datos de la Agencia Estatal Boletín Oficial del "
     "Estado' (https://www.boe.es) and say that consolidated texts are informational and have "
     "no official legal value."
@@ -128,6 +132,9 @@ _INVALID_QUERY_ADVICE = {
     "compare_topics": "Simplify the text words or check the subject codes, then try again.",
     "explain_spike": "Simplify the text filter or check subject_code, then try again.",
     "most_amended_laws": "Simplify the text filter or check subject_code, then try again.",
+    # The gazette tools send the BOE nothing but a date, which the arguments already constrain.
+    "get_daily_summary": "Check the date, then try again.",
+    "scan_gazette": "Check the dates, then try again.",
 }
 
 
@@ -820,6 +827,95 @@ async def get_law_structure(
     )
 
 
+async def get_daily_summary(
+    ctx: Context,
+    date: Annotated[
+        date | None,
+        Field(description="Day to show, ISO format, e.g. 2020-03-14. Default: the latest issue."),
+    ] = None,
+    section: Annotated[
+        str | None, Field(description="Only this section code, e.g. '1', '2A', '3', '5B'.")
+    ] = None,
+    department_code: Annotated[
+        str | None,
+        Field(description="Only this department code. Look codes up with find_codes."),
+    ] = None,
+    words: Annotated[
+        str | None, Field(description="Words that must all appear in the title (exact forms).")
+    ] = None,
+    offset: Annotated[
+        int, Field(ge=0, description="Start position; pass next_offset from the previous page.")
+    ] = 0,
+    limit: Annotated[
+        int, Field(ge=1, le=gazette.MAX_LIMIT, description="Items per page.")
+    ] = gazette.DEFAULT_LIMIT,
+) -> DailySummaryResult:
+    """Everything the BOE published on one day: dispositions, appointments, grants and
+    announcements, by section and department. Covers the whole gazette since 1960-09-01, not just
+    consolidated laws. Without a date it gives the latest issue.
+    """
+    # The parameter is called ``date`` because that is the name the model sees; the use case
+    # calls it ``day`` so that it does not hide the ``date`` type.
+    return await _guard(
+        gazette.daily_summary(
+            _client(ctx),
+            day=date,
+            section=section,
+            department_code=department_code,
+            words=words,
+            offset=offset,
+            limit=limit,
+        ),
+        "get_daily_summary",
+    )
+
+
+async def scan_gazette(
+    ctx: Context,
+    words: Annotated[
+        str | None, Field(description="Words that must all appear in the title (exact forms).")
+    ] = None,
+    section: Annotated[
+        str | None, Field(description="Only this section code, e.g. '1', '2A', '3', '5B'.")
+    ] = None,
+    department_code: Annotated[
+        str | None,
+        Field(description="Only this department code. Look codes up with find_codes."),
+    ] = None,
+    from_date: Annotated[
+        date | None,
+        Field(description="First day, ISO format. Default: 6 days before to_date."),
+    ] = None,
+    to_date: Annotated[
+        date | None, Field(description="Last day, ISO format. Default: today.")
+    ] = None,
+    offset: Annotated[
+        int, Field(ge=0, description="Start position; pass next_offset from the previous page.")
+    ] = 0,
+    limit: Annotated[
+        int, Field(ge=1, le=gazette.MAX_LIMIT, description="Items per page.")
+    ] = gazette.DEFAULT_LIMIT,
+) -> ScanGazetteResult:
+    """Find items published in the BOE over a range of up to 31 days whose title has given words,
+    or that belong to a section or department. Matches titles only, exact word forms. When
+    complete is false, call again to continue.
+    """
+    return await _guard(
+        gazette.scan_gazette(
+            _client(ctx),
+            words=words,
+            section=section,
+            department_code=department_code,
+            from_date=from_date,
+            to_date=to_date,
+            offset=offset,
+            limit=limit,
+            progress=ctx.report_progress,
+        ),
+        "scan_gazette",
+    )
+
+
 # (function, display title). Registered by ``create_server``; every tool is read-only and
 # idempotent, and "open world" because it reads an external service.
 _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
@@ -837,6 +933,8 @@ _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (compare_topics, "Compare topics over time"),
     (explain_spike, "Explain a spike in legislation"),
     (most_amended_laws, "Find the most amended laws"),
+    (get_daily_summary, "Get a day's BOE summary"),
+    (scan_gazette, "Scan the BOE over several days"),
 )
 
 

@@ -113,3 +113,15 @@ Index files were re-serialised with `json.dumps(indent=4, ensure_ascii=False)` (
 | `analisis_asturias_ley8_2026.json` | `.../id/BOE-A-2026-23272/analisis` (`notas` holds `Publicada en el BOPA núm. 206, de 23 de octubre de 2026.`) | none (probe 3 body as saved) |
 | `metadatos_dogc_f_2017_90436.json` | `.../id/DOGC-f-2017-90436/metadatos` (regional-gazette id: `diario` is the regional gazette, no BOE reprint) | none (probe 3 body as saved) |
 | `analisis_dogc_f_2017_90436.json` | `.../id/DOGC-f-2017-90436/analisis` (no `notas`) | none (probe 3 body as saved) |
+| `sumario_boe_20200314_trimmed.xml` | `GET B/boe/sumario/20200314`, `Accept: application/xml` (two issues: 67 extraordinary, listed first, and 66 ordinary; section `1` appears once per issue) | issue 67 whole; in issue 66 whole `<departamento>`, `<epigrafe>` and `<item>` elements removed (about 30 of 419 items kept, 28 KB), every nesting variant kept |
+| `sumario_boe_20200610_trimmed.xml` | `.../sumario/20200610` (XML; has section `T`, Tribunal Constitucional, and `5C`) | whole departments, epigrafes and items removed (30 of 202 items kept, 28 KB) |
+| `sumario_boe_19600901_trimmed.xml` | `.../sumario/19600901` (XML; first available day, departments with `codigo=""` and `nombre=""`, section `5`) | whole departments, epigrafes and items removed (21 of 45 items kept, 17 KB) |
+| `sumario_boe_20000614_trimmed.xml` | `.../sumario/20000614` (XML; `BOE-B-` items without `url_html` and `url_xml`) | whole departments and items removed, items without `url_html` deliberately kept (33 of 289 items, 26 KB) |
+| `sumario_boe_19781229_constitution.xml` | `.../sumario/19781229` (XML; the one-item day of the Constitución) | none (1.3 KB as received) |
+| `sumario_boe_20261120_trimmed.xml` | `.../sumario/20261120` (XML; recent ordinary day, sections 1 to 5C, items directly under a department and under an epígrafe) | whole departments, epigrafes and items removed (31 of 282 items kept, 29 KB) |
+| `analisis_rdl8_2020_BOE-A-2020-3824.json` | `.../id/BOE-A-2020-3824/analisis` (Real Decreto-ley 8/2020: 10 `anteriores`, 34 `posteriores`; amends the laws in the next five fixtures) | none (probe 4 body as saved, 21.9 KB) |
+| `analisis_ley11_2002_BOE-A-2002-8628.json` | `.../id/BOE-A-2002-8628/analisis` (Ley 11/2002 CNI; `posteriores` holds the mirrored `270 SE MODIFICA` of RDL 8/2020) | none (probe 4 body as saved) |
+| `analisis_ley19_2003_BOE-A-2003-13471.json` | `.../id/BOE-A-2003-13471/analisis` (Ley 19/2003; mirrored `270` from RDL 8/2020, own `anteriores` with 210, 270, 407, 480, 330) | none (probe 4 body as saved) |
+| `analisis_ley14_2011_BOE-A-2011-9617.json` | `.../id/BOE-A-2011-9617/analisis` (Ley 14/2011; mirrored `235 SE SUPRIME` from RDL 8/2020) | none (probe 4 body as saved) |
+| `analisis_orden_2015_BOE-A-2015-2495.json` | `.../id/BOE-A-2015-2495/analisis` (mirrored `231 SE SUSPENDE` from RDL 8/2020 and from BOE-A-2020-4208) | none (probe 4 body as saved) |
+| `analisis_boja_b_2022_90314.json` | `.../id/BOJA-b-2022-90314/analisis` (regional id; `posteriores` is one object, code 301, to another regional id) | none (probe 4 body as saved) |

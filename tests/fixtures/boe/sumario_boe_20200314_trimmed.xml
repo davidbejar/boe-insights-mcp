@@ -1,0 +1,351 @@
+<?xml version='1.0' encoding='utf-8'?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <sumario>
+      <metadatos>
+        <publicacion>BOE</publicacion>
+        <fecha_publicacion>20200314</fecha_publicacion>
+      </metadatos>
+      <diario numero="67">
+        <sumario_diario>
+          <identificador>BOE-S-2020-67</identificador>
+          <url_pdf szBytes="162428" szKBytes="159">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-S-2020-67.pdf</url_pdf>
+        </sumario_diario>
+        <seccion codigo="1" nombre="I. Disposiciones generales">
+          <departamento codigo="9574" nombre="MINISTERIO DE LA PRESIDENCIA, RELACIONES CON LAS CORTES Y MEMORIA DEMOCRÁTICA">
+            <epigrafe nombre="Estado de alarma">
+              <item>
+                <identificador>BOE-A-2020-3692</identificador>
+                <control>2020/3762</control>
+                <titulo>Real Decreto 463/2020, de 14 de marzo, por el que se declara el estado de alarma para la gestión de la situación de crisis sanitaria ocasionada por el COVID-19.</titulo>
+                <url_pdf szBytes="302351" szKBytes="295" pagina_inicial="25390" pagina_final="25400">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3692.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3692</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3692</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+      </diario>
+      <diario numero="66">
+        <sumario_diario>
+          <identificador>BOE-S-2020-66</identificador>
+          <url_pdf szBytes="541910" szKBytes="529">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-S-2020-66.pdf</url_pdf>
+        </sumario_diario>
+        <seccion codigo="1" nombre="I. Disposiciones generales">
+          <departamento codigo="9562" nombre="MINISTERIO DE ASUNTOS EXTERIORES, UNIÓN EUROPEA Y COOPERACIÓN">
+            <epigrafe nombre="Tratados internacionales">
+              <item>
+                <identificador>BOE-A-2020-3636</identificador>
+                <control>2020/3452</control>
+                <titulo>Protocolo entre el Reino de España y la República de Albania relativo a la aplicación del Acuerdo entre la Comunidad Europea y la República de Albania sobre la readmisión de residentes ilegales, hecho en Tirana el 5 de abril de 2018.</titulo>
+                <url_pdf szBytes="260239" szKBytes="254" pagina_inicial="25152" pagina_final="25157">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3636.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3636</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3636</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="5140" nombre="MINISTERIO DE HACIENDA">
+            <epigrafe nombre="Tabaco. Precios">
+              <item>
+                <identificador>BOE-A-2020-3637</identificador>
+                <control>2020/3725</control>
+                <titulo>Resolución de 13 de marzo de 2020, de la Presidencia del Comisionado para el Mercado de Tabacos, por la que se publican los precios de venta al público de determinadas labores de tabaco en Expendedurías de Tabaco y Timbre del área del Monopolio.</titulo>
+                <url_pdf szBytes="260223" szKBytes="254" pagina_inicial="25158" pagina_final="25160">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3637.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3637</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3637</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="9574" nombre="MINISTERIO DE LA PRESIDENCIA, RELACIONES CON LAS CORTES Y MEMORIA DEMOCRÁTICA">
+            <epigrafe nombre="Organización">
+              <item>
+                <identificador>BOE-A-2020-3638</identificador>
+                <control>2020/3759</control>
+                <titulo>Orden PCM/218/2020, de 13 de marzo, por la que se publica el Acuerdo del Consejo de Seguridad Nacional por el que se crea y regula el Consejo Nacional de Seguridad Aeroespacial.</titulo>
+                <url_pdf szBytes="252756" szKBytes="247" pagina_inicial="25161" pagina_final="25166">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3638.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3638</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3638</url_xml>
+              </item>
+              <item>
+                <identificador>BOE-A-2020-3639</identificador>
+                <control>2020/3760</control>
+                <titulo>Orden PCM/219/2020, de 13 de marzo, por la que se publica el Acuerdo del Consejo de Seguridad Nacional, por el que se crea y regula el Comité Especializado contra el Terrorismo.</titulo>
+                <url_pdf szBytes="254303" szKBytes="248" pagina_inicial="25167" pagina_final="25171">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3639.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3639</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3639</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="2A" nombre="II. Autoridades y personal. - A. Nombramientos, situaciones e incidencias">
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <epigrafe nombre="Reingresos">
+              <item>
+                <identificador>BOE-A-2020-3640</identificador>
+                <control>2020/3540</control>
+                <titulo>Orden JUS/220/2020, de 4 de marzo, por la que se reingresa al servicio activo en la Carrera Fiscal a don Ignacio Rodríguez Fernández.</titulo>
+                <url_pdf szBytes="218675" szKBytes="214" pagina_inicial="25172" pagina_final="25172">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3640.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3640</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3640</url_xml>
+              </item>
+            </epigrafe>
+            <epigrafe nombre="Situaciones">
+              <item>
+                <identificador>BOE-A-2020-3641</identificador>
+                <control>2020/3541</control>
+                <titulo>Orden JUS/221/2020, de 4 de marzo, por la que se declara en situación de excedencia voluntaria en la Carrera Fiscal a doña Rebeca Rodríguez Suárez.</titulo>
+                <url_pdf szBytes="221191" szKBytes="216" pagina_inicial="25173" pagina_final="25173">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3641.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3641</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3641</url_xml>
+              </item>
+              <item>
+                <identificador>BOE-A-2020-3642</identificador>
+                <control>2020/3542</control>
+                <titulo>Orden JUS/222/2020, de 5 de marzo, por la que se declara en la situación administrativa de servicios especiales en la Carrera Fiscal a don Guillermo García-Panasco Morales.</titulo>
+                <url_pdf szBytes="219289" szKBytes="214" pagina_inicial="25174" pagina_final="25174">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3642.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3642</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3642</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="2B" nombre="II. Autoridades y personal. - B. Oposiciones y concursos">
+          <departamento codigo="1820" nombre="CONSEJO GENERAL DEL PODER JUDICIAL">
+            <epigrafe nombre="Carreras Judicial y Fiscal">
+              <item>
+                <identificador>BOE-A-2020-3644</identificador>
+                <control>2020/3678</control>
+                <titulo>Acuerdo de 12 de marzo de 2020, de la Comisión de Selección a la que se refiere el artículo 305 de la Ley Orgánica del Poder Judicial, por la que se adoptan una serie de medidas con motivo del COVID-19, en relación con el proceso selectivo convocado por Acuerdo de 5 de julio de 2019.</titulo>
+                <url_pdf szBytes="233414" szKBytes="228" pagina_inicial="25176" pagina_final="25178">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3644.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3644</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3644</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="9579" nombre="MINISTERIO DE INCLUSIÓN, SEGURIDAD SOCIAL Y MIGRACIONES">
+            <epigrafe nombre="Cuerpo Superior de Técnicos de la Administración de la Seguridad Social">
+              <item>
+                <identificador>BOE-A-2020-3645</identificador>
+                <control>2020/3555</control>
+                <titulo>Resolución de 6 de marzo de 2020, de la Subsecretaría, por la que se publica la relación definitiva de aprobados en la fase de oposición del proceso selectivo para ingreso, por el sistema general de acceso libre y promoción interna, en el Cuerpo Superior de Técnicos de la Administración de la Seguridad Social, convocado por Resolución de 21 de febrero de 2019.</titulo>
+                <url_pdf szBytes="303910" szKBytes="297" pagina_inicial="25179" pagina_final="25182">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3645.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3645</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3645</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="8090" nombre="COMUNIDAD AUTÓNOMA DE GALICIA">
+            <epigrafe nombre="Cuerpos de funcionarios docentes">
+              <item>
+                <identificador>BOE-A-2020-3646</identificador>
+                <control>2020/3481</control>
+                <titulo>Resolución de 24 de febrero de 2020, de la Dirección General de Centros y Recursos Humanos, de la Consejería de Educación, Universidad y Formación Profesional, por la que se publica la convocatoria de procedimientos selectivos de acceso al Cuerpo de Inspectores de Educación, al Cuerpo de Profesores de Enseñanza Secundaria, al Cuerpo de Profesores de Escuelas Oficiales de Idiomas y al Cuerpo de Profesores de Artes Plásticas y Diseño y de ingreso al Cuerpo de Profesores de Enseñanza Secundaria, al Cuerpo de Profesores de Escuelas Oficiales de Idiomas, al Cuerpo de Profesores de Música y Artes Escénicas, al Cuerpo de Profesores de Artes Plásticas y Diseño, al Cuerpo de Profesores Técnicos de Formación Profesional, al Cuerpo de Maestros y procedimiento de adquisición de nuevas especialidades por el personal funcionario de carrera de los Cuerpos de Profesores de Enseñanza Secundaria, Profesores de Escuelas Oficiales de Idiomas, Profesores de Música y Artes Escénicas, Profesores de Artes Plásticas y Diseño, Profesores Técnicos de Formación Profesional y Maestros.</titulo>
+                <url_pdf szBytes="441113" szKBytes="431" pagina_inicial="25183" pagina_final="25189">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3646.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3646</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3646</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="3" nombre="III. Otras disposiciones">
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <epigrafe nombre="Recursos">
+              <item>
+                <identificador>BOE-A-2020-3651</identificador>
+                <control>2020/3496</control>
+                <titulo>Resolución de 20 de diciembre de 2019, de la Dirección General de los Registros y del Notariado, en el recurso interpuesto contra la calificación de la registradora de la propiedad de Cullera, por la que se suspende la inscripción de una escritura de préstamo con garantía hipotecaria.</titulo>
+                <url_pdf szBytes="273680" szKBytes="267" pagina_inicial="25194" pagina_final="25203">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3651.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3651</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3651</url_xml>
+              </item>
+              <item>
+                <identificador>BOE-A-2020-3652</identificador>
+                <control>2020/3497</control>
+                <titulo>Resolución de 20 de diciembre de 2019, de la Dirección General de los Registros y del Notariado, en el recurso interpuesto contra la calificación del registrador de la propiedad de Madrid n.º 3, por la que se suspende la inscripción de una escritura de préstamo con garantía hipotecaria.</titulo>
+                <url_pdf szBytes="282492" szKBytes="276" pagina_inicial="25204" pagina_final="25215">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3652.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3652</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3652</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <epigrafe nombre="Recursos">
+              <item>
+                <identificador>BOE-A-2020-3659</identificador>
+                <control>2020/3442</control>
+                <titulo>Resolución 160/38056/2020, de 28 de febrero, de la Jefatura de Enseñanza de la Guardia Civil, por la que se emplaza a los interesados en el recurso contencioso-administrativo 2/000074/2020, interpuesto ante el Tribunal Superior de Justicia de la Comunidad Valenciana, Sala de lo Contencioso-Administrativo, Sección Segunda.</titulo>
+                <url_pdf szBytes="221117" szKBytes="216" pagina_inicial="25273" pagina_final="25273">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3659.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3659</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3659</url_xml>
+              </item>
+              <item>
+                <identificador>BOE-A-2020-3660</identificador>
+                <control>2020/3443</control>
+                <titulo>Resolución 160/38057/2020, de 28 de febrero, de la Jefatura de Enseñanza de la Guardia Civil, por la que se emplaza a los interesados en el recurso contencioso-administrativo 68/2020, interpuesto ante el Tribunal Superior de Justicia de la Comunidad Valenciana, Sala de lo Contencioso-Administrativo, Sección Segunda.</titulo>
+                <url_pdf szBytes="219167" szKBytes="214" pagina_inicial="25274" pagina_final="25274">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3660.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3660</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3660</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="5140" nombre="MINISTERIO DE HACIENDA">
+            <epigrafe nombre="Convenios">
+              <item>
+                <identificador>BOE-A-2020-3664</identificador>
+                <control>2020/3504</control>
+                <titulo>Resolución de 5 de marzo de 2020, de la Dirección General del Catastro, por la que se publica el Convenio con el Colegio Oficial de Aparejadores y Arquitectos Técnicos de Cádiz en materia de gestión catastral.</titulo>
+                <url_pdf szBytes="259540" szKBytes="253" pagina_inicial="25278" pagina_final="25284">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-A-2020-3664.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-3664</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-3664</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="4" nombre="IV. Administración de Justicia">
+          <departamento codigo="1430" nombre="TRIBUNAL SUPREMO">
+            <item>
+              <identificador>BOE-B-2020-11438</identificador>
+              <titulo>SALA DE LO CONTENCIOSO-ADMINISTRATIVO</titulo>
+              <url_pdf szBytes="164674" szKBytes="161" pagina_inicial="14973" pagina_final="14973">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11438.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11438</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11438</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="9551" nombre="AUDIENCIAS PROVINCIALES">
+            <item>
+              <identificador>BOE-B-2020-11439</identificador>
+              <titulo>ALMERIA</titulo>
+              <url_pdf szBytes="161018" szKBytes="157" pagina_inicial="14974" pagina_final="14974">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11439.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11439</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11439</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="9546" nombre="JUZGADOS DE PRIMERA INSTANCIA E INSTRUCCIÓN">
+            <item>
+              <identificador>BOE-B-2020-11440</identificador>
+              <titulo>ALBACETE</titulo>
+              <url_pdf szBytes="161635" szKBytes="158" pagina_inicial="14975" pagina_final="14975">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11440.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11440</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11440</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-11441</identificador>
+              <titulo>ALBACETE</titulo>
+              <url_pdf szBytes="161974" szKBytes="158" pagina_inicial="14976" pagina_final="14976">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11441.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11441</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11441</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5A" nombre="V. Anuncios. - A. Contratación del Sector Público">
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <item>
+              <identificador>BOE-B-2020-11718</identificador>
+              <titulo>Anuncio de licitación de: Jefatura de la Sección Económico Administrativa 22 - Base Aérea de Torrejón (Agrupación de Base). Objeto: Servicio de costura y adaptación de la uniformidad militar en las instalaciones del Centro Logístico de Intendencia. Expediente: 4220020004000.</titulo>
+              <url_pdf szBytes="194267" szKBytes="190" pagina_inicial="15253" pagina_final="15255">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11718.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11718</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11718</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-11719</identificador>
+              <titulo>Anuncio de formalización de contratos de: Subdirección General de Servicios Económicos y Pagadurías. Objeto: Servicio de Diseño, Producción, Transporte de Materiales, Montaje y Desmontaje de Stands y contratación de espacios en ferias o eventos en apoyo a las actividades de información y captación. Expediente: 2019/01010020/00000501.</titulo>
+              <url_pdf szBytes="179773" szKBytes="176" pagina_inicial="15256" pagina_final="15256">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11719.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11719</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11719</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="5140" nombre="MINISTERIO DE HACIENDA">
+            <item>
+              <identificador>BOE-B-2020-11723</identificador>
+              <titulo>Anuncio de formalización de contratos de: Dirección del Servicio de Gestión Económica de la Agencia Estatal de la Administración Tributaria. Objeto: Servicio de evaluación externa de los conocimientos de inglés del personal de la Agencia Estatal de Administración Tributaria. Expediente: 19810086700.</titulo>
+              <url_pdf szBytes="178671" szKBytes="174" pagina_inicial="15263" pagina_final="15263">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11723.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11723</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11723</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="7320" nombre="MINISTERIO DEL INTERIOR">
+            <item>
+              <identificador>BOE-B-2020-11724</identificador>
+              <titulo>Anuncio de formalización de contratos de: Dirección General de Tráfico. Objeto: Suministro de licencias de software de gestión de pruebas de aplicaciones. Expediente: 4DGT00000384.</titulo>
+              <url_pdf szBytes="182257" szKBytes="178" pagina_inicial="15264" pagina_final="15265">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11724.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11724</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11724</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-11725</identificador>
+              <titulo>Anuncio de formalización de contratos de: Dirección General de Tráfico. Objeto: Contratación de suministro de 1.000 terminales táctiles para la realización de exámenes teóricos en la Dirección General de Tráfico. Expediente: 4DGT00000334.</titulo>
+              <url_pdf szBytes="187408" szKBytes="183" pagina_inicial="15266" pagina_final="15267">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11725.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11725</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11725</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5B" nombre="V. Anuncios. - B. Otros anuncios oficiales">
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <item>
+              <identificador>BOE-B-2020-11740</identificador>
+              <titulo>Anuncio de la Subsecretaría (División de Derechos de Gracia y otros Derechos), sobre solicitud de sucesión en el título de Marqués de Cartellá de Sabastida.</titulo>
+              <url_pdf szBytes="167724" szKBytes="164" pagina_inicial="15298" pagina_final="15298">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11740.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11740</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11740</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-11741</identificador>
+              <titulo>Resolución de la Secretaría General para la Innovación y Calidad del Servicio Público de Justicia sobre la prescripción por abandono de depósitos y consignaciones judiciales.</titulo>
+              <url_pdf szBytes="451635" szKBytes="441" pagina_inicial="15299" pagina_final="15352">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11741.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11741</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11741</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <item>
+              <identificador>BOE-B-2020-11742</identificador>
+              <titulo>Resolución del Juzgado Marítimo Permanente núm. 6 de Ferrol, sobre Asistencia Marítima al buque pesquero de nacionalidad española denominado "Ovimar".</titulo>
+              <url_pdf szBytes="172478" szKBytes="168" pagina_inicial="15353" pagina_final="15353">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11742.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11742</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11742</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="5140" nombre="MINISTERIO DE HACIENDA">
+            <item>
+              <identificador>BOE-B-2020-11743</identificador>
+              <titulo>U.R. SUBASTAS CATALUÑA</titulo>
+              <url_pdf szBytes="162613" szKBytes="159" pagina_inicial="15354" pagina_final="15354">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11743.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11743</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11743</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-11744</identificador>
+              <titulo>U.R. SUBASTAS CATALUÑA</titulo>
+              <url_pdf szBytes="162745" szKBytes="159" pagina_inicial="15355" pagina_final="15355">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11744.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11744</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11744</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5C" nombre="V. Anuncios. - C. Anuncios particulares">
+          <departamento codigo="9202" nombre="ANUNCIOS PARTICULARES">
+            <item>
+              <identificador>BOE-B-2020-11792</identificador>
+              <titulo>NOTARÍA DE ANGEL ARREGUI LABORDA</titulo>
+              <url_pdf szBytes="160439" szKBytes="157" pagina_inicial="15403" pagina_final="15403">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11792.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11792</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11792</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-11793</identificador>
+              <titulo>NOTARÍA DE JORGE VICENTE FARRÉS REIG</titulo>
+              <url_pdf szBytes="161850" szKBytes="158" pagina_inicial="15404" pagina_final="15404">https://www.boe.es/boe/dias/2020/03/14/pdfs/BOE-B-2020-11793.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-11793</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-11793</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+      </diario>
+    </sumario>
+  </data>
+</response>

@@ -18,7 +18,7 @@ import statistics
 import unicodedata
 from bisect import bisect_right
 from collections import Counter
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Literal
@@ -50,6 +50,7 @@ __all__ = [
     "find_spikes",
     "highest_official_numbers",
     "series_by",
+    "title_matcher",
 ]
 
 Period = Literal["year", "quarter", "month"]
@@ -303,6 +304,20 @@ def _words(text: str) -> list[str]:
     if current:
         words.append(_fold("".join(current)))
     return words
+
+
+def title_matcher(words: str | None) -> Callable[[str], bool] | None:
+    """A predicate telling whether a title has all of ``words`` as whole words.
+
+    Matching is the one ``filter_laws`` applies to titles: ignoring case, accents (but not ``ñ``)
+    and punctuation, exact word forms. Returns ``None`` when ``words`` is ``None`` or holds no
+    word at all, which means "no constraint", so callers can tell an absent filter from one that
+    matches nothing.
+    """
+    wanted = set(_words(words)) if words is not None else set()
+    if not wanted:
+        return None
+    return lambda title: wanted <= set(_words(title))
 
 
 def filter_laws(

@@ -15,10 +15,12 @@ from boe_insights_mcp.schemas import (
     AmendmentHistoryResult,
     ArticleHistoryResult,
     CompareArticleVersionsResult,
+    DailySummaryResult,
     LawOverview,
     LawStructureResult,
     ReadArticleResult,
     ResolveReferenceResult,
+    ScanGazetteResult,
     SearchLegislationResult,
 )
 from boe_insights_mcp.server import create_server
@@ -247,3 +249,27 @@ async def test_live_overview_of_an_asturian_law_names_the_regional_gazette(
     overview = LawOverview.model_validate(result.structured_content)
     assert overview.first_published is not None
     assert (overview.first_published.gazette, overview.first_published.number) == ("BOPA", "206")
+
+
+async def test_live_daily_summary_of_the_day_of_the_state_of_alarm(mcp: Client[Any]) -> None:
+    # 2020-03-14 had two issues: the extraordinary one, with Real Decreto 463/2020 alone.
+    result = await mcp.call_tool(
+        "get_daily_summary", {"date": "2020-03-14", "words": "estado de alarma"}
+    )
+
+    page = DailySummaryResult.model_validate(result.structured_content)
+    assert page.published is True
+    assert [issue.identifier for issue in page.issues] == ["BOE-S-2020-67", "BOE-S-2020-66"]
+    assert "BOE-A-2020-3692" in [entry.identifier for entry in page.items]
+    assert page.total_items > 100
+
+
+async def test_live_scan_of_one_day_finds_the_same_decree(mcp: Client[Any]) -> None:
+    result = await mcp.call_tool(
+        "scan_gazette",
+        {"words": "estado de alarma", "from_date": "2020-03-14", "to_date": "2020-03-14"},
+    )
+
+    page = ScanGazetteResult.model_validate(result.structured_content)
+    assert (page.complete, page.days_scanned, page.days_with_issue) == (True, 1, 1)
+    assert "BOE-A-2020-3692" in [entry.identifier for entry in page.items]

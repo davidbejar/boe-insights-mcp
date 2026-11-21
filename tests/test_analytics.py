@@ -41,6 +41,7 @@ from boe_insights_mcp.analytics import (
     find_spikes,
     highest_official_numbers,
     series_by,
+    title_matcher,
 )
 from boe_insights_mcp.models import CodedValue, LawSummary
 
@@ -462,6 +463,23 @@ TITLE_CASES = [
 def test_filter_title_words(title: str, query: str, expected: bool) -> None:
     result = filter_laws([make_law(title=title)], title_words=query)
     assert (len(result) == 1) is expected
+
+
+@pytest.mark.parametrize(("title", "query", "expected"), TITLE_CASES)
+def test_title_matcher_agrees_with_the_law_filter(title: str, query: str, expected: bool) -> None:
+    matcher = title_matcher(query)
+
+    # A query without words is "no constraint", which the matcher reports as no matcher at all.
+    if not query.strip():
+        assert matcher is None
+    else:
+        assert matcher is not None
+        assert matcher(title) is expected
+
+
+@pytest.mark.parametrize("query", [None, "", "  ", "¿?, -"])
+def test_title_matcher_is_none_when_there_are_no_words(query: str | None) -> None:
+    assert title_matcher(query) is None
 
 
 def test_filter_blank_title_words_is_the_same_as_none(catalogue: list[LawSummary]) -> None:
