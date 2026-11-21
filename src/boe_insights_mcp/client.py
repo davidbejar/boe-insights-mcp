@@ -43,6 +43,7 @@ __all__ = [
     "AUXILIARY_TTL",
     "BASE_URL",
     "DEFAULT_USER_AGENT",
+    "LAW_ID",
     "METADATA_TTL",
     "SEARCH_TTL",
     "AuxiliaryTable",
@@ -74,7 +75,7 @@ _ACCEPT = "application/json"
 _MAX_RETRY_AFTER = 60.0
 _JITTER_FRACTION = 0.25
 _MAX_LIMIT = 1000
-_LAW_ID = re.compile(r"[A-Z]{2,6}-[A-Za-z]-[0-9]{4}-[0-9]{1,6}")
+LAW_ID = re.compile(r"[A-Z]{2,6}-[A-Za-z]-[0-9]{4}-[0-9]{1,6}")
 _RETRY_AFTER_SECONDS = re.compile(r"[0-9]+")
 _ERROR_TEXT = re.compile(r"<status>.*?<text>([^<]*)</text>", re.DOTALL)
 _SERVER_ERROR_CODE = re.compile(r"Code:\s*([0-9]+)")
@@ -187,7 +188,7 @@ def _retry_after(response: httpx.Response) -> float | None:
 
 def _checked_law_id(law_id: str) -> str:
     """Return ``law_id`` if it is well formed; this also keeps it from altering the URL path."""
-    if not _LAW_ID.fullmatch(law_id):
+    if not LAW_ID.fullmatch(law_id):
         raise ValueError(f"invalid law identifier: {law_id!r}")
     return law_id
 
