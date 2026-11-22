@@ -803,16 +803,11 @@ def _law_outcome(
         key = _reference_key(reference)
         if key not in search.seen:
             fresh.setdefault(key, reference)
-    reported = [
-        (key, reference)
-        for key, reference in fresh.items()
-        if relation_kind(reference.relation.code) in REPORTED_KINDS
-    ]
-    others = [
-        (key, reference)
-        for key, reference in fresh.items()
-        if relation_kind(reference.relation.code) not in REPORTED_KINDS
-    ]
+    reported: list[tuple[str, LawReference]] = []
+    others: list[tuple[str, LawReference]] = []
+    for key, reference in fresh.items():
+        kind = relation_kind(reference.relation.code)
+        (reported if kind in REPORTED_KINDS else others).append((key, reference))
     if reported and allowance == 0:
         # The call's total was used up by earlier searches: nothing is marked, nothing lost.
         return _Outcome(_law_check(search, "partial", note=_NOT_REACHED_NOTE, total=len(reported)))
