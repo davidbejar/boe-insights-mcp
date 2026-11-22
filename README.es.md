@@ -7,11 +7,11 @@
 
 Servidor [MCP](https://modelcontextprotocol.io) (Model Context Protocol) que ofrece a asistentes de IA como Claude herramientas analíticas sobre los datos abiertos del BOE (Boletín Oficial del Estado). En lugar de una herramienta por cada endpoint de la API, las herramientas se diseñan en torno a las preguntas que la gente se hace de verdad: "¿sigue vigente esta ley?", "¿qué ha cambiado en este artículo?", "¿cómo ha evolucionado la legislación sobre X?".
 
-**Estado:** desarrollo temprano. Hoy hay dieciocho herramientas disponibles (localizar una norma, buscar, consultar su situación de vigencia y buscar códigos; historial y cadenas de modificaciones; leer, comparar y consultar el historial de cada artículo; comprobar citas contra el texto; el índice de una norma; análisis de tendencias sobre toda la colección consolidada; y el diario oficial día a día); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). Todavía no está publicado en PyPI: se ejecuta desde el código fuente.
+**Estado:** desarrollo temprano. Hoy hay veintitrés herramientas disponibles (localizar una norma, buscar, consultar su situación de vigencia y buscar códigos; historial y cadenas de modificaciones; leer, comparar y consultar el historial de cada artículo; comprobar citas contra el texto; el índice de una norma; análisis de tendencias sobre toda la colección consolidada; el diario oficial día a día; y búsquedas guardadas), además de cinco [recursos](#recursos-y-prompts) y ocho prompts (cuatro, cada uno en español y en inglés); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). Todavía no está publicado en PyPI: se ejecuta desde el código fuente.
 
 ## Qué puedes preguntar
 
-Ocho ejemplos prácticos, cada uno a partir de una ejecución real del servidor (los ejemplos 1 a 4 el 2026-11-21 y los ejemplos 5 a 8 el 2026-11-22). Primero la pregunta, después las llamadas a las herramientas en orden y un extracto del resultado (los títulos largos se acortan con "…").
+Nueve ejemplos prácticos, cada uno a partir de una ejecución real del servidor (los ejemplos 1 a 4 el 2026-11-21 y los ejemplos 5 a 9 el 2026-11-22). Primero la pregunta, después las llamadas a las herramientas en orden y un extracto del resultado (los títulos largos se acortan con "…").
 
 ### 1. Leer una norma conocida
 
@@ -168,6 +168,25 @@ scan_gazette(words="vivienda")      -> rango por defecto: los últimos 7 días, 
 - 2026-11-19, `BOE-B-2026-38005`: "Anuncio del concurso de proyectos de: Secretaría General de Agenda Urbana, Vivienda y Arquitectura. …"
 - 2026-11-20, `BOE-B-2026-38218`: "Resolución del Departamento de Territorio, Vivienda y Transición Ecológica TER/4133/2026, por la que se otorga …"
 
+### 9. Seguir un tema
+
+*"Sígueme lo que salga sobre vivienda en el BOE y dime qué hay de nuevo."* y después *"Avísame también si cambia la Ley 40/2015."* (véase [Cómo funcionan las búsquedas guardadas](#cómo-funcionan-las-búsquedas-guardadas))
+
+```text
+save_search(words="vivienda")                                -> guardada como "vivienda"
+list_saved_searches()
+check_saved_searches(since="2026-11-15", limit=3)
+save_search(law_id="BOE-A-2015-10566")                       -> guardada como "ley-40-2015"
+check_saved_searches(name="ley-40-2015")
+```
+
+Ejecutado un domingo, 2026-11-22, con el almacén vacío. Guardar una búsqueda del diario no hace ninguna petición: solo anota "revisada hasta hoy" (`checked_through` 2026-11-22), y la nota dice "The first check reports issues dated after 2026-11-22". Una búsqueda guardada hoy todavía no tiene novedades, así que la comprobación de abajo pasa `since` siete días atrás (2026-11-15) para leer la última semana. `since` vuelve a leer sin marcar nada como visto, de modo que el marcador no se movió (`last_checked_at` sigue en `null`).
+
+- `list_saved_searches` devuelve una búsqueda: `name` "vivienda", `kind` `gazette`, `words` "vivienda", `total` 1 con un `limit` de 20.
+- La comprobación leyó del 2026-11-15 al 2026-11-21 (`days_pending` 0; el día 22 aún no tenía número, y el resultado lo indica) y encontró 11 coincidencias (`matched`), las mismas que el `scan_gazette` del ejemplo 8, que abarcaba un día más tarde. Con `limit=3` muestra 3 (`has_more` true) y dice "Showing 3 of 11; scan_gazette with the same filters from 2026-11-15 to 2026-11-21 lists them all." La más reciente, del 2026-11-21, `BOE-A-2026-24487`: "Resolución de 10 de noviembre de 2026, de la Dirección General de Vivienda y Suelo, por la que se publica el Convenio con la Comunidad Autónoma de Castilla-La Mancha, …"
+- Guardar una búsqueda de norma lee la norma una vez y recuerda las modificaciones que ya tiene, para que no cuenten como novedad. El nombre se propuso a partir del rango y el número: `ley-40-2015` (`name_was_proposed` true, `total` 2).
+- Su comprobación es el honesto "nada nuevo": `status` `checked`, `changes` vacío, `changes_total` 0, `other_new` 0. La misma comprobación con `since="2026-08-25"` tampoco devuelve nada, con la nota "For a law, since works by the year of the amending norm."
+
 ### Conviene saber
 
 - **Los filtros de título coinciden con palabras completas y la formulación importa.** Las herramientas de tendencias y del diario oficial aceptan singular y plural ("vivienda" encuentra también "viviendas"); la búsqueda del propio BOE (los filtros `title` y `text` de `search_legislation`) coincide con palabras exactas. En un título, "fumar" no encuentra nada desde 2020, mientras que "tabaco" encuentra 8 (verificado el 2026-11-21). Un filtro de texto o de materia que coincida con más de 5.000 normas se rechaza por demasiado amplio.
@@ -176,6 +195,7 @@ scan_gazette(words="vivienda")      -> rango por defecto: los últimos 7 días, 
 - **La cobertura es la colección de legislación consolidada del BOE**, no todo lo publicado en el BOE, y contiene solo una parte de las normas de cada año, una parte variable (más escasa antes de 2010 aproximadamente y en el último año o dos). Un cambio en un recuento no es por sí mismo un cambio en cuánto se legisló. Al contar un rango (Ley con `scope="state"`, Ley Orgánica, Real Decreto-ley o Real Decreto Legislativo) por años, `legislation_over_time` añade `highest_number` para que puedas valorar la cobertura. Los recuentos lo indican en sus `caveats`.
 - **La cobertura autonómica son leyes y decretos-leyes con rango de ley**, no decretos ni órdenes autonómicos, que están en el diario oficial de cada comunidad.
 - **Las leyes autonómicas se fechan por su reproducción en el BOE** (que puede llegar semanas o años después de la publicación autonómica), salvo que pases `date_basis="enacted"`; con `enacted` los últimos tres meses están incompletos, porque las normas se publican semanas después de aprobarse.
+- **Las búsquedas guardadas no avisan a nadie.** El servidor solo responde cuando se le pregunta y no puede enviar mensajes ni ejecutarse por su cuenta. Consulta [Cómo funcionan las búsquedas guardadas](#cómo-funcionan-las-búsquedas-guardadas) para saber qué cubre una comprobación y dónde se guardan los datos.
 - **Los textos consolidados son informativos y carecen de valor jurídico oficial.** Consulta el [aviso legal](#fuente-de-los-datos-atribución-y-aviso-legal).
 
 ## Herramientas
@@ -215,7 +235,7 @@ Estas dos herramientas cubren todo lo que imprime el BOE (nombramientos, subvenc
 | `get_daily_summary` | ¿Qué publicó el BOE este día? | `date` (por defecto, el último número), `section`, `department_code`, `words`, `offset`, `limit` (1-100) |
 | `scan_gazette` | ¿Qué elementos de los últimos días tienen estas palabras en el título? | `words`, `section`, `department_code`, `from_date` (por defecto, 6 días antes de `to_date`), `to_date` (por defecto, hoy), `offset`, `limit` (1-100); como máximo 31 días |
 
-Las dieciocho herramientas son de solo lectura. `resolve_reference` devuelve `resolved`, `ambiguous` (con candidatas y una pista) o `not_found`. `search_legislation` pagina con `next_offset`, porque la API no ofrece el número total de resultados. `find_codes` devuelve los pares `{code, text}` que coinciden.
+Las dieciocho primeras herramientas son de solo lectura; las cinco [herramientas de búsquedas guardadas](#cómo-funcionan-las-búsquedas-guardadas) son las únicas que cambian algo, y solo en el almacén del propio servidor, nunca en el BOE. `resolve_reference` devuelve `resolved`, `ambiguous` (con candidatas y una pista) o `not_found`. `search_legislation` pagina con `next_offset`, porque la API no ofrece el número total de resultados. `find_codes` devuelve los pares `{code, text}` que coinciden.
 
 **Situación de vigencia de la norma.** `get_law_overview` devuelve un `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` o `not_yet_in_force`) con una nota explicativa, la nota inicial del BOE si el texto la tiene, y recuentos y muestras de las normas que modifican la norma consultada o que esta modifica. El `status` se deriva de los indicadores del BOE y de las referencias de modificación, por lo que es una indicación, no una determinación jurídica. La derogación total también se detecta a partir de la nota inicial del texto consolidado ("Norma derogada..."), porque algunas normas derogadas por completo solo llevan esa nota y no el indicador de los metadatos.
 
@@ -295,6 +315,82 @@ Cada resultado incluye un bloque `provenance`. Salida abreviada de `compare_arti
 }
 ```
 
+### Búsquedas guardadas
+
+| Herramienta | Pregunta a la que responde | Parámetros principales |
+|---|---|---|
+| `save_search` | Seguir este tema o esta norma. | `name` (opcional), `words`, `section`, `department_code` (búsqueda del diario) o `law_id` (búsqueda de una norma) |
+| `list_saved_searches` | ¿Qué temas sigo y cuándo se revisó cada uno por última vez? | ninguno |
+| `check_saved_searches` | ¿Hay algo nuevo en lo que sigo? | `name` (por defecto, todas), `since` (hasta 90 días atrás), `limit` (1-50, por defecto 20) |
+| `edit_saved_search` | Cambiar el nombre de una búsqueda guardada o los filtros de una búsqueda del diario. | `name`, `new_name`, `words`, `section`, `department_code` (una cadena vacía quita el filtro) |
+| `delete_saved_search` | Dejar de seguir esto. | `name` |
+
+## Cómo funcionan las búsquedas guardadas
+
+Una búsqueda guardada es una búsqueda almacenada en tu equipo más un marcador de hasta dónde se revisó por última vez. Sirve para preguntar, una semana después, "¿hay algo nuevo?" sin repetir los filtros y sin ver dos veces lo mismo.
+
+**El servidor no puede avisar a nadie.** Solo funciona mientras tu aplicación lo está usando y no tiene manera de enviar un mensaje. No ocurre nada hasta que preguntas ("¿hay algo nuevo?"); entonces el asistente llama a `check_saved_searches`. Una búsqueda que nunca revisas simplemente espera.
+
+**Dos tipos de búsqueda.**
+
+| Tipo | Tú indicas | Una comprobación informa de |
+|---|---|---|
+| Diario | `words` (palabras completas del título; el singular y el plural coinciden), `section`, `department_code`: al menos uno | Los elementos del diario publicados desde la última comprobación que cumplen los filtros, del día más reciente al más antiguo. |
+| Norma | el `law_id` de una norma consolidada (usa `resolve_reference` para encontrarlo) | Nuevas modificaciones, adiciones, suspensiones, derogaciones y correcciones de esa norma, con la redacción del propio BOE. Las resoluciones judiciales y las citas que mencionan la norma solo se cuentan (`other_new`), no se listan. |
+
+Guardar una búsqueda del diario no hace ninguna petición al BOE y solo anota hoy como punto de partida. Guardar una búsqueda de norma lee la norma una vez y recuerda las modificaciones que ya tiene, de modo que solo las posteriores cuentan como novedad. Una búsqueda de norma no puede cambiar de norma: para seguir otra, guarda una búsqueda nueva.
+
+**Nombres.** Puedes dar uno (`name`) o dejar que el servidor lo proponga a partir de los filtros, como `vivienda`, `seccion-1` o `ley-40-2015`. El nombre se guarda en minúsculas, con letras, cifras y guiones, de hasta 60 caracteres, así que "Ley 40/2015" pasa a ser `ley-40-2015`; si ya existe, se añade `-2`, `-3` y así sucesivamente. `edit_saved_search` cambia el nombre y, en una búsqueda del diario, también sus filtros, conservando el marcador.
+
+**Qué cubre una comprobación.** La de una búsqueda del diario lee los días desde la última comprobación hasta hoy, como máximo los últimos 31 días; si se han quedado más días sin revisar, lo dice e indica cuántos se dejaron fuera. Pasa `since` para volver a leer desde una fecha anterior, hasta 90 días atrás: no se marca nada como visto, así que sirve para mirar atrás o para probar una búsqueda guardada hoy que todavía no tiene novedades. En una búsqueda de norma, `since` funciona por el año de la norma modificadora, porque las referencias del BOE no llevan fecha. Una comprobación tiene un presupuesto de unos 40 segundos: si `complete` es false, vuelve a pedirla y continúa donde se quedó. Puede que el número de hoy aún no haya salido (la mayoría de los domingos no hay ninguno); la siguiente comprobación lo vuelve a pedir.
+
+**Límite.** 20 búsquedas guardadas. Guardar la 21.ª falla con un mensaje que pide borrar una antes.
+
+**Dónde se guardan los datos.** En un pequeño archivo SQLite, `saved_searches.sqlite3`, dentro del directorio de datos de tu usuario (en macOS `~/Library/Application Support/boe-insights-mcp/`, en Linux `~/.local/share/boe-insights-mcp/`). El archivo es privado para tu usuario, se queda en tu equipo y no se envía a ninguna parte; una comprobación solo envía las peticiones al BOE que necesita. Para llevarte tus búsquedas a otro equipo, copia el archivo a la misma ubicación allí, o define `BOE_INSIGHTS_DATA_DIR` ([Configuración](#configuración)). Para borrarlo todo, borra el archivo. Es independiente de la caché de respuestas, que se puede borrar en cualquier momento: vaciar la caché nunca hace perder una búsqueda guardada. Con `BOE_INSIGHTS_CACHE=memory` y sin `BOE_INSIGHTS_DATA_DIR`, las búsquedas solo se guardan en memoria y se pierden al detener el servidor.
+
+**Son las únicas herramientas que cambian algo**, y solo en ese archivo. `edit_saved_search` y `delete_saved_search` están marcadas como destructivas, así que algunas aplicaciones piden confirmación antes de ejecutarlas; una búsqueda borrada no se puede recuperar. `check_saved_searches` también cambia algo (mueve el marcador), salvo que pases `since`.
+
+Frases habituales y qué ocurre:
+
+| Tú dices | Qué ocurre |
+|---|---|
+| "Sígueme las ayudas a la vivienda en el BOE" | `save_search` con `words`, y se te comunica el nombre elegido. |
+| "¿Qué temas estamos siguiendo?" | `list_saved_searches`. |
+| "¿Hay algo nuevo?" | `check_saved_searches` para todas. |
+| "¿Hay algo nuevo sobre vivienda?" | `check_saved_searches` con ese `name`. |
+| "¿Qué encontró la búsqueda de vivienda en el último mes?" | `check_saved_searches` con `since`, sin marcar nada como visto. |
+| "Avísame también si cambia la Ley 40/2015" | `resolve_reference` y después `save_search` con su `law_id`. |
+| "Cambia el nombre de la búsqueda de vivienda a ayudas" | `edit_saved_search` con `new_name`. |
+| "A partir de ahora, solo la sección 3" | `edit_saved_search` con `section`. |
+| "Deja de seguir lo de vivienda" | `delete_saved_search`. |
+
+## Recursos y prompts
+
+Ambos son extras opcionales que reflejan las herramientas: no ofrecen nada que estas no puedan hacer. La compatibilidad depende de la aplicación, y muchas permiten a la persona elegir un recurso o un prompt pero no dejan que el modelo abra uno por sí mismo.
+
+**Los recursos** son elementos que una persona adjunta a la conversación; cada uno devuelve exactamente lo que devuelve la herramienta equivalente (en JSON, con la atribución y el aviso informativo).
+
+| URI | Qué devuelve | Equivale a |
+|---|---|---|
+| `boe://law/{law_id}` | Resumen de una norma: vigencia, fechas, departamento, recuento de modificaciones. | `get_law_overview` |
+| `boe://law/{law_id}/article/{block_id}` | Texto vigente de un artículo, por su `block_id`. | `read_article` |
+| `boe://gazette/{day}` | Lo que publicó el BOE un día (`AAAA-MM-DD`), con hasta 100 elementos. | `get_daily_summary` |
+| `boe://codes/{kind}` | La tabla completa de departamentos (`department`) o de rangos (`rank`). La de materias es demasiado grande; usa `find_codes`. | `find_codes` |
+| `boe://saved-searches` | Tus búsquedas guardadas y cuándo se revisó cada una. | `list_saved_searches` |
+
+En Claude Code se adjunta un recurso escribiendo `@` y eligiéndolo, por ejemplo `@boe-insights:boe://law/BOE-A-2015-10566`.
+
+**Los prompts** son peticiones ya preparadas que indican al asistente qué herramientas llamar y cómo presentar el resultado. Cada uno existe en español y en inglés, con los mismos pasos; los argumentos se llaman en el idioma del prompt.
+
+| Español | English | Argumentos | Qué pide |
+|---|---|---|---|
+| `explicar_ley` | `explain_law` | `ley` / `law` | Qué regula una norma, su estado, su estructura y cuántas veces se ha modificado. |
+| `cambios_articulo` | `article_changes` | `ley`, `articulo`, `desde` (opcional) / `law`, `article`, `since` (optional) | Cómo ha cambiado un artículo y qué normas lo modificaron. |
+| `comprobar_citas` | `check_citations` | `texto` / `text` | Comprobar las citas de leyes de un texto con los textos consolidados. |
+| `resumen_boe` | `gazette_briefing` | `tema`, `dias` (1-31, por defecto 7) / `topic`, `days` | Qué publicó el BOE sobre un tema en los últimos días. |
+
+En Claude Code los prompts aparecen como comandos con barra, por ejemplo `/mcp__boe-insights__explicar_ley`.
+
 ## Inicio rápido
 
 Requisitos previos: Python 3.11 o superior y [uv](https://docs.astral.sh/uv/). No hace falta clave de API: la API de datos abiertos del BOE es pública.
@@ -357,6 +453,7 @@ Variables de entorno opcionales. Las variables sin definir o vacías conservan s
 |---|---|---|
 | `BOE_INSIGHTS_CACHE` | `disk` | Tipo de caché: `disk` (persistente) o `memory` (solo durante el proceso). |
 | `BOE_INSIGHTS_CACHE_DIR` | directorio de caché de la plataforma | Dónde se guarda la caché en disco. |
+| `BOE_INSIGHTS_DATA_DIR` | directorio de datos de usuario de la plataforma | Dónde se guardan las búsquedas guardadas (`saved_searches.sqlite3`). Es independiente de la caché a propósito: la caché se puede borrar, tus búsquedas guardadas no deberían perderse. |
 | `BOE_INSIGHTS_MIN_INTERVAL` | `1.0` | Segundos mínimos entre peticiones a boe.es (número >= 0). |
 | `BOE_INSIGHTS_MAX_CONCURRENCY` | `2` | Máximo de peticiones simultáneas a boe.es (entero >= 1). |
 
@@ -407,7 +504,7 @@ Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](
 - [x] 2. Lectura de artículos e historial de versiones: leer un artículo a una fecha dada, comparar versiones de un artículo, cronología de cambios, historial de modificaciones
 - [x] 3. Análisis de tendencias: legislación a lo largo del tiempo, departamentos con más normas, comparar temas, explicar un pico, normas más modificadas, y el índice de una norma
 - [x] 4. Verificación de citas, explorador de la cadena de modificaciones, rastreo del diario oficial
-- [ ] 5. Recursos y prompts MCP y listas de seguimiento guardadas
+- [x] 5. Recursos y prompts MCP y búsquedas guardadas
 - [ ] 6. Modo remoto: Streamable HTTP, OAuth con GitHub, contenedor Podman
 - [ ] 7. Batería de evaluación, sitio de documentación y publicación en PyPI
 

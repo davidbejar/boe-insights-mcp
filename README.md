@@ -7,11 +7,11 @@
 
 An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that gives AI assistants such as Claude analytical tools over the open data of Spain's BOE (Boletín Oficial del Estado). Instead of one tool per API endpoint, the tools are shaped around the questions people actually ask: "is this law still in force?", "what changed in this article?", "how has legislation on X evolved?".
 
-**Status:** early development. Eighteen tools are available today (law lookup, search, status overview and code lookup; amendment history and amendment chains; reading, comparing and tracing the history of single articles; checking citations against the text; a law's table of contents; trend analytics over the whole consolidated collection; and the BOE's daily gazette); everything else is on the [roadmap](#roadmap). Not yet published on PyPI: run it from source.
+**Status:** early development. Twenty-three tools are available today (law lookup, search, status overview and code lookup; amendment history and amendment chains; reading, comparing and tracing the history of single articles; checking citations against the text; a law's table of contents; trend analytics over the whole consolidated collection; the BOE's daily gazette; and saved searches), plus five [resources](#resources-and-prompts) and eight prompts (four, each in English and Spanish); everything else is on the [roadmap](#roadmap). Not yet published on PyPI: run it from source.
 
 ## What you can ask
 
-Eight worked examples, each from a real run of the server (examples 1 to 4 on 2026-11-21, examples 5 to 8 on 2026-11-22). The question comes first, then the tool calls in order and an extract of the result (long titles shortened with "…").
+Nine worked examples, each from a real run of the server (examples 1 to 4 on 2026-11-21, examples 5 to 9 on 2026-11-22). The question comes first, then the tool calls in order and an extract of the result (long titles shortened with "…").
 
 ### 1. Read a well-known law
 
@@ -168,6 +168,25 @@ scan_gazette(words="vivienda")      -> default range: the last 7 days, 2026-11-1
 - 2026-11-19, `BOE-B-2026-38005`: "Anuncio del concurso de proyectos de: Secretaría General de Agenda Urbana, Vivienda y Arquitectura. …"
 - 2026-11-20, `BOE-B-2026-38218`: "Resolución del Departamento de Territorio, Vivienda y Transición Ecológica TER/4133/2026, por la que se otorga …"
 
+### 9. Following a topic
+
+*"Follow housing in the BOE for me, and tell me what is new."* then *"Also tell me if Ley 40/2015 changes."* (see [How saved searches work](#how-saved-searches-work))
+
+```text
+save_search(words="vivienda")                                -> saved as "vivienda"
+list_saved_searches()
+check_saved_searches(since="2026-11-15", limit=3)
+save_search(law_id="BOE-A-2015-10566")                       -> saved as "ley-40-2015"
+check_saved_searches(name="ley-40-2015")
+```
+
+Run on a Sunday, 2026-11-22, with an empty store. Saving a gazette search makes no request: it only records "checked through today" (`checked_through` 2026-11-22), and the note says "The first check reports issues dated after 2026-11-22". A search saved today has nothing new yet, so the check below passes `since` seven days back (2026-11-15) to read the past week. `since` reads again without marking anything as seen, so the bookmark did not move (`last_checked_at` stays `null`).
+
+- `list_saved_searches` returns one search: `name` "vivienda", `kind` `gazette`, `words` "vivienda", `total` 1 of a `limit` of 20.
+- The check read 2026-11-15 to 2026-11-21 (`days_pending` 0; the 22nd had no issue yet, which the result notes) and found 11 matches (`matched`), the same count as the `scan_gazette` run in example 8, which covered one day later. With `limit=3` it shows 3 (`has_more` true) and says "Showing 3 of 11; scan_gazette with the same filters from 2026-11-15 to 2026-11-21 lists them all." The newest, 2026-11-21, `BOE-A-2026-24487`: "Resolución de 10 de noviembre de 2026, de la Dirección General de Vivienda y Suelo, por la que se publica el Convenio con la Comunidad Autónoma de Castilla-La Mancha, …"
+- Saving a law search reads the law once and remembers the amendments it already has, so they do not count as news. The name was proposed from the law's rank and number: `ley-40-2015` (`name_was_proposed` true, `total` 2).
+- Its check is the honest "nothing new": `status` `checked`, `changes` empty, `changes_total` 0, `other_new` 0. The same check with `since="2026-08-25"` also returns nothing, with the note "For a law, since works by the year of the amending norm."
+
 ### Good to know
 
 - **Title filters match whole words, and wording matters.** The trend tools and the gazette tools match singular and plural forms ("vivienda" also finds "viviendas"); the BOE's own search (the `title` and `text` filters of `search_legislation`) matches exact words. In a title, "fumar" finds nothing since 2020, while "tabaco" finds 8 (verified on 2026-11-21). A text or subject filter that matches more than 5,000 laws is refused as too broad.
@@ -176,6 +195,7 @@ scan_gazette(words="vivienda")      -> default range: the last 7 days, 2026-11-1
 - **Coverage is the BOE's consolidated legislation collection**, not every item printed in the BOE, and it holds only part of each year's laws, a varying part (thinner before about 2010 and for the most recent year or two). A change in a count is not by itself a change in how much was legislated. Counting one rank (Ley with `scope="state"`, Ley Orgánica, Real Decreto-ley or Real Decreto Legislativo) by year, `legislation_over_time` adds `highest_number` so you can judge the coverage. Counts say so in their `caveats`.
 - **Regional coverage is laws and decree-laws with the rank of law**, not regional decrees or orders, which live in each community's own gazette.
 - **Regional laws are dated by their BOE reprint** (which can come weeks or years after the regional publication) unless you pass `date_basis="enacted"`; under `enacted` the last three months are incomplete, because laws are published weeks after being enacted.
+- **Saved searches do not alert anyone.** The server only answers when asked, and it cannot send a message or run on a timer. See [How saved searches work](#how-saved-searches-work) for what a check covers and where the data lives.
 - **Consolidated texts are informational and have no official legal value.** See the [legal notice](#data-source-attribution-and-legal-notice).
 
 ## Tools
@@ -215,7 +235,7 @@ These two tools cover everything the BOE prints (appointments, grants, announcem
 | `get_daily_summary` | What did the BOE publish on this day? | `date` (default: the latest issue), `section`, `department_code`, `words`, `offset`, `limit` (1-100) |
 | `scan_gazette` | Which items in the last days have these words in the title? | `words`, `section`, `department_code`, `from_date` (default: 6 days before `to_date`), `to_date` (default: today), `offset`, `limit` (1-100); at most 31 days |
 
-All eighteen tools are read-only. `resolve_reference` returns `resolved`, `ambiguous` (with candidates and a hint) or `not_found`. `search_legislation` pages with `next_offset`, because the API gives no total count. `find_codes` returns the matching `{code, text}` pairs.
+The first eighteen tools are read-only; the five [saved-search tools](#how-saved-searches-work) are the only ones that change anything, and only in the server's own store, never at the BOE. `resolve_reference` returns `resolved`, `ambiguous` (with candidates and a hint) or `not_found`. `search_legislation` pages with `next_offset`, because the API gives no total count. `find_codes` returns the matching `{code, text}` pairs.
 
 **Law status.** `get_law_overview` returns a `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` or `not_yet_in_force`) with a plain-English note, the BOE's initial note when the text has one, and counts and samples of the norms that amend the law or that it amends. The status is derived from the BOE flags and the amendment references, so it is an indication, not a legal determination. A whole repeal is also detected from the opening note of the consolidated text ("Norma derogada..."), because some wholly repealed laws carry only that note and not the metadata flag.
 
@@ -295,6 +315,82 @@ Every result carries a `provenance` block. Trimmed output of `compare_article_ve
 }
 ```
 
+### Saved searches
+
+| Tool | Question it answers | Key parameters |
+|---|---|---|
+| `save_search` | Keep following this topic or this law. | `name` (optional), `words`, `section`, `department_code` (gazette search) or `law_id` (law search) |
+| `list_saved_searches` | Which topics am I following, and when were they last checked? | none |
+| `check_saved_searches` | Is there anything new in what I follow? | `name` (default: all), `since` (up to 90 days back), `limit` (1-50, default 20) |
+| `edit_saved_search` | Rename a saved search or change its gazette filters. | `name`, `new_name`, `words`, `section`, `department_code` (empty string removes a filter) |
+| `delete_saved_search` | Stop following this. | `name` |
+
+## How saved searches work
+
+A saved search is a search kept on your machine plus a bookmark of how far it was last checked. It exists so that you can ask, a week later, "anything new?" without repeating the filters and without seeing the same items twice.
+
+**The server cannot alert anyone.** It runs only while your app is using it and has no way to send a message. Nothing happens until you ask ("anything new?"), and then the assistant calls `check_saved_searches`. A search you never check just waits.
+
+**Two kinds of search.**
+
+| Kind | You give | A check reports |
+|---|---|---|
+| Gazette | `words` (whole words of the title; singular and plural both match), `section`, `department_code`: at least one | The items of the daily gazette published since the last check that match the filters, newest day first. |
+| Law | `law_id` of a consolidated law (use `resolve_reference` to find it) | New amendments, additions, suspensions, repeals and corrections of that law, with the BOE's own wording. Court rulings and citations that mention the law are only counted (`other_new`), not listed. |
+
+Saving a gazette search makes no request to the BOE and only records today as the starting point. Saving a law search reads the law once and remembers the amendments it already has, so only later ones count as news. A law search cannot change its law: to follow another, save a new search.
+
+**Names.** Give one (`name`) or let the server propose one from the filters, such as `vivienda`, `seccion-1` or `ley-40-2015`. A name is stored as lowercase letters, digits and hyphens, at most 60 characters, so "Ley 40/2015" becomes `ley-40-2015`; a name already taken gets `-2`, `-3` and so on. `edit_saved_search` renames a search and, for a gazette search, changes its filters while keeping the bookmark.
+
+**What a check covers.** A gazette check reads the days from the last check to today, at most the last 31 days; when more days were missed it says how many were left out. Pass `since` to read again from an earlier date, up to 90 days back: nothing is marked as seen, so use it to look back, or to try a search that was saved today and has nothing new yet. For a law search `since` works by the year of the amending norm, because the BOE's references carry no date. A check has a time budget of about 40 seconds: when `complete` is false, ask again and it continues from where it stopped. Today's issue may not be out yet (most Sundays there is none); the next check asks for it again.
+
+**Limit.** 20 saved searches. Saving a 21st fails with a message telling you to delete one first.
+
+**Where the data lives.** In a small SQLite file, `saved_searches.sqlite3`, in your user data directory (on macOS `~/Library/Application Support/boe-insights-mcp/`, on Linux `~/.local/share/boe-insights-mcp/`). The file is private to your user, stays on your machine and is never sent anywhere; a check sends only the BOE requests it needs. To move your searches, copy the file to the same place on the other machine, or set `BOE_INSIGHTS_DATA_DIR` ([Configuration](#configuration)). To delete everything, delete the file. It is separate from the response cache, which is safe to delete at any time: clearing the cache never loses a saved search. With `BOE_INSIGHTS_CACHE=memory` and no `BOE_INSIGHTS_DATA_DIR`, searches are kept in memory only and are lost when the server stops.
+
+**These are the only tools that change anything**, and only in that file. `edit_saved_search` and `delete_saved_search` are marked as destructive, so some apps ask you to confirm before running them; a deleted search cannot be recovered. `check_saved_searches` also changes something (it moves the bookmark), unless you pass `since`.
+
+Everyday phrases and what happens:
+
+| You say | What happens |
+|---|---|
+| "Follow housing grants in the BOE" | `save_search` with `words`, then the name it chose is reported back. |
+| "Which topics are we following?" | `list_saved_searches`. |
+| "Anything new?" | `check_saved_searches` for all of them. |
+| "Anything new on housing?" | `check_saved_searches` with that `name`. |
+| "What did the housing search find in the last month?" | `check_saved_searches` with `since`, without marking anything as seen. |
+| "Also tell me if Ley 40/2015 changes" | `resolve_reference`, then `save_search` with its `law_id`. |
+| "Rename the housing search to grants" | `edit_saved_search` with `new_name`. |
+| "Only section 3 from now on" | `edit_saved_search` with `section`. |
+| "Stop following housing" | `delete_saved_search`. |
+
+## Resources and prompts
+
+Both are optional extras that mirror the tools: they offer nothing the tools cannot do. Support depends on the app, and many apps let the person pick a resource or a prompt but do not let the model open one itself.
+
+**Resources** are things a person attaches to the conversation, each returning exactly what the matching tool returns (as JSON, with the attribution and the informational notice).
+
+| URI | What it returns | Same as |
+|---|---|---|
+| `boe://law/{law_id}` | Overview of a law: status, dates, department, amendment counts. | `get_law_overview` |
+| `boe://law/{law_id}/article/{block_id}` | Current text of one article, by its `block_id`. | `read_article` |
+| `boe://gazette/{day}` | What the BOE published on one day (`YYYY-MM-DD`), with up to 100 items. | `get_daily_summary` |
+| `boe://codes/{kind}` | The whole table of departments (`department`) or ranks (`rank`). The subject table is too large; use `find_codes`. | `find_codes` |
+| `boe://saved-searches` | Your saved searches and when each was last checked. | `list_saved_searches` |
+
+In Claude Code you attach a resource by typing `@` and choosing it, for example `@boe-insights:boe://law/BOE-A-2015-10566`.
+
+**Prompts** are ready-made requests that tell the assistant which tools to call and how to present the result. Each exists in English and in Spanish, with the same steps; the arguments are named in the language of the prompt.
+
+| English | Español | Arguments | What it asks for |
+|---|---|---|---|
+| `explain_law` | `explicar_ley` | `law` / `ley` | What a law regulates, its status, its structure and how often it was amended. |
+| `article_changes` | `cambios_articulo` | `law`, `article`, `since` (optional) / `ley`, `articulo`, `desde` (optional) | How one article changed and which norms changed it. |
+| `check_citations` | `comprobar_citas` | `text` / `texto` | Check the citations of laws in a text against the consolidated texts. |
+| `gazette_briefing` | `resumen_boe` | `topic`, `days` (1-31, default 7) / `tema`, `dias` | What the BOE published on a topic in the last days. |
+
+In Claude Code, prompts appear as slash commands, for example `/mcp__boe-insights__explain_law`.
+
 ## Quick start
 
 Prerequisites: Python 3.11+ and [uv](https://docs.astral.sh/uv/). No API key is needed: the BOE open data API is public.
@@ -357,6 +453,7 @@ Optional environment variables; unset or empty variables keep their defaults, an
 |---|---|---|
 | `BOE_INSIGHTS_CACHE` | `disk` | Cache backend: `disk` (persistent) or `memory` (per process). |
 | `BOE_INSIGHTS_CACHE_DIR` | platform cache directory | Where the disk cache lives. |
+| `BOE_INSIGHTS_DATA_DIR` | platform user data directory | Where saved searches live (`saved_searches.sqlite3`). Separate from the cache on purpose: the cache can be deleted, your saved searches should not be. |
 | `BOE_INSIGHTS_MIN_INTERVAL` | `1.0` | Minimum seconds between requests to boe.es (number >= 0). |
 | `BOE_INSIGHTS_MAX_CONCURRENCY` | `2` | Maximum simultaneous requests to boe.es (integer >= 1). |
 
@@ -406,7 +503,7 @@ Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](
 - [x] 2. Article reading and version history: read an article as of a date, article diff, change timeline, amendment history
 - [x] 3. Trend analytics: legislation over time, top departments, compare topics, explain a spike, most-amended laws, plus a law's table of contents
 - [x] 4. Citation verification, amendment chain explorer, gazette scanning
-- [ ] 5. MCP resources, prompts and stored watchlists
+- [x] 5. MCP resources, prompts and saved searches
 - [ ] 6. Remote mode: Streamable HTTP, GitHub OAuth, Podman container
 - [ ] 7. Evaluation suite, documentation site, PyPI release
 
