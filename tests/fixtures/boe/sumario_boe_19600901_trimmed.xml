@@ -1,0 +1,238 @@
+<?xml version='1.0' encoding='utf-8'?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <sumario>
+      <metadatos>
+        <publicacion>BOE</publicacion>
+        <fecha_publicacion>19600901</fecha_publicacion>
+      </metadatos>
+      <diario numero="210">
+        <sumario_diario>
+          <identificador>BOE-S-1960-210</identificador>
+          <url_pdf szBytes="756247" szKBytes="739">https://www.boe.es/boe/dias/1960/09/01/pdfs/BOE-S-1960-210.pdf</url_pdf>
+        </sumario_diario>
+        <seccion codigo="1" nombre="I. Disposiciones generales">
+          <departamento codigo="5240" nombre="MINISTERIO DE INDUSTRIA">
+            <epigrafe nombre="Artículos siderometalúrgicos transformados">
+              <item>
+                <identificador>BOE-A-1960-12749</identificador>
+                <titulo>Resolución de la Secretaría General Técnica por la que se anulan las relativas a intervención en la producción, circulación y precios de los artículos siderometalúrgicos transformados.</titulo>
+                <url_pdf szBytes="167637" szKBytes="164" pagina_inicial="12321" pagina_final="12321">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12321-12321.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12749</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12749</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="7920" nombre="SECRETARÍA GENERAL DEL MOVIMIENTO">
+            <epigrafe nombre="Elecciones Sindicales">
+              <item>
+                <identificador>BOE-A-1960-12752</identificador>
+                <titulo>Orden de 19 de julio de 1960 por la que se aprueba el Reglamento General de Elecciones Sindicales.</titulo>
+                <url_pdf szBytes="2158343" szKBytes="2108" pagina_inicial="12321" pagina_final="12335">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12321-12335.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12752</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12752</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="2A" nombre="II. Autoridades y personal. - Nombramientos, situaciones e incidencias">
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <epigrafe nombre="Nombramientos">
+              <item>
+                <identificador>BOE-A-1960-12716</identificador>
+                <titulo>Orden de 25 de agosto de 1960 por la que se nombra Auxiliar administrativo del Instituto Nacional de Toxicología de Barcelona a don Manuel Aurelio Peña Baztán.</titulo>
+                <url_pdf szBytes="107672" szKBytes="105" pagina_inicial="12336" pagina_final="12336">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12336-12336.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12716</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12716</url_xml>
+              </item>
+              <item>
+                <identificador>BOE-A-1960-12717</identificador>
+                <titulo>Orden de 25 de agosto de 1960 por la que se nombra Auxiliar administrativo del Instituto Nacional de Toxicología, Sección Central de Madrid, a doña María de los Angeles Navarro Canales.</titulo>
+                <url_pdf szBytes="107672" szKBytes="105" pagina_inicial="12336" pagina_final="12336">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12336-12336.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12717</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12717</url_xml>
+              </item>
+            </epigrafe>
+            <epigrafe nombre="Excedencias">
+              <item>
+                <identificador>BOE-A-1960-12720</identificador>
+                <titulo>Resolución de la Dirección General de Justicia por la que se concede la excedencia voluntaria al Agente de la Justicia Municipal don Angel Pérez Saldaña.</titulo>
+                <url_pdf szBytes="107672" szKBytes="105" pagina_inicial="12336" pagina_final="12336">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12336-12336.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12720</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12720</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="7330" nombre="MINISTERIO DE LA GOBERNACIÓN">
+            <epigrafe nombre="Jubilaciones">
+              <item>
+                <identificador>BOE-A-1960-12722</identificador>
+                <titulo>Resolución de la Dirección General de Seguridad por la que se jubila a los funcionarios del Cuerpo General de Policía que se relacionan.</titulo>
+                <url_pdf szBytes="107672" szKBytes="105" pagina_inicial="12336" pagina_final="12336">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12336-12336.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12722</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12722</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="4255" nombre="MINISTERIO DE EDUCACIÓN NACIONAL">
+            <epigrafe nombre="Recursos">
+              <item>
+                <identificador>BOE-A-1960-12728</identificador>
+                <titulo>Orden de 30 de junio de 1960 por la que se resuelve el recurso de alzada interpuesto por doña Rosario Barranco Martín y otros, Maestros de Láujar, contra Resolución de la Dirrección General de Enseñanza Primaria.</titulo>
+                <url_pdf szBytes="113608" szKBytes="111" pagina_inicial="12337" pagina_final="12337">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12337-12337.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12728</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12728</url_xml>
+              </item>
+              <item>
+                <identificador>BOE-A-1960-12733</identificador>
+                <titulo>Orden de 4 de agosto de 1960 por la que se resuelve el recurso de alzada interpuesto por don Alberto López Casero contra Resolución de la Dirección General de Enseñanza Primaria.</titulo>
+                <url_pdf szBytes="113608" szKBytes="111" pagina_inicial="12337" pagina_final="12337">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12337-12337.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12733</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12733</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="2B" nombre="II. Autoridades y personal. - Oposiciones y concursos">
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <epigrafe nombre="Jueces municipales">
+              <item>
+                <identificador>BOE-A-1960-12719</identificador>
+                <titulo>Orden de 27 de agosto de 1960 por la que se nombra el Tribunal calificador del concurso-oposición a Jueces municipales, convocado por Orden de 12 de noviembre de 1959.</titulo>
+                <url_pdf szBytes="101920" szKBytes="100" pagina_inicial="12338" pagina_final="12338">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12338-12338.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12719</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12719</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="4255" nombre="MINISTERIO DE EDUCACIÓN NACIONAL">
+            <epigrafe nombre="Archiveros, Bibliotecarios y Arqueólogos">
+              <item>
+                <identificador>BOE-A-1960-12729</identificador>
+                <titulo>Orden de 7 de julio de 1960 por la que se nombran los Tribunales calificadores para las oposiciones a ingreso en el Cuerpo Facultativo de Archiveros, Bibliotecarios y Arqueólogos.</titulo>
+                <url_pdf szBytes="256281" szKBytes="250" pagina_inicial="12338" pagina_final="12339">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12338-12339.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12729</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12729</url_xml>
+              </item>
+            </epigrafe>
+            <epigrafe nombre="Magisterio Nacional">
+              <item>
+                <identificador>BOE-A-1960-12741</identificador>
+                <titulo>Orden de 22 de agosto de 1960 por la que se nombran los Tribunales que han de juzgar los ejercicios de la oposición a ingreso en el Magisterio Nacional.</titulo>
+                <url_pdf szBytes="2589621" szKBytes="2529" pagina_inicial="12339" pagina_final="12361">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12339-12361.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12741</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12741</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="9525" nombre="ADMINISTRACIÓN LOCAL">
+            <epigrafe nombre="Oficial de Secretaría del Ayuntamiento de Calasparra">
+              <item>
+                <identificador>BOE-A-1960-12754</identificador>
+                <titulo>Resolución del Ayuntamiento de Calasparra referente a la oposición convocada para proveer una plaza de Oficial de Secretaría.</titulo>
+                <url_pdf szBytes="115423" szKBytes="113" pagina_inicial="12361" pagina_final="12361">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12361-12361.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12754</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12754</url_xml>
+              </item>
+            </epigrafe>
+            <epigrafe nombre="Jefes de Negociado, Letrados, del Ayuntamiento de Huelva">
+              <item>
+                <identificador>BOE-A-1960-12756</identificador>
+                <titulo>Resolución del Ayuntamiento de Huelva por el que se transcriben las bases que han de regir en la oposición para proveer en propiedad dos plazas de Jefes de Negociado, Letrados.</titulo>
+                <url_pdf szBytes="387356" szKBytes="378" pagina_inicial="12361" pagina_final="12363">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12361-12363.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12756</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12756</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="3" nombre="III. Otras disposiciones">
+          <departamento codigo="7330" nombre="MINISTERIO DE LA GOBERNACIÓN">
+            <epigrafe nombre="Concursos">
+              <item>
+                <identificador>BOE-A-1960-12723</identificador>
+                <titulo>Resolución de la Jefatura Superior de Policía de Bilbao por la que se convoca cocurso público para la adjudicación del Bar-Comedor que esta Jefatura proyecta instalar.</titulo>
+                <url_pdf szBytes="143672" szKBytes="140" pagina_inicial="12363" pagina_final="12363">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12363-12363.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12723</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12723</url_xml>
+              </item>
+            </epigrafe>
+            <epigrafe nombre="Obras">
+              <item>
+                <identificador>BOE-A-1960-12724</identificador>
+                <titulo>Resoluciones de la Comisión Provincial de Servicios Técnicos de Murcia por las que se anuncian las subastas de las obras que se citan.</titulo>
+                <url_pdf szBytes="283043" szKBytes="276" pagina_inicial="12363" pagina_final="12364">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12363-12364.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12724</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12724</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="3220" nombre="MINISTERIO DE OBRAS PÚBLICAS">
+            <epigrafe nombre="Obras">
+              <item>
+                <identificador>BOE-A-1960-12725</identificador>
+                <titulo>Orden de 24 de agosto de 1960 por la que se adjudican a la «Sociedad Española de Montajes Industriales» las obras de «Línea aérea de contacto del ferrocarril de Navacerrada al de Madrid a Burgos (puerto de Navacerrada al puerto del Paular)».</titulo>
+                <url_pdf szBytes="146755" szKBytes="143" pagina_inicial="12364" pagina_final="12364">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12364-12364.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12725</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12725</url_xml>
+              </item>
+            </epigrafe>
+            <epigrafe nombre="Transportes por carretera">
+              <item>
+                <identificador>BOE-A-1960-12726</identificador>
+                <titulo>Resoluciones de la Dirección GeneraL de Ferrocarriles, Tranvías y Transportes por Carretera por la que se adjudican definitivamente los servicios públicos regulares de transportes mecánico de viajeros por carretera entre las localidades que se citan.</titulo>
+                <url_pdf szBytes="951600" szKBytes="929" pagina_inicial="12364" pagina_final="12369">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12364-12369.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12726</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12726</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="4255" nombre="MINISTERIO DE EDUCACIÓN NACIONAL">
+            <epigrafe nombre="Bibliotecas Públicas Municipales">
+              <item>
+                <identificador>BOE-A-1960-12730</identificador>
+                <titulo>Orden de 15 de julio de 1960 por la que se crea la Biblioteca Pública Municipal de Cubells (Lérida) y se aprueban sus Reglamentos.</titulo>
+                <url_pdf szBytes="192939" szKBytes="188" pagina_inicial="12369" pagina_final="12369">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12369-12369.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12730</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12730</url_xml>
+              </item>
+            </epigrafe>
+            <epigrafe nombre="«Fiesta del Libro»">
+              <item>
+                <identificador>BOE-A-1960-12731</identificador>
+                <titulo>Orden de 15 de julio de 1960 por la que se nombra el Jurado calificador que ha de discernir la adjudicación de los premios del concurso de la «Fiesta del Libro».</titulo>
+                <url_pdf szBytes="121074" szKBytes="118" pagina_inicial="12370" pagina_final="12370">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12370-12370.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1960-12731</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1960-12731</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="4" nombre="IV. Administración de Justicia">
+          <departamento codigo="" nombre="">
+            <item>
+              <identificador>BOE-B-1960-31210</identificador>
+              <titulo>Anuncios de Audiencias, Tribunales, Juzgados y Requisitorias</titulo>
+              <url_pdf szBytes="1415677" szKBytes="1382" pagina_inicial="12375" pagina_final="12382">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12375-12382.pdf</url_pdf>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5" nombre="V. Anuncios">
+          <departamento codigo="" nombre="">
+            <item>
+              <identificador>BOE-B-1960-30210</identificador>
+              <titulo>Subastas y concursos de obras y servicios</titulo>
+              <url_pdf szBytes="874526" szKBytes="854" pagina_inicial="12382" pagina_final="12390">https://www.boe.es/boe/dias/1960/09/01/pdfs/A12382-12390.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-1960-30210</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-1960-30210</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+      </diario>
+    </sumario>
+  </data>
+</response>

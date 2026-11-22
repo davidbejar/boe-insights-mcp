@@ -1,0 +1,140 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "materias": [
+                {
+                    "materia": {
+                        "codigo": "6488",
+                        "texto": "Secretos oficiales"
+                    }
+                }
+            ],
+            "referencias": {
+                "anteriores": {
+                    "anterior": {
+                        "id_norma": "BOE-A-1997-7878",
+                        "relacion": {
+                            "codigo": "440",
+                            "texto": "DE CONFORMIDAD con"
+                        },
+                        "texto": "la disposici\u00f3n adicional 10 de la Ley 6\/1997, de 14 de abril"
+                    }
+                },
+                "posteriores": [
+                    {
+                        "posterior": [
+                            {
+                                "id_norma": "BOE-A-2020-3824",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 6.2, por Real Decreto-ley 8\/2020, de 17 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2008-20744",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 8.5, por Ley 2\/2008, de 23 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2007-19880",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 8.1, por Ley 39\/2007, de 19 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2003-23936",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 8, por Ley 62\/2003, de 30 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2013-3907",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "aprobando el Estatuto del personal del CNI: Real Decreto 240\/2013, de 5 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2012-5036",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "sobre el modelo de tarjeta de identidad profesional y placa insignia: Orden PRE\/723\/2012, de 30 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2004-5051",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "regulando el Centro Criptol\u00f3gico Nacional: Real Decreto 421\/2004, de 12 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2002-12889",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "con el art. 8.3, sobre r\u00e9gimen econ\u00f3mico presupuestario: Real Decreto 593\/2002, de 28 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2002-9161",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "estableciendo la estructura org\u00e1nica del Centro Nacional de Inteligencia: Real Decreto 436\/2002, de 10 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2002-8627",
+                                "relacion": {
+                                    "codigo": "331",
+                                    "texto": "SE DICTA EN RELACI\u00d3N"
+                                },
+                                "texto": ", regulando el control judicial previo del Centro Nacional de Inteligencia: Ley Org\u00e1nica 2\/2002, de 6 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-11306",
+                                "relacion": {
+                                    "codigo": "470",
+                                    "texto": "SE DECLARA"
+                                },
+                                "texto": ", en el Recurso 2035\/2020, su extinci\u00f3n por p\u00e9rdida sobrevenida del objeto en relaci\u00f3n al art. 6.2 en la redacci\u00f3n dada por la disposici\u00f3n final 2 del Real Decreto-ley 8\/2020, de 17 de marzo, por Sentencia 124\/2021, de 3 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-10023",
+                                "relacion": {
+                                    "codigo": "470",
+                                    "texto": "SE DECLARA"
+                                },
+                                "texto": "en el Recurso 1813\/2020, la inconstitucionalidad y nulidad del art. 6.2, en la redacci\u00f3n dada por la disposici\u00f3n final 2 del Real Decreto-ley 8\/2020, de 17 de marzo, por Sentencia 110\/2021, de 13 de mayo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-4874",
+                                "relacion": {
+                                    "codigo": "552",
+                                    "texto": "Recurso"
+                                },
+                                "texto": "2035\/2020 promovido contra el art. 6.2, en la redacci\u00f3n dada por la disposici\u00f3n final 2 del Real Decreto-ley 8\/2020, de 17 de marzo"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

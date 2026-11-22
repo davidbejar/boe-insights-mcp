@@ -1,0 +1,267 @@
+{
+    "status": {
+        "code": "200",
+        "text": "ok"
+    },
+    "data": [
+        {
+            "materias": [
+                {
+                    "materia": {
+                        "codigo": "7090",
+                        "texto": "Universidades"
+                    }
+                }
+            ],
+            "notas": {
+                "nota": "Entrada en vigor, con la salvedad indicada, el 2 de diciembre de 2011."
+            },
+            "referencias": {
+                "anteriores": [
+                    {
+                        "anterior": [
+                            {
+                                "id_norma": "BOE-A-1986-9479",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": "la Ley 13\/1986, de 14 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-1982-10344",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "DEROGA"
+                                },
+                                "texto": ", en la forma indicada el Real Decreto-ley 7\/1982, de 30 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2007-12945",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "los arts. 12.2.f), 78.1, 85 y 86 de la Ley 14\/2007, de 3 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2006-13554",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "art. 3.1 de la Ley 29\/2006, de 26 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2003-23101",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "art. 67 de la Ley 55\/2003, de 16 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2003-20977",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "art. 31.3 de la Ley 38\/2003, de 17 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2002-25039",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "arts. 3.1 y 16 de la Ley 49\/2002, de 23 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2001-24515",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "arts. 7, 8, 48, 57, 80, 82, 84, disposici\u00f3n adicional 10 y la r\u00fabrica del t\u00edtulo IV, y A\u00d1ADE los arts. 30 bis, 30 ter y la secci\u00f3n III a la Ley Org\u00e1nica 6\/2001, de 21 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-1986-7900",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "art. 20.9 de la Ley 11\/1986, de 20 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-1985-151",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "MODIFICA"
+                                },
+                                "texto": "arts. 4.2, y 6 de la Ley 53\/1984, de 26 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-1986-18105",
+                                "relacion": {
+                                    "codigo": "480",
+                                    "texto": "DECLARA la vigencia"
+                                },
+                                "texto": ", en cuanto no se oponga, del Real Decreto 1406\/1986, de 6 de junio"
+                            }
+                        ]
+                    }
+                ],
+                "posteriores": [
+                    {
+                        "posterior": [
+                            {
+                                "id_norma": "BOE-A-2023-625",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": ", con efectos desde el 1 de septiembre de 2023, la disposici\u00f3n adicional 18, por Real Decreto-ley 1\/2023, de 10 de enero"
+                            },
+                            {
+                                "id_norma": "BOE-A-2022-5516",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": "la disposici\u00f3n adicional 23.2, SE MODIFICA la disposici\u00f3n adicional 1 y SE A\u00d1ADE los arts. 23 bis y 32 bis, por Real Decreto-ley 8\/2022, de 5 de abril"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-21788",
+                                "relacion": {
+                                    "codigo": "210",
+                                    "texto": "SE DEROGA"
+                                },
+                                "texto": ", con los efectos se\u00f1alados, lo indicado, por Real Decreto-ley 32\/2021, de 28 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2022-14581",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": ", SE A\u00d1ADE y SE SUPRIME, en la forma indicada, determinados preceptos y referencias, por Ley 17\/2022, de 5 de septiembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2021-21096",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 22 y la disposici\u00f3n adicional 16, por Real Decreto-ley 29\/2021, de 21 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-17340",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 34.2, la disposici\u00f3n adicional 11 y SE A\u00d1ADE la adicional 29, por Real Decreto-ley 36\/2020, de 30 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-17339",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 26.5, por Ley 11\/2020, de 30 de diciembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-6621",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "la disposici\u00f3n adicional 11.3, por Real Decreto-ley 23\/2020, de 23 de junio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2019-1782",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 34 y las disposiciones adicionales 13 y 23, por Real Decreto-ley 3\/2019, de 8 de febrero"
+                            },
+                            {
+                                "id_norma": "BOE-A-2017-11500",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "la disposici\u00f3n adicional 23, por Real Decreto-ley 14\/2017, de 6 de octubre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2015-9734",
+                                "relacion": {
+                                    "codigo": "270",
+                                    "texto": "SE MODIFICA"
+                                },
+                                "texto": "el art. 21.c), por Ley 30\/2015, de 9 de septiembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2020-3824",
+                                "relacion": {
+                                    "codigo": "235",
+                                    "texto": "SE SUPRIME"
+                                },
+                                "texto": "el art. 41, por Real Decreto-ley 8\/2020, de 17 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2023-16729",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "con el art. 33 y se regula el Distintivo de Igualdad de G\u00e9nero en I+D+I: Real Decreto 669\/2023, de 18 de julio"
+                            },
+                            {
+                                "id_norma": "BOE-A-2023-2632",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "con el art. 10.4 y la disposici\u00f3n final 10, y se aprueba el Reglamento del Comit\u00e9 Espa\u00f1ol de \u00c9tica de la Investigaci\u00f3n: Real Decreto 53\/2023, de 31 de enero"
+                            },
+                            {
+                                "id_norma": "BOE-A-2019-3700",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "con el art. 21, y aprueba el Estatuto del personal investigador predoctoral  en formaci\u00f3n: Real Decreto 103\/2019, de 1 de marzo"
+                            },
+                            {
+                                "id_norma": "BOE-A-2015-13250",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "con el art. 9, y aprueba el Reglamento del Consejo Asesor de Ciencia, Tecnolog\u00eda e Innovaci\u00f3n: Real Decreto 1024\/2015, de 13 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2015-12889",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "con la disposici\u00f3n adicional 12, crea la Agencia Estatal de Investigaci\u00f3n y aprueba su estatuto: Real Decreto 1067\/2015, de 27 de noviembre"
+                            },
+                            {
+                                "id_norma": "BOE-A-2014-2849",
+                                "relacion": {
+                                    "codigo": "440",
+                                    "texto": "SE DICTA DE CONFORMIDAD"
+                                },
+                                "texto": "y publica los estatutos del Instituto de Astrof\u00edsica de Canarias: Resoluci\u00f3n de 25 de febrero de 2014"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

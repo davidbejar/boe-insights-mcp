@@ -41,6 +41,7 @@ from boe_insights_mcp.analytics import (
     find_spikes,
     highest_official_numbers,
     series_by,
+    title_matcher,
 )
 from boe_insights_mcp.models import CodedValue, LawSummary
 
@@ -435,8 +436,52 @@ TITLE_CASES = [
     ("Ley de Protección de Datos", "ley proteccion datos", True),
     ("Ley de Protección de Datos", "proteccion cultura", False),
     ("Ley de Protección de Datos", "  ley   DATOS ", True),
-    ("Texto de las leyes", "ley", False),
-    ("Texto de la ley", "leyes", False),
+    ("Texto de las leyes", "ley", True),
+    ("Texto de la ley", "leyes", True),
+    ("Ley de vivienda", "viviendas", True),
+    ("Ley de viviendas", "vivienda", True),
+    ("Ley del impuesto", "impuestos", True),
+    ("Ley de impuestos", "impuesto", True),
+    ("Ley de contratos", "contrato", True),
+    ("Ley de contrato", "CONTRATOS", True),
+    ("Ley de las ciudades", "ciudad", True),
+    ("Ley de la ciudad", "ciudades", True),
+    ("Ley de los meses", "mes", True),
+    ("Ley del mes", "meses", True),
+    ("Ley de las viviendas y los impuestos", "vivienda impuesto", True),
+    ("Ley de las viviendas", "vivienda impuesto", False),
+    ("Ley de los años", "año", True),
+    ("Ley de los años", "ano", False),
+    ("Ley de los anos", "año", False),
+    # Words that merely look alike must stay different.
+    ("Texto legal", "ley", False),
+    ("Ley legal", "legales", True),
+    ("Ley de leyes", "legal", False),
+    ("Ley de la casa", "caso", False),
+    ("Ley del caso", "casa", False),
+    ("Ley de la mesa", "mes", False),
+    ("Ley del mes", "mesa", False),
+    ("Ley de los dos", "do", False),
+    ("Ley del gas", "gases", True),
+    ("Ley de los gases", "gas", True),
+    # D: a word has several forms (itself, without "s", without "es", "ces" -> "z"), and two
+    # words match when they share one. "lunes" has "lune" (no "s") and "lun" (no "es").
+    ("Ley de los lunes", "lun", True),
+    ("Ley de los lunes", "lune", True),
+    # D: words in -e, -s, -z and -ces that the single reduced form used to keep apart.
+    ("Ley de bases", "base", True),
+    ("Ley de la base", "bases", True),
+    ("Ley de partes", "parte", True),
+    ("Ley de la parte", "partes", True),
+    ("Tipo de interés", "intereses", True),
+    ("Tipo de los intereses", "interés", True),
+    ("Ley del país", "países", True),
+    ("Ley de los países", "país", True),
+    ("Ley del juez", "jueces", True),
+    ("Ley de los jueces", "juez", True),
+    ("Ley de la vez", "veces", True),
+    ("Ley de la ley", "leyes", True),
+    ("Ley de las leyes", "ley", True),
     ("Ley de Educación", "educ", False),
     ("Ley de Educación", "cacion", False),
     ("Ley (Orgánica) de «Educación».", "organica educacion", True),
@@ -462,6 +507,23 @@ TITLE_CASES = [
 def test_filter_title_words(title: str, query: str, expected: bool) -> None:
     result = filter_laws([make_law(title=title)], title_words=query)
     assert (len(result) == 1) is expected
+
+
+@pytest.mark.parametrize(("title", "query", "expected"), TITLE_CASES)
+def test_title_matcher_agrees_with_the_law_filter(title: str, query: str, expected: bool) -> None:
+    matcher = title_matcher(query)
+
+    # A query without words is "no constraint", which the matcher reports as no matcher at all.
+    if not query.strip():
+        assert matcher is None
+    else:
+        assert matcher is not None
+        assert matcher(title) is expected
+
+
+@pytest.mark.parametrize("query", [None, "", "  ", "¿?, -"])
+def test_title_matcher_is_none_when_there_are_no_words(query: str | None) -> None:
+    assert title_matcher(query) is None
 
 
 def test_filter_blank_title_words_is_the_same_as_none(catalogue: list[LawSummary]) -> None:

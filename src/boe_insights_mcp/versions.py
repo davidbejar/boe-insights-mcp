@@ -151,7 +151,7 @@ def is_repealed(version: BlockVersion) -> bool:
     """Whether the body of a version is just a repeal marker such as ``(Derogado).``."""
     # Quoted paragraphs are notes about the text ("Téngase en cuenta...", citations), not the
     # text, so they neither hide a marker nor count as live text; footnotes are already left out.
-    body = tuple(p for p in version.body if not p.quoted)
+    body = version.own_paragraphs
     if body and body[0].kind == "articulo":
         body = body[1:]  # the article heading survives a repeal
     return len(body) == 1 and _REPEAL_MARKER.fullmatch(body[0].text) is not None

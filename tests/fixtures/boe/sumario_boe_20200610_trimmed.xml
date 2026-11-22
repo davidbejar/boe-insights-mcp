@@ -1,0 +1,338 @@
+<?xml version='1.0' encoding='utf-8'?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <sumario>
+      <metadatos>
+        <publicacion>BOE</publicacion>
+        <fecha_publicacion>20200610</fecha_publicacion>
+      </metadatos>
+      <diario numero="163">
+        <sumario_diario>
+          <identificador>BOE-S-2020-163</identificador>
+          <url_pdf szBytes="445640" szKBytes="435">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-S-2020-163.pdf</url_pdf>
+        </sumario_diario>
+        <seccion codigo="1" nombre="I. Disposiciones generales">
+          <departamento codigo="7723" nombre="JEFATURA DEL ESTADO">
+            <epigrafe nombre="Medidas urgentes">
+              <item>
+                <identificador>BOE-A-2020-5895</identificador>
+                <control>2020/6109</control>
+                <titulo>Real Decreto-ley 21/2020, de 9 de junio, de medidas urgentes de prevención, contención y coordinación para hacer frente a la crisis sanitaria ocasionada por el COVID-19.</titulo>
+                <url_pdf szBytes="476856" szKBytes="466" pagina_inicial="38723" pagina_final="38752">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5895.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5895</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5895</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <epigrafe nombre="Fuerzas Armadas">
+              <item>
+                <identificador>BOE-A-2020-5896</identificador>
+                <control>2020/6106</control>
+                <titulo>Real Decreto 556/2020, de 9 de junio, por el que se modifica el Real Decreto 35/2010, de 15 de enero, por el que se aprueba el Reglamento de ingreso y promoción y de ordenación de la enseñanza de formación en las Fuerzas Armadas.</titulo>
+                <url_pdf szBytes="173090" szKBytes="169" pagina_inicial="38753" pagina_final="38755">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5896.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5896</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5896</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="9572" nombre="MINISTERIO DE TRANSPORTES, MOVILIDAD Y AGENDA URBANA">
+            <epigrafe nombre="Estado de alarma. Transporte aéreo">
+              <item>
+                <identificador>BOE-A-2020-5897</identificador>
+                <control>2020/6029</control>
+                <titulo>Resolución de 8 de junio de 2020, de la Dirección General de Aviación Civil, por la que se adecúan los niveles de servicio del transporte aéreo sometido a obligaciones de servicio público, para adaptarlo a la evolución de la demanda en el proceso de desescalada de la crisis sanitaria ocasionada por el COVID-19.</titulo>
+                <url_pdf szBytes="229326" szKBytes="224" pagina_inicial="38756" pagina_final="38757">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5897.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5897</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5897</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="2A" nombre="II. Autoridades y personal. - A. Nombramientos, situaciones e incidencias">
+          <departamento codigo="9562" nombre="MINISTERIO DE ASUNTOS EXTERIORES, UNIÓN EUROPEA Y COOPERACIÓN">
+            <epigrafe nombre="Destinos">
+              <item>
+                <identificador>BOE-A-2020-5902</identificador>
+                <control>2020/5962</control>
+                <titulo>Resolución de 1 de junio de 2020, de la Subsecretaría, por la que se resuelve la convocatoria de libre designación, efectuada por Resolución de 18 de diciembre de 2019.</titulo>
+                <url_pdf szBytes="244797" szKBytes="239" pagina_inicial="38877" pagina_final="38878">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5902.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5902</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5902</url_xml>
+              </item>
+              <item>
+                <identificador>BOE-A-2020-5903</identificador>
+                <control>2020/6080</control>
+                <titulo>Resolución de 5 de junio de 2020, de la Subsecretaría, por la que se resuelve la convocatoria de libre designación, efectuada por Resolución de 11 de febrero de 2020, en la Carrera Diplomática.</titulo>
+                <url_pdf szBytes="550288" szKBytes="537" pagina_inicial="38879" pagina_final="38893">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5903.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5903</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5903</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <epigrafe nombre="Ceses">
+              <item>
+                <identificador>BOE-A-2020-5904</identificador>
+                <control>2020/6081</control>
+                <titulo>Real Decreto 559/2020, de 9 de junio, por el que se dispone el cese del General de División del Cuerpo General del Ejército del Aire don Fernando de la Cruz Caravaca como Jefe del Mando Aéreo de Canarias.</titulo>
+                <url_pdf szBytes="214713" szKBytes="210" pagina_inicial="38894" pagina_final="38894">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5904.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5904</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5904</url_xml>
+              </item>
+              <item>
+                <identificador>BOE-A-2020-5905</identificador>
+                <control>2020/5719</control>
+                <titulo>Resolución 701/38138/2020, de 22 de mayo, de la Jefatura del Estado Mayor del Ejército del Aire, por la que se dispone el cese del Coronel del Cuerpo General del Ejército del Aire, Escala de Oficiales, don Javier Otón Carrillo, como Jefe del Sector Aéreo de Tenerife y Comandante Militar Aéreo de Aeropuerto de Tenerife.</titulo>
+                <url_pdf szBytes="213222" szKBytes="208" pagina_inicial="38895" pagina_final="38895">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5905.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5905</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5905</url_xml>
+              </item>
+            </epigrafe>
+            <epigrafe nombre="Nombramientos">
+              <item>
+                <identificador>BOE-A-2020-5906</identificador>
+                <control>2020/5720</control>
+                <titulo>Resolución 701/38139/2020, de 22 de mayo, de la Jefatura del Estado Mayor del Ejército del Aire, por la que se nombra Jefe del Sector Aéreo de Tenerife y Comandante Militar Aéreo de Aeropuerto de Tenerife al Coronel del Cuerpo General del Ejército del Aire, Escala de Oficiales, don Francisco Rafael de Paz Solís.</titulo>
+                <url_pdf szBytes="214843" szKBytes="210" pagina_inicial="38896" pagina_final="38896">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5906.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5906</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5906</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="7320" nombre="MINISTERIO DEL INTERIOR">
+            <epigrafe nombre="Destinos">
+              <item>
+                <identificador>BOE-A-2020-5907</identificador>
+                <control>2020/6035</control>
+                <titulo>Resolución de 5 de junio de 2020, de la Subsecretaría, por la que se resuelve la convocatoria de libre designación, efectuada por Resolución de 29 de abril de 2020.</titulo>
+                <url_pdf szBytes="238514" szKBytes="233" pagina_inicial="38897" pagina_final="38898">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5907.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5907</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5907</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="2B" nombre="II. Autoridades y personal. - B. Oposiciones y concursos">
+          <departamento codigo="1820" nombre="CONSEJO GENERAL DEL PODER JUDICIAL">
+            <epigrafe nombre="Carrera Judicial">
+              <item>
+                <identificador>BOE-A-2020-5916</identificador>
+                <control>2020/6044</control>
+                <titulo>Acuerdo de 4 de junio de 2020, de la Comisión Permanente del Consejo General del Poder Judicial, por el que se excluyen del concurso de traslado entre miembros de la Carrera Judicial con categoría de Magistrado, convocado por Acuerdo de 5 de marzo de 2020, las plazas del Juzgado de Primera Instancia número 17 de Murcia, del Juzgado de Primera Instancia e Instrucción número 8 de Toledo y del Juzgado de lo Penal número 2 de Segovia.</titulo>
+                <url_pdf szBytes="221129" szKBytes="216" pagina_inicial="38910" pagina_final="38910">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5916.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5916</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5916</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="9562" nombre="MINISTERIO DE ASUNTOS EXTERIORES, UNIÓN EUROPEA Y COOPERACIÓN">
+            <epigrafe nombre="Personal laboral">
+              <item>
+                <identificador>BOE-A-2020-5917</identificador>
+                <control>2020/5991</control>
+                <titulo>Resolución de 16 de marzo de 2020, de la Dirección de la Agencia Española de Cooperación Internacional para el Desarrollo, por la que se modifica la de 18 de diciembre de 2019, por la que se aprueban las bases y se convoca la provisión de la plaza de Jefe/a del Departamento de Emergencia y Postconflicto.</titulo>
+                <url_pdf szBytes="221338" szKBytes="216" pagina_inicial="38911" pagina_final="38911">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5917.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5917</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5917</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <epigrafe nombre="Carreras Judicial y Fiscal">
+              <item>
+                <identificador>BOE-A-2020-5918</identificador>
+                <control>2020/6091</control>
+                <titulo>Orden JUS/510/2020, de 3 de junio, por la que se modifica la composición de la Comisión de selección de las pruebas de acceso a las Carreras Judicial y Fiscal.</titulo>
+                <url_pdf szBytes="214925" szKBytes="210" pagina_inicial="38912" pagina_final="38912">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5918.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5918</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5918</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="3" nombre="III. Otras disposiciones">
+          <departamento codigo="1820" nombre="CONSEJO GENERAL DEL PODER JUDICIAL">
+            <epigrafe nombre="Ayudas">
+              <item>
+                <identificador>BOE-A-2020-5951</identificador>
+                <control>2020/5594</control>
+                <titulo>Acuerdo de 20 de mayo de 2020, de la Comisión Permanente del Consejo General del Poder Judicial, por el que se convocan ayudas para la financiación de actividades de formación realizadas por miembros de la Carrera Judicial y las auspiciadas o impulsadas por las Asociaciones Judiciales.</titulo>
+                <url_pdf szBytes="390799" szKBytes="382" pagina_inicial="38958" pagina_final="38970">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5951.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5951</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5951</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="4810" nombre="MINISTERIO DE JUSTICIA">
+            <epigrafe nombre="Procedimientos registrales">
+              <item>
+                <identificador>BOE-A-2020-5952</identificador>
+                <control>2020/6103</control>
+                <titulo>Instrucción de 4 de junio de 2020, de la Dirección General de Seguridad Jurídica y Fe Pública, sobre levantamiento de medidas adoptadas por la crisis sanitaria del COVID-19.</titulo>
+                <url_pdf szBytes="234313" szKBytes="229" pagina_inicial="38971" pagina_final="38973">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5952.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5952</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5952</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+          <departamento codigo="9573" nombre="MINISTERIO DE TRABAJO Y ECONOMÍA SOCIAL">
+            <epigrafe nombre="Convenios">
+              <item>
+                <identificador>BOE-A-2020-5953</identificador>
+                <control>2020/5967</control>
+                <titulo>Resolución de 4 de junio de 2020, de la Subsecretaría, por la que se publica el Convenio con el Servicio Público de Empleo Estatal y las Cajas Rurales Miembro del Grupo Cooperativo Cajamar, para el anticipo de prestaciones por desempleo previamente reconocidas por el Servicio Público de Empleo Estatal.</titulo>
+                <url_pdf szBytes="484750" szKBytes="473" pagina_inicial="38974" pagina_final="38998">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5953.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5953</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5953</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+        <seccion codigo="4" nombre="IV. Administración de Justicia">
+          <departamento codigo="9546" nombre="JUZGADOS DE PRIMERA INSTANCIA E INSTRUCCIÓN">
+            <item>
+              <identificador>BOE-B-2020-15990</identificador>
+              <titulo>BARCELONA</titulo>
+              <url_pdf szBytes="168382" szKBytes="164" pagina_inicial="21803" pagina_final="21803">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-15990.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-15990</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-15990</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-15991</identificador>
+              <titulo>BARCELONA</titulo>
+              <url_pdf szBytes="169112" szKBytes="165" pagina_inicial="21804" pagina_final="21804">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-15991.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-15991</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-15991</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="9547" nombre="JUZGADOS DE LO MERCANTIL">
+            <item>
+              <identificador>BOE-B-2020-16008</identificador>
+              <titulo>A CORUÑA</titulo>
+              <url_pdf szBytes="168711" szKBytes="165" pagina_inicial="21821" pagina_final="21821">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16008.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16008</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16008</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-16009</identificador>
+              <titulo>BARCELONA</titulo>
+              <url_pdf szBytes="167976" szKBytes="164" pagina_inicial="21822" pagina_final="21822">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16009.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16009</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16009</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5A" nombre="V. Anuncios. - A. Contratación del Sector Público">
+          <departamento codigo="6110" nombre="MINISTERIO DE DEFENSA">
+            <item>
+              <identificador>BOE-B-2020-16048</identificador>
+              <titulo>Anuncio de formalización de contratos de: Sección de Asuntos Económicos de la Academia General Militar. Objeto: Prendas de cabeza, uniformidad y tejidos para alumnos AGBS. Expediente: 2035019008400.</titulo>
+              <url_pdf szBytes="187980" szKBytes="184" pagina_inicial="21863" pagina_final="21864">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16048.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16048</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16048</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-16049</identificador>
+              <titulo>Anuncio de licitación de: Dirección de Asuntos Económicos del Ejército. Objeto: Acuerdo Marco para el suministro de productos alimenticios para la RMASE "Santiago" de Valladolid. Expediente: 2092119001100.</titulo>
+              <url_pdf szBytes="200570" szKBytes="196" pagina_inicial="21865" pagina_final="21867">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16049.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16049</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16049</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="5140" nombre="MINISTERIO DE HACIENDA">
+            <item>
+              <identificador>BOE-B-2020-16060</identificador>
+              <titulo>Anuncio de formalización de contratos de: Delegación Especial de la Agencia Tributaria en Andalucía, Ceuta y Melilla. Objeto: Suministro de 203 mamparas de policarbonato para protección personal, con destino a centros dependientes de la Delegación Especial de la AEAT en Andalucía, Ceuta y Melilla. Expediente: 20A10035800.</titulo>
+              <url_pdf szBytes="183620" szKBytes="179" pagina_inicial="21883" pagina_final="21884">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16060.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16060</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16060</url_xml>
+            </item>
+            <item>
+              <identificador>BOE-B-2020-16061</identificador>
+              <titulo>Anuncio de formalización de contratos de: Dirección del Servicio de Gestión Económica de la Agencia Estatal de la Administración Tributaria. Objeto: Suministro por lotes de diferentes prendas de uniformidad para los nuevos funcionarios de Vigilancia aduanera adscritos al Departamento de Aduanas e II.EE. Expediente: 19710079400.</titulo>
+              <url_pdf szBytes="201600" szKBytes="197" pagina_inicial="21885" pagina_final="21887">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16061.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16061</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16061</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="7320" nombre="MINISTERIO DEL INTERIOR">
+            <item>
+              <identificador>BOE-B-2020-16063</identificador>
+              <titulo>Anuncio de formalización de contratos de: Jefatura de Asuntos Económicos de la Guardia Civil. Objeto: Adquisición de dos Unidades Térmicas Móviles integradas en vehículos 4x4, para uso en distintas Unidades de la Guardia Civil en Ceuta y Melilla. Expediente: R/0029/A/19/6.</titulo>
+              <url_pdf szBytes="190542" szKBytes="186" pagina_inicial="21890" pagina_final="21891">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16063.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16063</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16063</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5B" nombre="V. Anuncios. - B. Otros anuncios oficiales">
+          <departamento codigo="5140" nombre="MINISTERIO DE HACIENDA">
+            <item>
+              <identificador>BOE-B-2020-16102</identificador>
+              <titulo>Anuncio de la Delegación de Economía y Hacienda en Huesca del Acuerdo de declaración de caducidad del expediente e inicio de nuevo procedimiento para la declaración administrativa de heredero abintestato a favor de la Administración General del Estado y de adjudicación de los de bienes y derechos de la herencia de don Aventín Sigirán Ferrer.</titulo>
+              <url_pdf szBytes="178631" szKBytes="174" pagina_inicial="21957" pagina_final="21958">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16102.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16102</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16102</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="9572" nombre="MINISTERIO DE TRANSPORTES, MOVILIDAD Y AGENDA URBANA">
+            <item>
+              <identificador>BOE-B-2020-16103</identificador>
+              <titulo>Resolución de 5 de mayo de 2020 de la Subdirección General de Gestión, Análisis e Innovación del Transporte Terrestre, por la que se convoca información pública sobre la modificación del contrato del servicio público de trasporte regular de uso general de viajeros por carretera entre Cuenca y Barcelona (VAC-230). MOD-309/2020.</titulo>
+              <url_pdf szBytes="175603" szKBytes="171" pagina_inicial="21959" pagina_final="21959">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16103.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16103</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16103</url_xml>
+            </item>
+          </departamento>
+          <departamento codigo="9563" nombre="MINISTERIO DE EDUCACIÓN Y FORMACIÓN PROFESIONAL">
+            <item>
+              <identificador>BOE-B-2020-16104</identificador>
+              <titulo>Extracto de la Resolución de 4 de junio de 2020, de la Secretaría de Estado de Educación,, por la que se convocan ayudas para sufragar el servicio de comedor escolar y el transporte escolar, para alumnos matriculados en centros docentes públicos, en las Ciudades de Ceuta y Melilla en el curso académico 2020/2021.</titulo>
+              <url_pdf szBytes="183646" szKBytes="179" pagina_inicial="21960" pagina_final="21962">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16104.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16104</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16104</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="5C" nombre="V. Anuncios. - C. Anuncios particulares">
+          <departamento codigo="9202" nombre="ANUNCIOS PARTICULARES">
+            <item>
+              <identificador>BOE-B-2020-16115</identificador>
+              <titulo>UNIÓN DE MUTUAS, MUTUA COLABORADORA CON LA SEGURIDAD SOCIAL N.º 267</titulo>
+              <url_pdf szBytes="175052" szKBytes="171" pagina_inicial="21974" pagina_final="21975">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-B-2020-16115.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-B-2020-16115</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-B-2020-16115</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+        <seccion codigo="T" nombre="T.C. Sección del Tribunal Constitucional">
+          <departamento codigo="1410" nombre="TRIBUNAL CONSTITUCIONAL">
+            <epigrafe nombre="Sentencias">
+              <item>
+                <identificador>BOE-A-2020-5966</identificador>
+                <control>2020/5970</control>
+                <titulo>Sala Primera. Sentencia 41/2020, de 9 de marzo de 2020. Recurso de amparo 3431-2018. Promovido por don Luis Alfredo Carvajal Estrada en relación con las resoluciones dictadas por un juzgado de primera instancia de Illescas en procedimiento de ejecución hipotecaria. Vulneración del derecho a la tutela judicial sin indefensión: emplazamiento mediante edictos sin agotar las posibilidades de averiguación del domicilio real del demandado (STC 122/2013).</titulo>
+                <url_pdf szBytes="282697" szKBytes="276" pagina_inicial="39065" pagina_final="39074">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5966.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5966</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5966</url_xml>
+              </item>
+              <item>
+                <identificador>BOE-A-2020-5967</identificador>
+                <control>2020/5971</control>
+                <titulo>Sala Primera. Sentencia 42/2020, de 9 de marzo de 2020. Recurso de amparo 4933-2018. Promovido por don Carlos Stuart Rochabrunt Gamarra, en relación con la resolución de la Subdelegación del Gobierno en Girona y las sentencias de las salas de lo contencioso-administrativo del Tribunal Supremo y del Tribunal Superior de Justicia de Cataluña, que denegaron su solicitud de obtención de tarjeta de residencia como familiar de ciudadano de la Unión Europea. Vulneración de los derechos a la igualdad y a la tutela judicial efectiva: resoluciones administrativas y judiciales que no ponderaron suficientemente las circunstancias fácticas de la relación de dependencia que sirve de fundamento a la posibilidad de reagrupación familiar.</titulo>
+                <url_pdf szBytes="328551" szKBytes="321" pagina_inicial="39075" pagina_final="39092">https://www.boe.es/boe/dias/2020/06/10/pdfs/BOE-A-2020-5967.pdf</url_pdf>
+                <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-2020-5967</url_html>
+                <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-2020-5967</url_xml>
+              </item>
+            </epigrafe>
+          </departamento>
+        </seccion>
+      </diario>
+    </sumario>
+  </data>
+</response>

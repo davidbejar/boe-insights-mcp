@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<response>
+  <status>
+    <code>200</code>
+    <text>ok</text>
+  </status>
+  <data>
+    <sumario>
+      <metadatos>
+        <publicacion>BOE</publicacion>
+        <fecha_publicacion>19781229</fecha_publicacion>
+      </metadatos>
+      <diario numero="311">
+        <sumario_diario>
+          <identificador>BOE-S-1978-311</identificador>
+          <url_pdf szBytes="7731896" szKBytes="7551">https://www.boe.es/boe/dias/1978/12/29/pdfs/BOE-S-1978-311.pdf</url_pdf>
+        </sumario_diario>
+        <seccion codigo="1" nombre="I. Disposiciones generales">
+          <departamento codigo="1220" nombre="CORTES GENERALES">
+            <item>
+              <identificador>BOE-A-1978-31229</identificador>
+              <titulo>Constitución Española.</titulo>
+              <url_pdf szBytes="7864105" szKBytes="7680" pagina_inicial="29313" pagina_final="29424">https://www.boe.es/boe/dias/1978/12/29/pdfs/A29313-29424.pdf</url_pdf>
+              <url_html>https://www.boe.es/diario_boe/txt.php?id=BOE-A-1978-31229</url_html>
+              <url_xml>https://www.boe.es/diario_boe/xml.php?id=BOE-A-1978-31229</url_xml>
+            </item>
+          </departamento>
+        </seccion>
+      </diario>
+    </sumario>
+  </data>
+</response>

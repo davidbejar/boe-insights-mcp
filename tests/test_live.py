@@ -12,14 +12,18 @@ import pytest
 from fastmcp import Client
 
 from boe_insights_mcp.schemas import (
+    AmendmentChainResult,
     AmendmentHistoryResult,
     ArticleHistoryResult,
     CompareArticleVersionsResult,
+    DailySummaryResult,
     LawOverview,
     LawStructureResult,
     ReadArticleResult,
     ResolveReferenceResult,
+    ScanGazetteResult,
     SearchLegislationResult,
+    VerifyCitationResult,
 )
 from boe_insights_mcp.server import create_server
 from boe_insights_mcp.settings import Settings
@@ -247,3 +251,84 @@ async def test_live_overview_of_an_asturian_law_names_the_regional_gazette(
     overview = LawOverview.model_validate(result.structured_content)
     assert overview.first_published is not None
     assert (overview.first_published.gazette, overview.first_published.number) == ("BOPA", "206")
+
+
+async def test_live_daily_summary_of_the_day_of_the_state_of_alarm(mcp: Client[Any]) -> None:
+    # 2020-03-14 had two issues: the extraordinary one, with Real Decreto 463/2020 alone.
+    result = await mcp.call_tool(
+        "get_daily_summary", {"date": "2020-03-14", "words": "estado de alarma"}
+    )
+
+    page = DailySummaryResult.model_validate(result.structured_content)
+    assert page.published is True
+    assert [issue.identifier for issue in page.issues] == ["BOE-S-2020-67", "BOE-S-2020-66"]
+    assert "BOE-A-2020-3692" in [entry.identifier for entry in page.items]
+    assert page.total_items > 100
+
+
+async def test_live_scan_of_one_day_finds_the_same_decree(mcp: Client[Any]) -> None:
+    result = await mcp.call_tool(
+        "scan_gazette",
+        {"words": "estado de alarma", "from_date": "2020-03-14", "to_date": "2020-03-14"},
+    )
+
+    page = ScanGazetteResult.model_validate(result.structured_content)
+    assert (page.complete, page.days_scanned, page.days_with_issue) == (True, 1, 1)
+    assert "BOE-A-2020-3692" in [entry.identifier for entry in page.items]
+
+
+async def test_live_verify_citation_tells_a_real_quote_from_a_missing_article(
+    mcp: Client[Any],
+) -> None:
+    result = await mcp.call_tool(
+        "verify_citation",
+        {
+            "citations": [
+                {
+                    "law": "Ley 40/2015",
+                    "article": "artículo 48",
+                    "quote": "Los convenios se perfeccionan por la prestación del consentimiento "
+                    "de las partes.",
+                },
+                {"law": "Ley 40/2015", "article": "artículo 999"},
+            ]
+        },
+    )
+
+    checked = VerifyCitationResult.model_validate(result.structured_content)
+    assert [c.status for c in checked.results] == ["matches", "article_not_found"]
+    assert checked.results[0].law_id == LEY_40
+    assert (checked.checked, checked.not_checked) == (2, 0)
+
+
+async def test_live_amendment_chain_of_rdl_8_2020_lists_the_laws_it_amended(
+    mcp: Client[Any],
+) -> None:
+    result = await mcp.call_tool(
+        "explore_amendment_chain",
+        {"law_id": "BOE-A-2020-3824", "direction": "amends", "depth": 1},
+    )
+
+    chain = AmendmentChainResult.model_validate(result.structured_content)
+    assert (chain.complete, chain.examined, chain.pending) == (True, 1, 0)
+    assert chain.nodes[0].law_id == "BOE-A-2020-3824"
+    # Ley 11/2002, a law of the national intelligence centre, was one of the laws it modified.
+    assert any(
+        edge.amending == "BOE-A-2020-3824"
+        and edge.amended == "BOE-A-2002-8628"
+        and edge.kind == "modifies"
+        for edge in chain.edges
+    )
+
+
+async def test_live_a_two_issue_day_gives_each_item_its_issue_and_the_gazette_notice(
+    mcp: Client[Any],
+) -> None:
+    result = await mcp.call_tool("get_daily_summary", {"date": "2020-03-14", "limit": 25})
+
+    content: dict[str, Any] = result.structured_content  # type: ignore[assignment]
+    items: list[dict[str, Any]] = content["items"]
+    assert len(items) == 25
+    assert items[0]["issue"] == "67"  # the extraordinary issue is listed first
+    assert all("issue" in item for item in items)
+    assert content["provenance"]["notice"].startswith("Summary of the official gazette.")

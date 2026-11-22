@@ -17,7 +17,7 @@ from __future__ import annotations
 import re
 import time
 from collections import Counter
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Literal, Protocol, get_args
@@ -62,6 +62,7 @@ __all__ = [
     "AnalysisClient",
     "DateBasis",
     "GroupBy",
+    "MonotonicProgress",
     "TrendFilters",
     "compare_topics",
     "explain_spike",
@@ -159,7 +160,7 @@ class AnalysisClient(Protocol):
         ...
 
 
-class _Monotonic:
+class MonotonicProgress:
     """Wraps a progress callback so that the values it receives strictly increase.
 
     One tool call can report several phases (the catalogue download, then a search, then a loop
@@ -278,7 +279,7 @@ async def _prepare(
     if period is not None:
         # Fails early (too many buckets) instead of after a possible 30-second download.
         analytics.bucket_range(start, end, period)
-    wrapped: ProgressCallback | None = _Monotonic(progress) if progress is not None else None
+    wrapped: ProgressCallback | None = MonotonicProgress(progress) if progress is not None else None
     catalogue = await store.get(progress=wrapped)
     # The API evaluates body text and subject; everything else is checked locally on the hits.
     selected = await store.select(
@@ -315,19 +316,35 @@ def _provenance(prepared: _Prepared) -> Provenance:
     )
 
 
+def _is_regional(law: LawSummary) -> bool:
+    """Whether the law has regional scope (code "2")."""
+    return law.scope is not None and law.scope.code == "2"
+
+
+def _counted(p: _Prepared) -> list[LawSummary]:
+    """The laws that fall in the resolved date range, which is what a result counts."""
+    return analytics.filter_laws(p.matched, start=p.start, end=p.end, date_field=p.field)
+
+
 def _caveats(
     *,
-    scope: ScopeFilter,
+    counted: Iterable[LawSummary],
     date_basis: DateBasis,
     partial: bool,
     text_used: bool,
     departments: bool = False,
     ratio: bool = False,
 ) -> list[str]:
-    """The fixed caveat sentences that apply, in a fixed order."""
+    """The fixed caveat sentences that apply, in a fixed order.
+
+    ``counted`` are the laws the result is made of; the reprint caveat needs one of them to
+    be regional.
+    """
     caveats = [_CAVEAT_BASE]
     # State laws are published in the BOE itself, so only regional ones suffer the reprint delay.
-    if scope != "state" and date_basis == "published":
+    # Looking at the laws rather than at the scope filter keeps the warning off results that
+    # cannot contain a regional law (ranks that exist only at state level, an empty range).
+    if date_basis == "published" and any(_is_regional(law) for law in counted):
         caveats.append(_CAVEAT_REPRINT)
     if partial:
         caveats.append(_CAVEAT_PARTIAL)
@@ -501,7 +518,7 @@ async def legislation_over_time(
         spikes=[_spike_info(s) for s in _spikes(series)],
         coverage=_coverage(p.catalogue, len(p.matched)),
         caveats=_caveats(
-            scope=filters.scope,
+            counted=_counted(p),
             date_basis=date_basis,
             partial=_has_partial(series),
             text_used=_blank_to_none(filters.text) is not None,
@@ -562,7 +579,7 @@ async def top_departments(
         coverage=_coverage(p.catalogue, len(p.matched)),
         # No series, so nothing can be partial.
         caveats=_caveats(
-            scope=filters.scope,
+            counted=_counted(p),
             date_basis=date_basis,
             partial=False,
             text_used=_blank_to_none(filters.text) is not None,
@@ -670,7 +687,7 @@ async def compare_topics(
         ],
         coverage=_coverage(p.catalogue, len(p.matched)),
         caveats=_caveats(
-            scope=scope,
+            counted=_counted(p),
             date_basis=date_basis,
             partial=any(_has_partial(t.series) for t in compared),
             text_used=any(_blank_to_none(topic.text) for topic in topics),
@@ -840,7 +857,7 @@ async def explain_spike(
         note="No laws match in this period." if explanation.count == 0 else None,
         coverage=_coverage(p.catalogue, len(p.matched)),
         caveats=_caveats(
-            scope=filters.scope,
+            counted=_counted(p),
             date_basis=date_basis,
             # A spike found in the series is a complete period by construction; a period named
             # by the caller may still be running.
@@ -868,7 +885,7 @@ def _no_spike(p: _Prepared, filters: TrendFilters, date_basis: DateBasis) -> Exp
         "period or fewer filters, or name a period with period_key.",
         coverage=_coverage(p.catalogue, len(p.matched)),
         caveats=_caveats(
-            scope=filters.scope,
+            counted=_counted(p),
             date_basis=date_basis,
             partial=False,
             text_used=_blank_to_none(filters.text) is not None,
@@ -978,10 +995,13 @@ async def most_amended_laws(
         except BoeError:
             # Any BOE failure, retryable or not, skips just this law: a permanently malformed
             # analysis of one law must not sink the ranking of the others. It is counted in
-            # ``failed`` and tried again on the next call. Programming errors are not
+            # ``failed``. A permanent failure is remembered by the client for a while, so
+            # repeating the call re-counts it without a request (it is then ``cached`` and
+            # spends no budget); a retryable one is tried again. Programming errors are not
             # ``BoeError`` and still propagate.
             failed += 1
-            fresh += 1
+            if not cached:
+                fresh += 1
         else:
             examined += 1
             if not cached:
@@ -1012,7 +1032,7 @@ async def most_amended_laws(
         note=None if complete else _incomplete_note(examined, failed, len(candidates)),
         coverage=_coverage(p.catalogue, len(p.matched)),
         caveats=_caveats(
-            scope=filters.scope,
+            counted=in_range,
             date_basis=date_basis,
             partial=False,
             text_used=_blank_to_none(filters.text) is not None,

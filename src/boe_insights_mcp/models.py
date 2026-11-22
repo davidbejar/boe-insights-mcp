@@ -9,7 +9,9 @@ Public names: ``LawSummary`` (a search hit), ``LawMetadata`` (a summary plus rep
 and the ``as_list`` helper. The text models are ``IndexEntry`` (one row of a law's block index),
 ``Paragraph``, ``BlockVersion`` and ``Block`` (one block of text with all its versions); the
 latter three are built by ``textparse`` from the XML of ``/texto/bloque`` and of the whole-law
-``/texto`` (api-notes 6 and "Text structure" of the third probe).
+``/texto`` (api-notes 6 and "Text structure" of the third probe). ``DailySummary``,
+``GazetteIssue`` and ``GazetteItem`` describe one day's gazette and are built by ``summaries``
+from the XML of ``/boe/sumario`` (api-notes 8 and "Verified after the fourth probe").
 ``client`` builds these from response bodies; ``legislation`` consumes them and converts them to
 the tool-facing ``schemas``. They are not sent to the model directly. Quirks are described in
 ``docs/api-notes.md`` section 0 and the sections cited below.
@@ -34,6 +36,9 @@ __all__ = [
     "Block",
     "BlockVersion",
     "CodedValue",
+    "DailySummary",
+    "GazetteIssue",
+    "GazetteItem",
     "IndexEntry",
     "LawAnalysis",
     "LawMetadata",
@@ -278,6 +283,19 @@ class BlockVersion(_ApiModel):
         return tuple(p for p in self.paragraphs if not _is_footnote(p))
 
     @property
+    def own_paragraphs(self) -> tuple[Paragraph, ...]:
+        """The paragraphs that are the law's own words: not footnotes, not quoted notes."""
+        # Quoted paragraphs ("Téngase en cuenta...", "Redacción anterior:" citations, and the
+        # footnotes inside a blockquote) and ``nota_pie`` footnotes are the BOE's notes about the
+        # text, not the text (api-notes 6.1, "Blockquote").
+        return tuple(p for p in self.body if not p.quoted)
+
+    @property
+    def editorial_paragraphs(self) -> tuple[Paragraph, ...]:
+        """The paragraphs the BOE adds about the text: footnotes and quoted notes."""
+        return tuple(p for p in self.paragraphs if _is_footnote(p) or p.quoted)
+
+    @property
     def text(self) -> str:
         """The body paragraphs joined by blank lines; quoted ones are prefixed with ``> ``."""
         return "\n\n".join(f"> {p.text}" if p.quoted else p.text for p in self.body)
@@ -305,3 +323,47 @@ class Block(_ApiModel):
     """True when the block carries a ``fecha_caducidad`` at all, a real date or not. It is also
     set for the sentinel ``00000001`` and for any other non-date value, which leave
     ``expires_on`` empty."""
+
+
+class GazetteItem(_ApiModel):
+    """One entry of a daily summary: a disposition, an appointment, a grant or an announcement."""
+
+    identifier: str
+    """``BOE-A-...`` (sections 1, 2A, 2B, 3, T) or ``BOE-B-...`` (sections 4, 5A, 5B, 5C)."""
+    title: str
+    """The title with whitespace collapsed; the Spanish text is otherwise untouched."""
+    section_code: str
+    """``1``, ``2A``, ``2B``, ``3``, ``4``, ``5A``, ``5B``, ``5C``, ``T``... (the names of the
+    sections change with the era, the codes do not)."""
+    section_name: str
+    department_code: str | None
+    """``None`` where the source has an empty code (announcements of 1960)."""
+    department_name: str | None
+    heading: str | None
+    """The name of the epígrafe the item sits under, when there is one."""
+    issue_number: str
+    """The ``numero`` of the issue the item belongs to."""
+    first_page: int | None
+    last_page: int | None
+    pdf_url: str | None
+    html_url: str | None
+    """Missing on some announcements before 2009."""
+
+
+class GazetteIssue(_ApiModel):
+    """One issue (``diario``) of the gazette."""
+
+    number: str
+    """The issue number within the year, e.g. ``67``."""
+    identifier: str
+    """The summary identifier, e.g. ``BOE-S-2020-67``."""
+
+
+class DailySummary(_ApiModel):
+    """Everything one day's summary lists."""
+
+    day: date
+    issues: tuple[GazetteIssue, ...]
+    """In the order the API gives them; a day can have two (extraordinary issue listed first)."""
+    items: tuple[GazetteItem, ...]
+    """In document order, across all issues."""

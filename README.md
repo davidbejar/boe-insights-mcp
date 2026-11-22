@@ -7,11 +7,11 @@
 
 An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that gives AI assistants such as Claude analytical tools over the open data of Spain's BOE (Boletín Oficial del Estado). Instead of one tool per API endpoint, the tools are shaped around the questions people actually ask: "is this law still in force?", "what changed in this article?", "how has legislation on X evolved?".
 
-**Status:** early development. Fourteen tools are available today (law lookup, search, status overview and code lookup; amendment history; reading, comparing and tracing the history of single articles; a law's table of contents; and trend analytics over the whole consolidated collection); everything else is on the [roadmap](#roadmap). Not yet published on PyPI: run it from source.
+**Status:** early development. Eighteen tools are available today (law lookup, search, status overview and code lookup; amendment history and amendment chains; reading, comparing and tracing the history of single articles; checking citations against the text; a law's table of contents; trend analytics over the whole consolidated collection; and the BOE's daily gazette); everything else is on the [roadmap](#roadmap). Not yet published on PyPI: run it from source.
 
 ## What you can ask
 
-Five worked examples, each from a real run of the server on 2026-11-21. The question comes first, then the tool calls in order and an extract of the result (long titles shortened with "…").
+Eight worked examples, each from a real run of the server (examples 1 to 4 on 2026-11-21, examples 5 to 8 on 2026-11-22). The question comes first, then the tool calls in order and an extract of the result (long titles shortened with "…").
 
 ### 1. Read a well-known law
 
@@ -94,27 +94,85 @@ search_legislation(scope="regional", title="vivienda", department_code="8121", p
 get_law_overview(law_id="BOE-A-2018-9774")
 ```
 
-About 29% of the collection (3,623 of 12,477 laws when this was run) is regional. For "vivienda", 39 laws since 2015 across 12 communities:
+About 29% of the collection (3,623 of 12,477 laws when this was run) is regional. For "vivienda", 48 laws since 2015 across 12 communities (the title filter also matches the plural "viviendas"):
 
 | Community | Laws |
 |---|---|
-| Illes Balears | 7 |
-| Región de Murcia | 5 |
-| Canarias, Cataluña | 4 each |
-| Andalucía, Extremadura, Navarra, Madrid | 3 each |
-| Aragón, País Vasco | 2 each |
+| Illes Balears | 8 |
+| Canarias, Cataluña | 7 each |
+| Región de Murcia | 6 |
+| Andalucía, Extremadura, Navarra, Madrid, Comunitat Valenciana | 3 each |
+| Aragón | 2 |
 
-The 2 remaining communities (3 laws) are grouped as "other". (The `search_legislation` step is only there to find an identifier among the Balearic results; they include Ley 5/2018, "de la vivienda de las Illes Balears".) `get_law_overview` for it shows two dates:
+The 2 remaining communities (3 laws) are grouped as "other". (The `search_legislation` step is only there to find an identifier among the Balearic results; it returns 7 laws, including Ley 5/2018, "de la vivienda de las Illes Balears". Its `title` filter is matched by the BOE itself on exact words, so it misses the eighth Balearic law, whose title says "viviendas".) `get_law_overview` for Ley 5/2018 shows two dates:
 
 - `first_published`: gazette BOIB, issue 78, 2018-06-26. This is where the law was first published, and it governs entry into force (`effective_from` 2018-06-27).
 - `published_on`: 2018-07-13, the date of its reprint in the BOE. `enacted_on` is 2018-06-19.
 - `status` `partially_repealed`; 20 later norms affect it (10 modifications, 3 repeals, among others).
 
-"Cambio climático" (9 laws, 8 communities) and "turismo" (12 laws, 6 communities, 5 from the Balearic Islands) were also tried; "vivienda" gave the broadest spread, so it is the one shown.
+### 6. Checking citations
+
+*"Check these citations from a memo."*
+
+```text
+read_article(law_id="BOE-A-2015-10566", article="artículo 48")                      -> text in force
+read_article(law_id="BOE-A-2015-10566", article="artículo 48", as_of="2017-01-01")  -> the 2016 wording
+verify_citation(citations=[five items: law, article, and a quote for four of them])
+```
+
+All five citations were checked in one call (`checked` 5, `not_checked` 0, run on 2026-11-22):
+
+| Citation | `status` | What the result says |
+|---|---|---|
+| Ley 40/2015, art. 48, the current wording of the term for registration ("resultarán eficaces una vez inscritos, en el plazo de 5 días hábiles desde su formalización, en el Registro Electrónico …") | `matches` | `quote_match.level` `exact`. |
+| The same sentence as worded from 2016 ("… una vez inscritos en el Registro Electrónico …", without the 5 days) | `matches_older_version` | `other_version`: an `exact` match with a version in force from 2016-10-02 to 2020-12-31. |
+| The current wording with "5 días" changed to "15 días" | `text_differs` | `level` `close`, `similarity` 0.97, `flags` `["number"]`, `differences`: "… en el plazo de [-15-] {+5+} días hábiles …". |
+| "Las aportaciones financieras que se comprometan a realizar los firmantes (...) podrán ser superiores a los gastos derivados de la ejecución del convenio." | `matches` | `level` `exact`, but `omitted` is `["no"]` and `flags` is `["omitted_negation"]`. |
+| Ley 30/1992, art. 1, no quote | `not_in_force` | `state` `repealed`; note: "The whole law was repealed on 2016-10-02, so this article is no longer in force; the text shown is its last consolidated version." |
+
+The fourth row is why `omitted` exists. Every word of the quote is in the article, so it matches, but the quote skips a "no": article 48.6 says the financial contributions "no podrán ser superiores a los gastos", and the quote reads as if they may be. The tool compares words, not meaning, and reports facts, not legal correctness.
+
+### 7. Following amendments
+
+*"What did Real Decreto-ley 8/2020 change, and has it been changed since?"*
+
+```text
+explore_amendment_chain(law_id="BOE-A-2020-3824", direction="amends", depth=1)
+explore_amendment_chain(law_id="BOE-A-2020-3824", direction="amended_by", depth=2)
+```
+
+- `amends`: the decree-law acts on 9 norms (`levels` [1, 9]): 6 modifications, 2 suspensions and 1 repeal. Edges, with the BOE's own wording in `detail`: `modifies` Real Decreto-ley 7/2020, "el art. 16 del Real Decreto-ley 7/2020, de 12 de marzo"; `suspends` `BOE-A-2015-2495`, "en la forma y con los efectos indicados la vigencia de los arts. 3.5 y 6 de la Orden IET/389/2015, de 5 de marzo".
+- `amended_by`, depth 2: 72 laws (`levels` [1, 23, 48]) and 142 edges, 117 `modifies` and 25 `repeals` (repeals include partial ones), all 24 laws examined (`complete` true). Two edges that touch the starting law: `repeals`, Ley 2/2021, "el art. 42, SE MODIFICA el art. 40.1 y 2, Ley 2/2021, de 29 de marzo"; `modifies`, `BOE-A-2023-6967`, "el art. 17.9, por Real Decreto-ley 2/2023, de 16 de marzo".
+- `court_rulings_excluded` is 3: three court rulings concerning this decree-law are left out by default because only amendments are followed; `include="all"` lists them.
+- Caution: the 48 laws at level 2 amended one of the 23 laws at level 1, not necessarily the parts that touch Real Decreto-ley 8/2020. Their `detail` is not shown by default.
+
+### 8. The daily gazette
+
+*"What did the BOE publish on 14 March 2020?"*
+
+```text
+get_daily_summary(date="2020-03-14", limit=5)
+```
+
+- Two issues that day: number 67 (`BOE-S-2020-67`) and number 66. 419 items in all: section 1 (general provisions) 5, 2A 4, 2B 7, 3 (other provisions) 41, 4 (administration of justice) 280, 5A 22, 5B 52, 5C 8.
+- The first item is in issue 67, the extraordinary one: `BOE-A-2020-3692`, "Real Decreto 463/2020, de 14 de marzo, por el que se declara el estado de alarma para la gestión de la situación de crisis sanitaria ocasionada por el COVID-19."
+
+*"Anything about vivienda in the BOE this week?"*
+
+```text
+scan_gazette(words="vivienda")      -> default range: the last 7 days, 2026-11-16 to 2026-11-22
+```
+
+- 7 days scanned, 6 with an issue (the 22nd is a Sunday, with none); 11 titles match: 2026-11-16 1, 11-17 2, 11-18 1, 11-19 2, 11-20 4, 11-21 1.
+- 2026-11-21, `BOE-A-2026-24487`: "Resolución de 10 de noviembre de 2026, de la Dirección General de Vivienda y Suelo, por la que se publica el Convenio con la Comunidad Autónoma de Castilla-La Mancha, …"
+- 2026-11-19, `BOE-B-2026-38005`: "Anuncio del concurso de proyectos de: Secretaría General de Agenda Urbana, Vivienda y Arquitectura. …"
+- 2026-11-20, `BOE-B-2026-38218`: "Resolución del Departamento de Territorio, Vivienda y Transición Ecológica TER/4133/2026, por la que se otorga …"
 
 ### Good to know
 
-- **Searches match exact words, so wording matters.** In a title, "fumar" finds nothing since 2020, while "tabaco" finds 8 (verified on 2026-11-21).
+- **Title filters match whole words, and wording matters.** The trend tools and the gazette tools match singular and plural forms ("vivienda" also finds "viviendas"); the BOE's own search (the `title` and `text` filters of `search_legislation`) matches exact words. In a title, "fumar" finds nothing since 2020, while "tabaco" finds 8 (verified on 2026-11-21). A text or subject filter that matches more than 5,000 laws is refused as too broad.
+- **The gazette is wider than the consolidated collection.** `get_daily_summary` and `scan_gazette` list everything the BOE prints, and most of those identifiers (appointments, announcements, many resolutions) are not in the consolidated collection, so the law and article tools will not find them.
+- **Citation checks compare words, not meaning.** A paraphrase does not match, and a quote that skips a word with "(...)" matches while `omitted` and `flags` say what was skipped. The result is facts about wording, not a view on legal correctness.
 - **Coverage is the BOE's consolidated legislation collection**, not every item printed in the BOE, and it holds only part of each year's laws, a varying part (thinner before about 2010 and for the most recent year or two). A change in a count is not by itself a change in how much was legislated. Counting one rank (Ley with `scope="state"`, Ley Orgánica, Real Decreto-ley or Real Decreto Legislativo) by year, `legislation_over_time` adds `highest_number` so you can judge the coverage. Counts say so in their `caveats`.
 - **Regional coverage is laws and decree-laws with the rank of law**, not regional decrees or orders, which live in each community's own gazette.
 - **Regional laws are dated by their BOE reprint** (which can come weeks or years after the regional publication) unless you pass `date_basis="enacted"`; under `enacted` the last three months are incomplete, because laws are published weeks after being enacted.
@@ -140,8 +198,24 @@ The 2 remaining communities (3 laws) are grouped as "other". (The `search_legisl
 | `compare_article_versions` | What changed in this article between two dates? | `law_id`, `article` or `block_id`, `from_date`, `to_date`, `max_changes` (1-200), `max_chars` (1000-30000) |
 | `get_article_history` | When did this article change, and which law changed it? | `law_id`, `article` or `block_id` |
 | `get_amendment_history` | Which norms have affected this law, by kind and by year? | `law_id`, `group` (`all`, `repeals`, `modifies`, `adds`, `corrections` or `other`), `limit` (1-100), `offset` |
+| `explore_amendment_chain` | Which laws did this law amend, and which laws amended it, up to three levels deep? | `law_id`, `direction` (`amended_by` or `amends`), `depth` (1-3), `include` (`amendments` or `all`), `details` (`root`, `all` or `none`), `max_laws` (1-50) |
 
-All fourteen tools are read-only. `resolve_reference` returns `resolved`, `ambiguous` (with candidates and a hint) or `not_found`. `search_legislation` pages with `next_offset`, because the API gives no total count. `find_codes` returns the matching `{code, text}` pairs.
+### Checking citations
+
+| Tool | Question it answers | Key parameters |
+|---|---|---|
+| `verify_citation` | Do these citations (law, article, quoted words) exist, are they in force, and do the words match the text, the current version or an older one? | `citations` (1 to 10, each with `law`, `article` or `block_id`, optional `quote` of at most 5,000 characters, optional `as_of`) |
+
+### The daily gazette
+
+These two tools cover everything the BOE prints (appointments, grants, announcements, every disposition) since 1960-09-01, unlike the consolidated collection the other tools use.
+
+| Tool | Question it answers | Key parameters |
+|---|---|---|
+| `get_daily_summary` | What did the BOE publish on this day? | `date` (default: the latest issue), `section`, `department_code`, `words`, `offset`, `limit` (1-100) |
+| `scan_gazette` | Which items in the last days have these words in the title? | `words`, `section`, `department_code`, `from_date` (default: 6 days before `to_date`), `to_date` (default: today), `offset`, `limit` (1-100); at most 31 days |
+
+All eighteen tools are read-only. `resolve_reference` returns `resolved`, `ambiguous` (with candidates and a hint) or `not_found`. `search_legislation` pages with `next_offset`, because the API gives no total count. `find_codes` returns the matching `{code, text}` pairs.
 
 **Law status.** `get_law_overview` returns a `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` or `not_yet_in_force`) with a plain-English note, the BOE's initial note when the text has one, and counts and samples of the norms that amend the law or that it amends. The status is derived from the BOE flags and the amendment references, so it is an indication, not a legal determination. A whole repeal is also detected from the opening note of the consolidated text ("Norma derogada..."), because some wholly repealed laws carry only that note and not the metadata flag.
 
@@ -309,6 +383,8 @@ The article tools add three pieces: an XML parser for the BOE's text blocks (`te
 - **Articles are found by title.** The BOE's block ids are opaque (article 46 bis of Ley 40/2015 is `a4-2`), so the server reads the law's text index and matches the wording against the block titles instead of building an id.
 - **Versions are selected by start date.** Each version of an article starts on its effective date (the publication date when that is missing), and the text in force on a date is the latest version that started on or before it.
 - **Long articles come in pages.** `read_article` returns at most `max_chars` characters, with `truncated` and `next_offset` to fetch the rest; `compare_article_versions` and `get_article_history` cap their output and say so with `changes_truncated`, `unified_truncated` and `truncated`.
+- **Citation matching compares words and versions.** A quote and each version of the article are reduced to comparable words (case, punctuation and quotation marks ignored, accents kept); the best aligned passage is graded `exact`, `close`, `partial` or `none`, and the other versions of the article are compared too, which is how an older wording is recognised.
+- **Daily summaries are read as XML, and past days are cached.** The BOE's summary of a day is fetched as XML; a past day never changes, so it is kept for 30 days (today's summary for an hour).
 - **Polite by default.** The BOE publishes no rate limit, so the server imposes its own: at least one second between requests and at most two at a time.
 - **Typed, structured results.** Every tool returns a pydantic model with a declared output schema, not free text.
 - **Actionable errors.** Failures say what happened, whether retrying makes sense and what to do next (for example, "use `resolve_reference` to find the correct identifier").
@@ -320,7 +396,7 @@ The data comes from the BOE open data API: <https://www.boe.es/datosabiertos/>.
 
 Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](https://www.boe.es)).
 
-- Consolidated texts are informational only and have no official legal value. Only the texts published in the official gazette are authentic.
+- Consolidated texts are informational only and have no official legal value. Only the texts published in the official gazette are authentic. Gazette summaries are a listing, and only the texts published in the BOE itself are authentic.
 - This project is independent. It is not affiliated with, sponsored by or endorsed by the Agencia Estatal Boletín Oficial del Estado.
 - Nothing here is legal advice.
 
@@ -329,7 +405,7 @@ Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](
 - [x] 1. Thin slice: client, cache, rate limiter and four tools
 - [x] 2. Article reading and version history: read an article as of a date, article diff, change timeline, amendment history
 - [x] 3. Trend analytics: legislation over time, top departments, compare topics, explain a spike, most-amended laws, plus a law's table of contents
-- [ ] 4. Citation verification, amendment chain explorer, gazette scanning
+- [x] 4. Citation verification, amendment chain explorer, gazette scanning
 - [ ] 5. MCP resources, prompts and stored watchlists
 - [ ] 6. Remote mode: Streamable HTTP, GitHub OAuth, Podman container
 - [ ] 7. Evaluation suite, documentation site, PyPI release

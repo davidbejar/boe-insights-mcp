@@ -44,6 +44,7 @@ from boe_insights_mcp.errors import (
 from boe_insights_mcp.identifiers import LAW_ID
 from boe_insights_mcp.models import (
     Block,
+    DailySummary,
     IndexEntry,
     LawAnalysis,
     LawMetadata,
@@ -52,18 +53,25 @@ from boe_insights_mcp.models import (
     as_list,
 )
 from boe_insights_mcp.ratelimit import RateLimiter
+from boe_insights_mcp.summaries import parse_summary
 from boe_insights_mcp.textparse import parse_block, parse_full_text
 
 __all__ = [
+    "ANALYSIS_FAILURE_TTL",
     "ANALYSIS_TTL",
     "AUXILIARY_TTL",
     "BASE_URL",
     "DEFAULT_MAX_RESPONSE_BYTES",
     "DEFAULT_USER_AGENT",
+    "FIRST_SUMMARY_DAY",
     "FULL_TEXT_TTL",
     "INITIAL_NOTE_TTL",
     "METADATA_TTL",
     "SEARCH_TTL",
+    "SUMMARY_ABSENCE_SETTLED_DAYS",
+    "SUMMARY_PAST_TTL",
+    "SUMMARY_RECENT_ABSENCE_TTL",
+    "SUMMARY_TODAY_TTL",
     "TEXT_BLOCK_TTL",
     "TEXT_BLOCK_VERSIONED_TTL",
     "TEXT_INDEX_TTL",
@@ -85,6 +93,11 @@ AUXILIARY_TTL = 7 * 24 * 3600.0
 SEARCH_TTL = 30 * 60.0
 METADATA_TTL = 6 * 3600.0
 ANALYSIS_TTL = 6 * 3600.0
+# How long a permanently failing analysis (unknown law, unreadable body) is remembered. Shorter
+# than ``ANALYSIS_TTL`` on purpose: a success is known good, whereas a failure may be an API
+# problem that the BOE fixes within hours, so it is checked again sooner. An hour still saves
+# the repeated requests that matter, such as ``most_amended_laws`` re-trying the same bad laws.
+ANALYSIS_FAILURE_TTL = 3600.0
 TEXT_INDEX_TTL = 6 * 3600.0
 TEXT_BLOCK_TTL = 6 * 3600.0
 # A block cannot change without its ``fecha_actualizacion`` in the index changing, and that date
@@ -95,6 +108,19 @@ INITIAL_NOTE_TTL = 6 * 3600.0
 # from. Like the other per-law data it can change when the law is amended, so it gets the same
 # six hours; there is no per-block revision date to key it on.
 FULL_TEXT_TTL = 6 * 3600.0
+# A daily summary of a past day never changes again, so it is kept for a month; today's summary
+# can still gain an issue or be corrected, so it only lives an hour. A remembered "no issue" is
+# kept for a month only when the day is well in the past: a 404 for a recent day may be a
+# transient failure of a real issue (api-notes 8 cannot tell a Sunday from an error), and must not
+# hide it for a month.
+SUMMARY_PAST_TTL = 30 * 24 * 3600.0
+SUMMARY_TODAY_TTL = 3600.0
+SUMMARY_RECENT_ABSENCE_TTL = 24 * 3600.0
+# Days after which a remembered "no issue" is trusted for ``SUMMARY_PAST_TTL``.
+SUMMARY_ABSENCE_SETTLED_DAYS = 7
+# The first day the BOE summary endpoint answers; every earlier date is a 404 (api-notes, fourth
+# probe, "Daily summaries").
+FIRST_SUMMARY_DAY = date(1960, 9, 1)
 # The largest response body accepted. The biggest real one seen is the 763 KB Código Civil index
 # (api-notes 6.1); a whole-law ``/texto`` can reach several MB, so the limit is generous. It
 # exists so that a hostile or broken server cannot make us hold an unbounded body in memory.
@@ -125,6 +151,15 @@ _NOTE_BLOCK_ID = "no"
 # Cached in place of a body to remember that a law has no initial note. It is not XML, so a
 # reader that mistook it for a block would fail to parse it and drop it (the stale-body path).
 _NO_NOTE = b"boe-insights-mcp: no initial note"
+# Cached in place of an analysis that failed permanently, one marker per kind of error so that
+# the same kind is raised again. Not JSON, so a reader that mistook one for an analysis would
+# fail to parse it and drop it.
+_ANALYSIS_NOT_FOUND = b"boe-insights-mcp: analysis not found"
+_ANALYSIS_UNREADABLE = b"boe-insights-mcp: analysis unreadable"
+# Cached in place of a daily summary to remember that the API answered 404 for a past day (no
+# issue was printed: a Sunday, or a date outside the archive). Not XML, so a reader that mistook
+# it for a summary would fail to parse it and drop it.
+_NO_SUMMARY = b"boe-insights-mcp: no summary that day"
 # Retry-After is honoured but capped; the total time budget of one call (``total_timeout``) can
 # still cut it short.
 _MAX_RETRY_AFTER = 60.0
@@ -390,9 +425,43 @@ class BoeClient:
         return await self._get(path, None, METADATA_TTL, _from_envelope(_build_metadata))
 
     async def get_law_analysis(self, law_id: str) -> LawAnalysis:
-        """Return the subjects and amendment references of one law."""
+        """Return the subjects and amendment references of one law.
+
+        A permanent failure (``BoeNotFoundError``, ``BoeResponseError``) is remembered for
+        ``ANALYSIS_FAILURE_TTL`` and raised again without a request.
+        """
         path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/analisis"
-        return await self._get(path, None, ANALYSIS_TTL, _from_envelope(_build_analysis))
+        key = self._cache_key(path, None, _JSON, None)
+        cached = await self._cache.get(key)
+        # The marker lives under the key the analysis itself would use, like ``_NO_NOTE``.
+        if cached == _ANALYSIS_NOT_FOUND:
+            self._cache_hits += 1
+            raise BoeNotFoundError("The law has no analysis (remembered from an earlier request)")
+        if cached == _ANALYSIS_UNREADABLE:
+            self._cache_hits += 1
+            raise BoeResponseError(
+                "The analysis could not be read (remembered from an earlier request)"
+            )
+        try:
+            return await self._resolve(
+                cached,
+                key,
+                f"{self._base_url}{path}",
+                None,
+                ANALYSIS_TTL,
+                _from_envelope(_build_analysis),
+                _JSON,
+            )
+        except (BoeNotFoundError, BoeResponseError) as error:
+            # Only permanent failures: they would come out the same on the next call, so asking
+            # again just spends the request budget (``most_amended_laws`` would retry every bad
+            # law on every call). A retryable failure (``BoeUnavailableError``) says nothing
+            # about the law and must be tried again at once, so it is not stored.
+            marker = (
+                _ANALYSIS_NOT_FOUND if isinstance(error, BoeNotFoundError) else _ANALYSIS_UNREADABLE
+            )
+            await self._cache.set(key, marker, ANALYSIS_FAILURE_TTL)
+            raise
 
     async def read_catalogue_stamp(self) -> datetime | None:
         """When the cached catalogue pages were downloaded, or ``None`` when no stamp is cached.
@@ -416,7 +485,8 @@ class BoeClient:
     async def has_cached_analysis(self, law_id: str) -> bool:
         """Whether the analysis of ``law_id`` is in the cache right now; sends no request.
 
-        ``most_amended_laws`` uses it to let already-cached analyses through for free.
+        ``most_amended_laws`` uses it to let already-cached analyses through for free. A
+        remembered permanent failure counts as cached: the answer is known without a request.
         """
         # Only presence is checked, not that the body still parses: if a stale body is found
         # later, ``get_law_analysis`` drops it and refetches, which is a rare, harmless miss.
@@ -455,6 +525,63 @@ class BoeClient:
         """
         path = f"legislacion-consolidada/id/{_checked_law_id(law_id)}/texto"
         return await self._get(path, None, FULL_TEXT_TTL, parse_full_text, accept=_XML)
+
+    async def get_daily_summary(self, day: date, *, today: date) -> DailySummary | None:
+        """Return everything the BOE printed on ``day``, or ``None`` when it printed no issue.
+
+        ``today`` is the current Madrid date, passed in by the caller. ``None`` means the API
+        answered 404: no issue that day (most Sundays), or not yet published. Raises
+        ``ValueError`` before any request when ``day`` is before ``FIRST_SUMMARY_DAY`` or after
+        ``today``; other errors are the usual ``BoeError`` subclasses.
+        """
+        if day < FIRST_SUMMARY_DAY or day > today:
+            raise ValueError(
+                f"date must be between {FIRST_SUMMARY_DAY.isoformat()} and "
+                f"{today.isoformat()}, got {day.isoformat()}"
+            )
+        # Why ``today`` is a parameter: the client never reads the clock (the use cases own it,
+        # which is how tests fix time), and the cache lifetime below depends on the answer.
+        path = f"boe/sumario/{day:%Y%m%d}"
+        key = self._cache_key(path, None, _XML, None)
+        cached = await self._cache.get(key)
+        if cached == _NO_SUMMARY:
+            self._cache_hits += 1
+            return None
+        # Why the two lifetimes: a day before today is final, so both the summary and the
+        # remembered 404 can live a month. Today's issue is still being completed and may appear
+        # after our first look, so its summary lives an hour and its 404 is not remembered at all.
+        final = day < today
+        try:
+            return await self._resolve(
+                cached,
+                key,
+                f"{self._base_url}{path}",
+                None,
+                SUMMARY_PAST_TTL if final else SUMMARY_TODAY_TTL,
+                lambda body: parse_summary(body, day),
+                _XML,
+            )
+        except BoeNotFoundError:
+            # Sunday, holiday and future date all answer 404 and cannot be told apart (api-notes,
+            # fourth probe). Only a past day's absence is remembered, for a day when the day is
+            # recent and for a month once it is settled.
+            if final:
+                settled = (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
+                await self._cache.set(
+                    key,
+                    _NO_SUMMARY,
+                    SUMMARY_PAST_TTL if settled else SUMMARY_RECENT_ABSENCE_TTL,
+                )
+            return None
+
+    async def has_cached_summary(self, day: date) -> bool:
+        """Whether the summary of ``day`` (or its remembered absence) is cached; sends no request.
+
+        ``gazette.scan_gazette`` uses it to read already-cached days without spending its time
+        budget. Only presence is checked, like ``has_cached_analysis``.
+        """
+        path = f"boe/sumario/{day:%Y%m%d}"
+        return await self._cache.get(self._cache_key(path, None, _XML, None)) is not None
 
     async def get_initial_note(self, law_id: str) -> Block | None:
         """Return the law's initial note (block ``no``), or ``None`` when it has none.
