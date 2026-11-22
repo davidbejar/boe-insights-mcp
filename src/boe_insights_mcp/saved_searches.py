@@ -629,6 +629,7 @@ async def check_saved_searches(
         {
             day
             for span in ranges.values()
+            # A span with nothing to read (see ``_gazette_outcome``) has no days.
             if span.start <= span.end
             for day in _days(span.start, span.end)
         }
@@ -938,7 +939,10 @@ def _gazette_outcome(
     finished days from the start, and the identifiers delivered for the days after it are kept.
     """
     if span.start > span.end:
-        # Only a version-1 row that was checked through today gets here.
+        # A bookmark on or after today leaves nothing to read. This code never stores one (saving
+        # sets yesterday and a check moves it over finished days, never today), but the clock
+        # can go back (the system date is set earlier, or ``today`` is injected) after a later
+        # day was recorded. The row is left as it is so that nothing already delivered is lost.
         through = search.checked_through
         check = SearchCheck(
             name=search.name,

@@ -1240,6 +1240,22 @@ async def test_nothing_new_to_read_when_checked_through_today(store: SavedSearch
     assert (await store.get(OWNER, seed.name)).checked_through == TODAY
 
 
+async def test_a_bookmark_after_today_reads_nothing_and_stays_put(
+    store: SavedSearchStore,
+) -> None:
+    # The clock went back after a later day was recorded: start is after end.
+    seed = await seed_gazette(store, checked_through=TODAY + timedelta(days=3))
+    fake = FakeBoe()
+
+    result = await check(store, fake)
+
+    assert result.results[0].status == "checked"
+    assert result.results[0].note == f"Already checked through {TODAY + timedelta(days=3)}."
+    assert fake.log == []
+    stored = await store.get(OWNER, seed.name)
+    assert stored.checked_through == TODAY + timedelta(days=3)
+
+
 # the 31-day cap
 
 

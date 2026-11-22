@@ -22,11 +22,9 @@ import sqlite3
 import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 from typing import Literal, TypeVar
-
-from boe_insights_mcp.clock import madrid_today
 
 __all__ = [
     "DuplicateNameError",
@@ -48,13 +46,11 @@ _SCHEMA_VERSION = 2
 _BUSY_TIMEOUT = 5.0
 _T = TypeVar("_T")
 
-_BASE_COLUMNS = (
+_COLUMNS = (
     "owner, name, kind, words, section, department_code, law_id, law_title, seen, "
-    "checked_through, created_at, last_checked_at"
+    "checked_through, created_at, last_checked_at, seen_items"
 )
-_COLUMNS = f"{_BASE_COLUMNS}, seen_items"
 _COLUMN_NAMES = frozenset(_COLUMNS.replace(" ", "").split(","))
-_V1_COLUMN_NAMES = frozenset(_BASE_COLUMNS.replace(" ", "").split(","))
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS saved_searches (
@@ -152,7 +148,7 @@ class SavedSearchStore:
     # -- opening ------------------------------------------------------------------------------
 
     def _db(self) -> sqlite3.Connection:
-        """The open connection, opening (and migrating) the file on first use.
+        """The open connection, opening the file on first use.
 
         Called under the lock. A failure leaves the store closed, so the next operation tries
         again (the person may have fixed the file).
@@ -167,9 +163,9 @@ class SavedSearchStore:
         return connection
 
     def _open(self) -> sqlite3.Connection:
-        """Open the database and bring its schema to the current version.
+        """Open the database, creating its schema if the file is new.
 
-        Raises ``SearchStoreError`` for a file from a newer program or with a foreign table, and
+        Raises ``SearchStoreError`` for a file of another version or with a foreign table, and
         sqlite3 or OS errors for the rest (``_db`` translates those).
         """
         if self._path is None:
@@ -196,8 +192,8 @@ class SavedSearchStore:
 
     @staticmethod
     def _initialise(connection: sqlite3.Connection) -> None:
-        """Create, validate or migrate the schema in one transaction."""
-        # BEGIN IMMEDIATE first so two processes opening one old file cannot both migrate it:
+        """Create a new file's schema, or validate an existing one, in one transaction."""
+        # BEGIN IMMEDIATE first so two processes opening one new file cannot both create it:
         # the second one waits, then finds version 2.
         connection.execute("BEGIN IMMEDIATE")
         try:
@@ -207,15 +203,12 @@ class SavedSearchStore:
                     f"the saved-searches file has version {version}, newer than this program "
                     f"understands ({_SCHEMA_VERSION}); update boe-insights-mcp"
                 )
+            if version == 1:
+                # Version 1 (no ``seen_items``) was never released, so it is not migrated: it is
+                # a file this program does not understand, like any other, and is left as it is.
+                raise SearchStoreError("the saved-searches file has an unsupported version 1")
             if version == 0:
                 connection.execute(_SCHEMA)
-            elif version == 1:
-                if _columns(connection) != _V1_COLUMN_NAMES:
-                    raise SearchStoreError("the saved-searches file has an unexpected layout")
-                connection.execute(
-                    "ALTER TABLE saved_searches ADD COLUMN seen_items TEXT NOT NULL DEFAULT '{}'"
-                )
-                _reopen_the_day_of_saving(connection)
             # The version number alone is not trusted: a foreign file can carry any number.
             if _columns(connection) != _COLUMN_NAMES:
                 raise SearchStoreError("the saved-searches file has an unexpected layout")
@@ -492,33 +485,6 @@ def _make_private_directories(directory: Path) -> None:
     for created in reversed(missing):
         created.mkdir(mode=0o700)
         created.chmod(0o700)
-
-
-def _reopen_the_day_of_saving(connection: sqlite3.Connection) -> None:
-    """Move a version-1 gazette bookmark that marked the day of saving or checking one day back.
-
-    Version 1 bookmarked today as finished, which loses what its issue gains later that day;
-    version 2 never does, so such a bookmark is one day earlier. Version 1 was never released,
-    so this stays small: a row whose dates cannot be read is left as it is.
-    """
-    rows = connection.execute(
-        "SELECT owner, name, checked_through, created_at, last_checked_at FROM saved_searches "
-        "WHERE kind = 'gazette' AND checked_through IS NOT NULL"
-    ).fetchall()
-    for owner, name, through, created, checked in rows:
-        try:
-            bookmark = date.fromisoformat(through)
-            # The Madrid day, the one the BOE's calendar uses, not the UTC one the text holds.
-            days = {
-                madrid_today(datetime.fromisoformat(text)) for text in (created, checked) if text
-            }
-        except (ValueError, TypeError):
-            continue
-        if bookmark in days:
-            connection.execute(
-                "UPDATE saved_searches SET checked_through = ? WHERE owner = ? AND name = ?",
-                ((bookmark - timedelta(days=1)).isoformat(), owner, name),
-            )
 
 
 def _columns(connection: sqlite3.Connection) -> frozenset[str]:

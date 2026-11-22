@@ -526,91 +526,26 @@ def write_version_one(path: Path) -> None:
     connection.close()
 
 
-async def test_a_version_one_file_is_migrated_in_place_keeping_every_row(
-    tmp_path: Path,
-) -> None:
+async def test_a_version_one_file_is_refused_and_left_unmodified(tmp_path: Path) -> None:
+    # Version 1 was never released: it is a file this program does not understand.
     path = tmp_path / "saved_searches.sqlite3"
     write_version_one(path)
+    before = path.read_bytes()
 
-    opened = SavedSearchStore(path)
-    rows = await opened.list(ALICE)
-    await opened.close()
+    refused = SavedSearchStore(path)
+    with pytest.raises(SearchStoreError):
+        await refused.list(ALICE)
+    await refused.close()
 
-    assert [row.name for row in rows] == ["old", "ley"]
-    assert rows[0].checked_through == date(2026, 11, 1)
-    assert rows[0].seen_items == {}
-    assert rows[1].seen == frozenset({"k1"})
+    assert path.read_bytes() == before
     check = sqlite3.connect(path)
     try:
-        assert check.execute("PRAGMA user_version").fetchone() == (2,)
+        assert check.execute("PRAGMA user_version").fetchone() == (1,)
+        columns = {row[1] for row in check.execute("PRAGMA table_info(saved_searches)")}
+        assert "seen_items" not in columns
+        assert check.execute("SELECT COUNT(*) FROM saved_searches").fetchone() == (2,)
     finally:
         check.close()
-
-
-async def test_a_migrated_file_accepts_progress_and_reopens_cleanly(tmp_path: Path) -> None:
-    path = tmp_path / "saved_searches.sqlite3"
-    write_version_one(path)
-    first = SavedSearchStore(path)
-    row = await first.get(ALICE, "old")
-    assert await first.update_progress(
-        ALICE,
-        "old",
-        expected=row,
-        checked_through=date(2026, 11, 5),
-        seen=frozenset(),
-        seen_items={date(2026, 11, 6): frozenset({"X"})},
-        last_checked_at=T0,
-    )
-    await first.close()
-
-    second = SavedSearchStore(path)
-
-    updated = await second.get(ALICE, "old")
-    assert updated.seen_items == {date(2026, 11, 6): frozenset({"X"})}
-    assert updated.checked_through == date(2026, 11, 5)
-    await second.close()
-
-
-async def test_migration_moves_a_bookmark_that_marked_the_day_of_saving_one_day_back(
-    tmp_path: Path,
-) -> None:
-    # Version 1 marked today as finished when saving or checking; version 2 never does.
-    path = tmp_path / "saved_searches.sqlite3"
-    write_version_one(path)
-    connection = sqlite3.connect(path)
-    rows = [
-        # (name, checked_through, created_at, last_checked_at)
-        ("saved-today", "2026-11-21", "2026-11-21T09:00:00+00:00", None),
-        ("checked-today", "2026-11-21", "2026-11-01T09:00:00+00:00", "2026-11-21T10:00:00+00:00"),
-        # 23:30 UTC on the 20th is 00:30 on the 21st in Madrid: the Madrid day counts.
-        ("late-utc", "2026-11-21", "2026-11-20T23:30:00+00:00", None),
-        ("earlier", "2026-11-19", "2026-11-21T09:00:00+00:00", "2026-11-20T10:00:00+00:00"),
-        ("never", None, "2026-11-21T09:00:00+00:00", None),
-    ]
-    for name, through, created, checked in rows:
-        connection.execute(
-            "INSERT INTO saved_searches VALUES ('user:alice',?,'gazette','x',NULL,NULL,NULL,NULL,"
-            "'[]',?,?,?)",
-            (name, through, created, checked),
-        )
-    connection.execute(
-        "INSERT INTO saved_searches VALUES ('user:alice','law-today','law',NULL,NULL,NULL,'L',"
-        "'T','[]','2026-11-21','2026-11-21T09:00:00+00:00',NULL)"
-    )
-    connection.commit()
-    connection.close()
-
-    opened = SavedSearchStore(path)
-    through = {row.name: row.checked_through for row in await opened.list(ALICE)}
-    await opened.close()
-
-    assert through["saved-today"] == date(2026, 11, 20)
-    assert through["checked-today"] == date(2026, 11, 20)
-    assert through["late-utc"] == date(2026, 11, 20)
-    assert through["earlier"] == date(2026, 11, 19)
-    assert through["never"] is None
-    assert through["old"] == date(2026, 11, 1)
-    assert through["law-today"] == date(2026, 11, 21)  # not a gazette search: left alone
 
 
 async def test_update_progress_compares_decoded_values_not_stored_text(tmp_path: Path) -> None:
