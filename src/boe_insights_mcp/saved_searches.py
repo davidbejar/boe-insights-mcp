@@ -1,10 +1,18 @@
 """Use cases of the five saved-search tools: save, list, check, edit and delete.
 
-A saved search is a stored filter plus a bookmark. The server cannot alert anyone: nothing
-happens until the model calls ``check_saved_searches``, which reads what the BOE published since
-the bookmark and moves it. Two kinds exist: ``gazette`` (title words, section and department over
-the daily summaries, reusing ``gazette.GazetteFilter``) and ``law`` (new amendments to one
-consolidated law, reusing ``chains.relation_kind``).
+A saved search is a stored filter plus what it remembers about what it already delivered. The
+server cannot alert anyone: nothing happens until the model calls ``check_saved_searches``. Two
+kinds exist: ``gazette`` (title words, section and department over the daily summaries, reusing
+``gazette.GazetteFilter``) and ``law`` (new amendments to one consolidated law, reusing
+``chains.relation_kind``).
+
+A gazette search remembers ``checked_through`` (every day up to it is finished) and, for the days
+after it, the identifiers already delivered (``seen_items``). A day is too coarse a unit for
+that alone: today's issue can grow after it was read, a ``limit`` can cut inside a day, and a
+recent "no issue" may be a late publication. A law search remembers the references it reported
+(``seen``). Delivery is at most once: what a check shows is marked as shown before the model has
+it, so a result lost in transit is recovered only with ``since``, which re-reads and marks
+nothing.
 
 Layering: ``server`` calls these functions with the owner from ``owner`` -> ``searchstore`` for
 the rows, ``client`` for BOE data -> ``schemas`` for the results. Like the other use-case

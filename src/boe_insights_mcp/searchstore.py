@@ -291,6 +291,7 @@ class SavedSearchStore:
         """
 
         def locked() -> _T:
+            """``function`` under the lock, with sqlite3 failures translated."""
             with self._lock:
                 try:
                     return function(*args)

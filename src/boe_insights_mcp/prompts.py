@@ -308,11 +308,14 @@ def _quote(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def _finish(
-    template: _Text, lang: Lang, *, closing: dict[Lang, str] | None = None, **fields: str
-) -> str:
+def _finish(template: _Text, lang: Lang, **fields: str) -> str:
     """Fill ``template.body`` with ``fields`` and append the closing lines of ``lang``."""
-    return template.body.format(**fields) + (closing or _CLOSING)[lang]
+    return template.body.format(**fields) + _CLOSING[lang]
+
+
+def _finish_gazette(template: _Text, lang: Lang, **fields: str) -> str:
+    """Like ``_finish``, with the closing lines of the gazette prompts."""
+    return template.body.format(**fields) + _GAZETTE_CLOSING[lang]
 
 
 def _window(days: int) -> tuple[str, str]:
@@ -376,10 +379,9 @@ def _gazette_briefing(lang: Lang, topic: str, days: int) -> str:
     text = _GAZETTE_BRIEFING.en if lang == "en" else _GAZETTE_BRIEFING.es
     start, end = _window(days)
     key = "topic" if lang == "en" else "tema"
-    return _finish(
+    return _finish_gazette(
         text,
         lang,
-        closing=_GAZETTE_CLOSING,
         start=start,
         end=end,
         days=str(days),
@@ -396,13 +398,16 @@ def register(server: FastMCP) -> None:
     """Register the eight prompts (four, each in English and Spanish) on ``server``."""
     # Argument names differ per language (they are what the person sees), so each registration
     # needs its own signature; the bodies only forward to the shared renderers above, which is
-    # what keeps a pair from drifting apart.
+    # what keeps a pair from drifting apart. The docstrings are for readers of this code: the
+    # model sees the ``description`` that ``_add`` passes explicitly, never the docstring.
     e, s = _EXPLAIN_LAW.en, _EXPLAIN_LAW.es
 
     def explain_law(law: Annotated[str, Field(description=e.arguments[0])]) -> str:
+        """The English prompt that explains a law."""
         return _explain_law("en", law)
 
     def explicar_ley(ley: Annotated[str, Field(description=s.arguments[0])]) -> str:
+        """The Spanish prompt that explains a law."""
         return _explain_law("es", ley)
 
     _add(server, explain_law, e)
@@ -415,6 +420,7 @@ def register(server: FastMCP) -> None:
         article: Annotated[str, Field(description=e.arguments[1])],
         since: Annotated[date | None, Field(description=e.arguments[2])] = None,
     ) -> str:
+        """The English prompt that traces the changes of one article."""
         return _article_changes("en", law, article, since)
 
     def cambios_articulo(
@@ -422,6 +428,7 @@ def register(server: FastMCP) -> None:
         articulo: Annotated[str, Field(description=s.arguments[1])],
         desde: Annotated[date | None, Field(description=s.arguments[2])] = None,
     ) -> str:
+        """The Spanish prompt that traces the changes of one article."""
         return _article_changes("es", ley, articulo, desde)
 
     _add(server, article_changes, e)
@@ -430,9 +437,11 @@ def register(server: FastMCP) -> None:
     e, s = _CHECK_CITATIONS.en, _CHECK_CITATIONS.es
 
     def check_citations(text: Annotated[str, Field(description=e.arguments[0])]) -> str:
+        """The English prompt that checks the citations in a text."""
         return _check_citations("en", text)
 
     def comprobar_citas(texto: Annotated[str, Field(description=s.arguments[0])]) -> str:
+        """The Spanish prompt that checks the citations in a text."""
         return _check_citations("es", texto)
 
     _add(server, check_citations, e)
@@ -444,12 +453,14 @@ def register(server: FastMCP) -> None:
         topic: Annotated[str, Field(description=e.arguments[0])],
         days: Annotated[int, Field(ge=1, le=_MAX_DAYS, description=e.arguments[1])] = _DEFAULT_DAYS,
     ) -> str:
+        """The English prompt that briefs on what the BOE published on a topic."""
         return _gazette_briefing("en", topic, days)
 
     def resumen_boe(
         tema: Annotated[str, Field(description=s.arguments[0])],
         dias: Annotated[int, Field(ge=1, le=_MAX_DAYS, description=s.arguments[1])] = _DEFAULT_DAYS,
     ) -> str:
+        """The Spanish prompt that briefs on what the BOE published on a topic."""
         return _gazette_briefing("es", tema, dias)
 
     _add(server, gazette_briefing, e)
