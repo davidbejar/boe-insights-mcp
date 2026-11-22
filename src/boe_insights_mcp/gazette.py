@@ -16,15 +16,15 @@ from __future__ import annotations
 import time
 from collections import Counter
 from collections.abc import Callable, Iterable
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Protocol
 
 from boe_insights_mcp.analytics import canonical_department_code, title_matcher
 from boe_insights_mcp.catalogue import ProgressCallback
 from boe_insights_mcp.client import FIRST_SUMMARY_DAY
-from boe_insights_mcp.clock import madrid_today, utc_now
+from boe_insights_mcp.clock import madrid_today, midnight_utc, utc_now
 from boe_insights_mcp.errors import BoeError
-from boe_insights_mcp.models import DailySummary, GazetteItem
+from boe_insights_mcp.models import DailySummary, GazetteItem, strip_or_none
 from boe_insights_mcp.schemas import (
     GAZETTE_NOTICE,
     DailySummaryResult,
@@ -80,12 +80,6 @@ class SummaryClient(Protocol):
 # --- shared helpers ----------------------------------------------------------------------------
 
 
-def _blank_to_none(value: str | None) -> str | None:
-    """Strip a filter value; blank means "not given"."""
-    stripped = (value or "").strip()
-    return stripped or None
-
-
 def _check_paging(offset: int, limit: int) -> None:
     """Raise ``ValueError`` for a negative offset or a limit outside 1..``MAX_LIMIT``."""
     if offset < 0:
@@ -106,10 +100,10 @@ class _Filter:
         self._words = title_matcher(words)
         if self._words is None and (words or "").strip():
             raise ValueError("words must contain letters or digits")
-        section = _blank_to_none(section)
+        section = strip_or_none(section)
         # Section codes are letters and digits whose case carries no meaning ("2a" is "2A").
         self._section = section.upper() if section else None
-        department = _blank_to_none(department_code)
+        department = strip_or_none(department_code)
         # Compared by canonical code: the summaries of some eras carry codes the departments table
         # writes differently (leading zeros, the recoded Madrid code of api-notes 8).
         self._department = canonical_department_code(department) if department else None
@@ -191,12 +185,9 @@ def _provenance(
     default: a summary lists what was published, not consolidated texts, so the
     consolidated-text notice of ``Provenance`` would be wrong for it.
     """
-    updated = (
-        datetime(newest_issue.year, newest_issue.month, newest_issue.day, tzinfo=UTC)
-        if newest_issue is not None
-        else None
+    return Provenance(
+        generated_at=moment, data_updated_at=midnight_utc(newest_issue), notice=notice
     )
-    return Provenance(generated_at=moment, data_updated_at=updated, notice=notice)
 
 
 # --- get_daily_summary -------------------------------------------------------------------------
@@ -286,7 +277,7 @@ async def daily_summary(
     matching = [item for item in found.items if wanted.matches(item)]
     end, has_more, next_offset = _page(len(matching), offset, limit)
     page = matching[offset:end]
-    if (asked := _blank_to_none(section)) is not None and not any(
+    if (asked := strip_or_none(section)) is not None and not any(
         item.section_code.upper() == asked.upper() for item in found.items
     ):
         # A wrong section code (the model writes "III" or "I") otherwise looks like an empty day.

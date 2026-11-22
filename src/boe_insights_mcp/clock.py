@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
 
-__all__ = ["madrid_today", "utc_now"]
+__all__ = ["madrid_today", "midnight_utc", "utc_now"]
 
 # Calendar days of Spanish legislation are Madrid days.
 _MADRID = ZoneInfo("Europe/Madrid")
@@ -28,3 +28,8 @@ def madrid_today(moment: datetime, today: date | None = None) -> date:
     # or two hours ahead, so for a short window around midnight UTC the dates differ, and a law
     # taking effect "tomorrow" in UTC terms may already be in force.
     return today if today is not None else moment.astimezone(_MADRID).date()
+
+
+def midnight_utc(day: date | None) -> datetime | None:
+    """The given day as a UTC midnight datetime (the shape of ``Provenance``), or ``None``."""
+    return datetime(day.year, day.month, day.day, tzinfo=UTC) if day is not None else None

@@ -32,6 +32,7 @@ from boe_insights_mcp.citation import (
 from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.clock import madrid_today, utc_now
 from boe_insights_mcp.errors import BoeError, describe_error
+from boe_insights_mcp.models import ellipsize
 from boe_insights_mcp.schemas import (
     ArticleCandidate,
     CitationCheck,
@@ -66,13 +67,6 @@ _GAVE_UP_NOTE = (
 )
 
 
-def _cap(text: str, limit: int = _MAX_MATCHED_CHARS) -> str:
-    """Cut ``text`` to ``limit`` characters, the last one being "…" when cut."""
-    if len(text) <= limit:
-        return text
-    return text[: limit - 1] + "…"
-
-
 def _quote_info(match: QuoteMatch | None) -> QuoteMatchInfo:
     """The tool-facing form of a match; no version in effect reads as "none"."""
     if match is None:
@@ -80,10 +74,10 @@ def _quote_info(match: QuoteMatch | None) -> QuoteMatchInfo:
     return QuoteMatchInfo(
         level=match.level,
         similarity=round(match.similarity, 2),
-        matched_text=_cap(match.matched_text),
+        matched_text=ellipsize(match.matched_text, _MAX_MATCHED_CHARS),
         differences=match.differences,
         flags=list(match.flags),
-        omitted=[_cap(text, _MAX_OMITTED_CHARS) for text in match.omitted],
+        omitted=[ellipsize(text, _MAX_OMITTED_CHARS) for text in match.omitted],
     )
 
 
@@ -98,7 +92,7 @@ def _other_version(found: CitationMatch) -> OtherVersionInfo | None:
         ends_on=other.ends_on,
         level=other.match.level,
         similarity=round(other.match.similarity, 2),
-        matched_text=_cap(other.match.matched_text),
+        matched_text=ellipsize(other.match.matched_text, _MAX_MATCHED_CHARS),
         differences=other.match.differences,
     )
 
@@ -108,7 +102,7 @@ def _article_candidates(
 ) -> list[LawBrief | ArticleCandidate]:
     """At most ``_MAX_CANDIDATES`` article candidates with their titles cut."""
     return [
-        ArticleCandidate(block_id=c.block_id, title=_cap(c.title, _MAX_CANDIDATE_TITLE))
+        ArticleCandidate(block_id=c.block_id, title=ellipsize(c.title, _MAX_CANDIDATE_TITLE))
         for c in candidates[:_MAX_CANDIDATES]
     ]
 
@@ -116,7 +110,7 @@ def _article_candidates(
 def _law_candidates(candidates: Sequence[LawBrief]) -> list[LawBrief | ArticleCandidate]:
     """At most ``_MAX_CANDIDATES`` law candidates with their titles cut."""
     return [
-        c.model_copy(update={"title": _cap(c.title, _MAX_CANDIDATE_TITLE)})
+        c.model_copy(update={"title": ellipsize(c.title, _MAX_CANDIDATE_TITLE)})
         for c in candidates[:_MAX_CANDIDATES]
     ]
 

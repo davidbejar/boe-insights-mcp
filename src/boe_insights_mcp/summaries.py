@@ -13,7 +13,13 @@ from collections.abc import Iterator
 from datetime import date
 from xml.etree.ElementTree import Element
 
-from boe_insights_mcp.models import DailySummary, GazetteIssue, GazetteItem, collapse_whitespace
+from boe_insights_mcp.models import (
+    DailySummary,
+    GazetteIssue,
+    GazetteItem,
+    collapse_whitespace,
+    strip_or_none,
+)
 from boe_insights_mcp.xmlsafe import parse_xml
 
 __all__ = ["parse_summary"]
@@ -61,8 +67,8 @@ def _issue_items(diario: Element, number: str) -> Iterator[GazetteItem]:
         section_name = seccion.get("nombre", "")
         for departamento in seccion.findall("departamento"):
             # An empty code or name is how the 1960 announcements arrive; it means "none".
-            code = _blank_to_none(departamento.get("codigo"))
-            name = _blank_to_none(departamento.get("nombre"))
+            code = strip_or_none(departamento.get("codigo"))
+            name = strip_or_none(departamento.get("nombre"))
             # Items sit directly under the department or under an epigrafe (section 5A/5B items
             # have no epigrafe; section 1 usually has). Walking the children once keeps the two
             # kinds in the order of the document. Anything else (text, unknown tags) is ignored.
@@ -71,7 +77,7 @@ def _issue_items(diario: Element, number: str) -> Iterator[GazetteItem]:
                     heading = None
                     candidates = [child]
                 elif child.tag == "epigrafe":
-                    heading = _blank_to_none(child.get("nombre"))
+                    heading = strip_or_none(child.get("nombre"))
                     candidates = child.findall("item")
                 else:
                     continue
@@ -112,9 +118,9 @@ def _parse_item(
         issue_number=issue_number,
         first_page=_page(pdf, "pagina_inicial"),
         last_page=_page(pdf, "pagina_final"),
-        pdf_url=_blank_to_none(pdf.text) if pdf is not None else None,
+        pdf_url=strip_or_none(pdf.text) if pdf is not None else None,
         # ``url_html`` is absent on some announcements before 2009 (api-notes, fourth probe).
-        html_url=_blank_to_none(element.findtext("url_html")),
+        html_url=strip_or_none(element.findtext("url_html")),
     )
 
 
@@ -123,9 +129,3 @@ def _page(pdf: Element | None, attribute: str) -> int | None:
     value = pdf.get(attribute) if pdf is not None else None
     # Tolerant on purpose: a page number is informational and must not make a day unreadable.
     return int(value) if value is not None and value.isdigit() else None
-
-
-def _blank_to_none(value: str | None) -> str | None:
-    """Strip a text; an empty or missing one becomes ``None``."""
-    stripped = (value or "").strip()
-    return stripped or None
