@@ -3,8 +3,8 @@
 A saved search is a stored filter plus what it remembers about what it already delivered. The
 server cannot alert anyone: nothing happens until the model calls ``check_saved_searches``. Two
 kinds exist: ``gazette`` (title words, section and department over the daily summaries, reusing
-``gazette.GazetteFilter``) and ``law`` (new amendments to one consolidated law, reusing
-``chains.relation_kind``).
+``gazette.GazetteFilter``) and ``law`` (new amendments and court rulings on one consolidated law,
+reusing ``chains.relation_kind``).
 
 A gazette search remembers ``checked_through`` (every day up to it is finished) and, for the days
 after it, the identifiers already delivered (``seen_items``). A day is too coarse a unit for
@@ -102,8 +102,14 @@ MAX_ITEMS = 50
 MAX_TOTAL_ITEMS = 60
 """Items and changes delivered per call over all searches, so that a result stays readable."""
 MAX_WORDS = 200
-REPORTED_KINDS: frozenset[RelationKind] = AMENDING_KINDS | frozenset[RelationKind](["corrects"])
-"""The relation kinds reported as changes; court rulings and citations are only counted."""
+REPORTED_KINDS: frozenset[RelationKind] = AMENDING_KINDS | frozenset[RelationKind](
+    ["corrects", "judicial"]
+)
+"""The relation kinds reported as changes; citations and the rest are only counted.
+
+Court rulings are listed because they are published in the BOE and can strike down part of a law
+(``docs/api-notes.md``: code 470, "SE DECLARA ... la inconstitucionalidad de ...").
+"""
 
 _MAX_TEXT = 200
 _NO_SEARCHES = "No saved searches. Create one with save_search."
@@ -804,14 +810,10 @@ def _law_check(
 def _other_counts(others: list[LawReference]) -> dict[str, int]:
     """Count references that are not changes by what they are; zero counts are left out."""
     kinds = Counter(
-        {"judicial": "court_rulings", "cites": "citations"}.get(
-            relation_kind(reference.relation.code), "other"
-        )
+        "citations" if relation_kind(reference.relation.code) == "cites" else "other"
         for reference in others
     )
-    return {
-        label: kinds[label] for label in ("court_rulings", "citations", "other") if kinds[label]
-    }
+    return {label: kinds[label] for label in ("citations", "other") if kinds[label]}
 
 
 def _law_outcome(
@@ -848,12 +850,6 @@ def _law_outcome(
     notes: list[str] = []
     if cut:
         notes.append(f"Showing {len(shown)} of {len(reported)} changes; call again for the rest.")
-    if rulings := counts.get("court_rulings"):
-        notes.append(
-            f"{rulings} new court {'ruling' if rulings == 1 else 'rulings'} on this law "
-            f"{'is' if rulings == 1 else 'are'} not listed; explore_amendment_chain with "
-            "include='all' shows them."
-        )
     return _Outcome(
         _law_check(
             search,

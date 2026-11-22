@@ -846,7 +846,7 @@ class SavedSearchInfo(_Output):
     name: str
     kind: Literal["gazette", "law"] = Field(
         description="'gazette': items by title words, section or department. 'law': amendments "
-        "of one law."
+        "and court rulings on one law."
     )
     # ``exclude_if`` leaves out the fields a kind does not have, so a search shows only its own
     # filters; ``last_checked_at`` stays because null there means "never checked".
@@ -897,7 +897,7 @@ class DeleteSearchResult(_Output):
 
 
 class SearchChange(_Output):
-    """A norm that acted on a followed law and was not reported before."""
+    """An amendment or court ruling on a followed law that was not reported before."""
 
     law_id: str = Field(description="Identifier of the norm that acts.")
     kind: RelationKind
@@ -962,7 +962,8 @@ class SearchCheck(_Output):
     changes: list[SearchChange] | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
-        description="Law: new amendments, repeals, additions, suspensions and corrections.",
+        description="Law: new amendments, repeals, additions, suspensions, corrections and "
+        "court rulings.",
     )
     changes_total: int | None = Field(
         default=None,
@@ -972,8 +973,7 @@ class SearchCheck(_Output):
     other_new: dict[str, int] | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
-        description="Law: new references that are not changes, counted only: court_rulings, "
-        "citations, other.",
+        description="Law: new references that are not changes, counted only: citations, other.",
     )
     note: str | None = Field(default=None, exclude_if=lambda value: value is None)
 

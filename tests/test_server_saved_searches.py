@@ -131,8 +131,8 @@ async def test_the_tools_carry_the_agreed_descriptions(mcp: Client[Any]) -> None
 
     assert words("save_search") == (
         "Save a search to re-check later: gazette items by title words, section or department, "
-        "or one law to follow for amendments. Nothing is sent automatically; call "
-        "check_saved_searches to see what is new. A name is proposed when none is given."
+        "or one law to follow for amendments and court rulings. Nothing is sent automatically; "
+        "call check_saved_searches to see what is new. A name is proposed when none is given."
     )
     assert words("list_saved_searches") == (
         "The saved searches, with their filters and when each was last checked."
@@ -356,10 +356,11 @@ async def test_a_law_search_reports_a_new_amendment_once(
     news = CheckSearchesResult.model_validate(await call(mcp, "check_saved_searches"))
     law_check = news.results[0]
     assert [(c.law_id, c.kind, c.relation) for c in law_check.changes or []] == [
-        ("BOE-A-2026-9001", "modifies", "SE MODIFICA")
+        ("BOE-A-2026-9001", "modifies", "SE MODIFICA"),
+        ("BOE-A-2026-9002", "judicial", "SENTENCIA"),
     ]
-    assert law_check.changes_total == 1
-    assert law_check.other_new == {"court_rulings": 1}
+    assert law_check.changes_total == 2
+    assert law_check.other_new is None
     assert law_check.status == "checked"
     assert news.complete is True
 

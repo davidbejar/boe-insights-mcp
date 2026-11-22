@@ -277,6 +277,7 @@ def test_constants() -> None:
         "adds",
         "suspends",
         "corrects",
+        "judicial",
     }
 
 
@@ -762,13 +763,11 @@ async def test_new_references_split_into_changes_and_other_new(store: SavedSearc
         ("BOE-A-2021-12", "adds", "SE AÑADE", "art. 3"),
         ("BOE-A-2021-13", "suspends", "SE SUSPENDE", "art. 4"),
         ("BOE-A-2021-14", "corrects", "SE CORRIGE", "art. 5"),
+        ("BOE-A-2021-15", "judicial", "SENTENCIA", "STC 7/2021"),
     ]
-    assert law_check.changes_total == 4
-    assert law_check.other_new == {"court_rulings": 1, "citations": 1}
-    assert law_check.note == (
-        "1 new court ruling on this law is not listed; explore_amendment_chain with "
-        "include='all' shows them."
-    )
+    assert law_check.changes_total == 5
+    assert law_check.other_new == {"citations": 1}
+    assert law_check.note is None
     assert result.checked == 1
     assert result.complete is True
     assert result.note is None
@@ -916,17 +915,34 @@ async def test_changes_cut_by_the_limit_stay_new_until_shown(store: SavedSearchS
 async def test_a_cut_check_still_marks_the_unreported_references_seen(
     store: SavedSearchStore,
 ) -> None:
-    # Court rulings and citations are only counted, so they are consumed on the first call.
+    # Citations are only counted, so they are consumed on the first call.
     await seed_law(store)
-    fake = FakeBoe(analyses={LAW: later(MODIFIES, REPEALS, JUDICIAL, CITES)})
+    fake = FakeBoe(analyses={LAW: later(MODIFIES, REPEALS, CITES)})
 
     first = await check(store, fake, limit=1)
     second = await check(store, fake, limit=1)
 
-    assert first.results[0].other_new == {"court_rulings": 1, "citations": 1}
+    assert first.results[0].other_new == {"citations": 1}
     assert second.results[0].other_new is None
     assert change_ids(second.results[0]) == [REPEALS.law_id]
     assert second.results[0].status == "checked"
+
+
+async def test_court_rulings_cut_by_the_limit_stay_new(store: SavedSearchStore) -> None:
+    await seed_law(store)
+    fake = FakeBoe(analyses={LAW: later(MODIFIES, JUDICIAL)})
+
+    first = await check(store, fake, limit=1)
+    second = await check(store, fake, limit=1)
+    third = await check(store, fake, limit=1)
+
+    assert change_ids(first.results[0]) == [MODIFIES.law_id]
+    assert (first.results[0].status, first.results[0].changes_total) == ("partial", 2)
+    assert change_ids(second.results[0]) == [JUDICIAL.law_id]
+    assert second.results[0].changes[0].kind == "judicial"
+    assert second.results[0].status == "checked"
+    assert third.results[0].changes == []
+    assert third.results[0].changes_total == 0
 
 
 async def test_exactly_limit_changes_are_not_cut(store: SavedSearchStore) -> None:
@@ -2143,43 +2159,67 @@ async def test_a_law_the_total_did_not_reach_is_partial_and_marks_nothing(
 
     assert [len(r.changes) for r in result.results] == [50, 10, 0]
     waiting = result.results[2]
-    assert (waiting.status, waiting.changes_total) == ("partial", 1)
+    assert (waiting.status, waiting.changes_total) == ("partial", 2)
     assert waiting.note == "Not reached in this call; call again."
     assert waiting.other_new is None
     assert untouched == seed
     # The next call finds the first two done and serves the third, rulings included.
-    assert change_ids(again.results[2]) == [MODIFIES.law_id]
-    assert again.results[2].other_new == {"court_rulings": 1}
+    assert change_ids(again.results[2]) == [MODIFIES.law_id, JUDICIAL.law_id]
+    assert again.results[2].other_new is None
     assert again.complete is True
 
 
 async def test_other_new_counts_each_kind_and_leaves_zeros_out(store: SavedSearchStore) -> None:
     other = ref("BOE-A-2022-5", "999", "OTRA RELACION", "art. 9")
     await seed_law(store)
-    fake = FakeBoe(analyses={LAW: later(JUDICIAL, JUDICIAL, CITES, other)})
+    fake = FakeBoe(analyses={LAW: later(CITES, CITES, other)})
 
     result = await check(store, fake)
 
     law_check = result.results[0]
-    assert law_check.other_new == {"court_rulings": 1, "citations": 1, "other": 1}
-    # Rulings with the same key are one reference; two different ones are two.
+    assert law_check.other_new == {"citations": 1, "other": 1}
 
 
-async def test_court_rulings_are_counted_and_the_note_says_where_to_see_them(
+async def test_new_court_rulings_are_listed_not_counted_and_leave_no_note(
     store: SavedSearchStore,
 ) -> None:
+    # Two rulings with the same key are one reference; different ones are different.
     rulings = [ref(f"BOE-A-2022-{n}", "470", "SENTENCIA", f"STC {n}/2022") for n in range(1, 4)]
     await seed_law(store)
-    fake = FakeBoe(analyses={LAW: later(MODIFIES, *rulings)})
+    fake = FakeBoe(analyses={LAW: later(*rulings, rulings[0])})
 
     result = await check(store, fake)
 
     law_check = result.results[0]
-    assert law_check.other_new == {"court_rulings": 3}
-    assert law_check.note == (
-        "3 new court rulings on this law are not listed; explore_amendment_chain with "
-        "include='all' shows them."
-    )
+    assert [(c.law_id, c.kind, c.relation, c.text) for c in law_check.changes] == [
+        (f"BOE-A-2022-{n}", "judicial", "SENTENCIA", f"STC {n}/2022") for n in range(1, 4)
+    ]
+    assert law_check.changes_total == 3
+    assert law_check.other_new is None
+    assert law_check.note is None
+    assert law_check.status == "checked"
+
+
+async def test_a_ruling_is_listed_next_to_an_amendment_and_a_citation(
+    store: SavedSearchStore,
+) -> None:
+    await seed_law(store)
+    fake = FakeBoe(analyses={LAW: later(MODIFIES, JUDICIAL, CITES)})
+
+    result = await check(store, fake)
+
+    law_check = result.results[0]
+    assert [(c.law_id, c.kind) for c in law_check.changes] == [
+        (MODIFIES.law_id, "modifies"),
+        (JUDICIAL.law_id, "judicial"),
+    ]
+    assert law_check.changes_total == 2
+    assert law_check.other_new == {"citations": 1}
+    assert law_check.note is None
+    # Everything shown or counted is seen: the next check has nothing new.
+    again = await check(store, fake)
+    assert again.results[0].changes == []
+    assert again.results[0].other_new is None
 
 
 async def test_a_failed_and_a_partial_search_say_both_things(store: SavedSearchStore) -> None:

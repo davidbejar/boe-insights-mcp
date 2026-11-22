@@ -1025,8 +1025,8 @@ async def save_search(
     ] = None,
 ) -> SaveSearchResult:
     """Save a search to re-check later: gazette items by title words, section or department, or
-    one law to follow for amendments. Nothing is sent automatically; call check_saved_searches
-    to see what is new. A name is proposed when none is given.
+    one law to follow for amendments and court rulings. Nothing is sent automatically; call
+    check_saved_searches to see what is new. A name is proposed when none is given.
     """
     # The owner comes from the authenticated request and is never an argument: a model (or
     # anyone steering it) must not be able to name another person's searches.
