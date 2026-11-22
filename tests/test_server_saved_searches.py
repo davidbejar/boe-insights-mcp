@@ -582,9 +582,7 @@ async def test_the_settings_decide_where_the_store_lives_and_it_survives_a_resta
     clock: Clock, tmp_path: Path
 ) -> None:
     data_dir = tmp_path / "data"
-    settings = Settings(
-        cache_backend="memory", data_dir=data_dir, data_dir_set=True, min_interval=0
-    )
+    settings = Settings(cache_backend="memory", data_dir=data_dir, min_interval=0)
 
     async with Client(create_server(settings=settings)) as client:
         await call(client, "save_search", words="vivienda", name="mia")
@@ -600,16 +598,15 @@ async def test_the_settings_decide_where_the_store_lives_and_it_survives_a_resta
 
 
 async def test_the_memory_backend_without_a_data_dir_keeps_searches_in_memory(
-    clock: Clock, tmp_path: Path
+    clock: Clock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    settings = Settings(
-        cache_backend="memory", data_dir=tmp_path / "data", data_dir_set=False, min_interval=0
-    )
+    monkeypatch.delenv("BOE_INSIGHTS_DATA_DIR", raising=False)
+    settings = Settings(cache_backend="memory", min_interval=0)
 
     async with Client(create_server(settings=settings)) as client:
-        await call(client, "save_search", words="vivienda")
+        saved = await call(client, "save_search", words="vivienda")
 
-    assert not (tmp_path / "data").exists()
+    assert saved["note"].endswith("Stored in memory only: it is lost when the server stops.")
 
 
 # --- resources and prompts on the real server --------------------------------------------------
@@ -667,3 +664,116 @@ async def test_the_saved_searches_resource_refuses_a_token_without_a_subject(
 
     with pytest.raises(MCPError):
         await mcp.read_resource("boe://saved-searches")
+
+
+# --- a bad store file or a missing identity never takes the server down -----------------------
+
+SAVED_TOOLS = {
+    "save_search": {"words": "vivienda"},
+    "list_saved_searches": {},
+    "check_saved_searches": {},
+    "edit_saved_search": {"name": "x", "new_name": "y"},
+    "delete_saved_search": {"name": "x"},
+}
+
+
+def make_unusable_store(tmp_path: Path, kind: str) -> Path:
+    """Return a data directory whose store file cannot be used, in the way ``kind`` says."""
+    import sqlite3
+
+    data_dir = tmp_path / kind
+    data_dir.mkdir()
+    path = data_dir / "saved_searches.sqlite3"
+    if kind == "corrupt":
+        path.write_bytes(b"this is not a database" * 100)
+    elif kind == "foreign":
+        connection = sqlite3.connect(path)
+        connection.execute("CREATE TABLE saved_searches (id INTEGER PRIMARY KEY, query TEXT)")
+        connection.execute("PRAGMA user_version = 1")
+        connection.commit()
+        connection.close()
+    elif kind == "newer":
+        connection = sqlite3.connect(path)
+        connection.execute("PRAGMA user_version = 9")
+        connection.commit()
+        connection.close()
+    elif kind == "unwritable":
+        data_dir.chmod(stat.S_IRUSR | stat.S_IXUSR)
+        return data_dir / "sub"
+    return data_dir
+
+
+@pytest.mark.parametrize("kind", ["corrupt", "foreign", "newer", "unwritable"])
+async def test_an_unusable_store_file_disables_only_the_saved_search_tools(
+    clock: Clock,
+    router: respx.MockRouter,
+    xml_response: Xml,
+    load_fixture: Loader,
+    tmp_path: Path,
+    kind: str,
+) -> None:
+    data_dir = make_unusable_store(tmp_path, kind)
+    friday_route(router, xml_response, load_fixture)
+    settings = Settings(
+        cache_backend="memory", cache_dir=tmp_path / "cache", data_dir=data_dir, min_interval=0
+    )
+    try:
+        async with Client(create_server(settings=settings)) as client:
+            assert len(await client.list_tools()) == 23
+            # The other tools work.
+            day = await call(client, "get_daily_summary", date="2026-11-20")
+            assert day["provenance"]["attribution"].startswith("Basado en datos")
+            for tool, arguments in SAVED_TOOLS.items():
+                with pytest.raises(ToolError) as caught:
+                    await client.call_tool(tool, arguments)
+                assert "Saved searches are unavailable (storage_error, not retryable)" in str(
+                    caught.value
+                ), tool
+                # The error never shows what the file holds or where it is.
+                assert str(data_dir) not in str(caught.value)
+            with pytest.raises(MCPError) as resource_error:
+                await client.read_resource("boe://saved-searches")
+            assert "Saved searches are unavailable (storage_error, not retryable)" in str(
+                resource_error.value
+            )
+    finally:
+        # ``unwritable`` locked the directory that holds ``data_dir``; the others are in tmp_path.
+        data_dir.parent.chmod(stat.S_IRWXU)
+
+
+async def test_a_store_that_becomes_usable_works_without_restarting_the_server(
+    clock: Clock, tmp_path: Path
+) -> None:
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    (data_dir / "saved_searches.sqlite3").write_bytes(b"garbage" * 50)
+    settings = Settings(
+        cache_backend="memory", cache_dir=tmp_path / "cache", data_dir=data_dir, min_interval=0
+    )
+    async with Client(create_server(settings=settings)) as client:
+        with pytest.raises(ToolError, match="storage_error"):
+            await client.call_tool("list_saved_searches", {})
+        (data_dir / "saved_searches.sqlite3").unlink()
+
+        listed = await call(client, "list_saved_searches")
+
+    assert listed["searches"] == []
+
+
+async def test_a_token_without_a_subject_gets_a_curated_error_from_every_tool_and_the_resource(
+    mcp: Client[Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "boe_insights_mcp.owner.get_access_token", lambda: SimpleNamespace(claims={})
+    )
+    expected = (
+        "Not signed in (unauthorized, not retryable): saved searches need an identified user."
+    )
+
+    for tool, arguments in SAVED_TOOLS.items():
+        with pytest.raises(ToolError) as caught:
+            await mcp.call_tool(tool, arguments)
+        assert expected in str(caught.value), tool
+    with pytest.raises(MCPError) as resource_error:
+        await mcp.read_resource("boe://saved-searches")
+    assert expected in str(resource_error.value)

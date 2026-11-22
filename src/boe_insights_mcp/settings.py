@@ -38,6 +38,12 @@ def default_data_dir(env: Mapping[str, str] | None = None) -> Path:
     return Path(override) if override else Path(user_data_dir(_APP_NAME))
 
 
+def _explicit_data_dir(env: Mapping[str, str] | None = None) -> Path | None:
+    """The directory ``BOE_INSIGHTS_DATA_DIR`` names, or ``None`` when it is unset or empty."""
+    value = (os.environ if env is None else env).get("BOE_INSIGHTS_DATA_DIR")
+    return Path(value) if value else None
+
+
 @dataclass(frozen=True)
 class Settings:
     """Server settings; ``from_env`` reads them from ``BOE_INSIGHTS_*`` variables."""
@@ -46,25 +52,38 @@ class Settings:
     """``BOE_INSIGHTS_CACHE``: ``disk`` (persistent) or ``memory`` (per process)."""
     cache_dir: Path = field(default_factory=default_cache_dir)
     """``BOE_INSIGHTS_CACHE_DIR``: where the disk cache lives; the platform cache dir if unset."""
-    data_dir: Path = field(default_factory=default_data_dir)
-    """``BOE_INSIGHTS_DATA_DIR``: where saved searches live; the platform data dir if unset.
+    data_dir: Path | None = field(default_factory=_explicit_data_dir)
+    """``BOE_INSIGHTS_DATA_DIR`` when given, else ``None`` (the platform data dir, see
+    ``data_directory``).
 
     Separate from ``cache_dir`` on purpose: the cache is safe to delete, saved searches are not.
+    Being ``None`` when nothing was given is what lets ``data_dir_set`` be derived: a flag next
+    to the path could disagree with it.
     """
-    data_dir_set: bool = False
-    """Whether ``BOE_INSIGHTS_DATA_DIR`` was given; with the memory cache and no explicit
-    directory, saved searches are kept in memory too."""
     min_interval: float = 1.0
     """``BOE_INSIGHTS_MIN_INTERVAL``: minimum seconds between requests to boe.es."""
     max_concurrency: int = 2
     """``BOE_INSIGHTS_MAX_CONCURRENCY``: maximum simultaneous requests to boe.es."""
 
     @property
+    def data_dir_set(self) -> bool:
+        """Whether a data directory was given; with the memory cache and none, searches stay in
+        memory too."""
+        return self.data_dir is not None
+
+    @property
+    def data_directory(self) -> Path:
+        """The directory saved searches live in: the given one, else the platform's."""
+        # The environment was already read when ``data_dir`` was derived; an empty mapping here
+        # gives the platform directory without reading it a second time.
+        return self.data_dir if self.data_dir is not None else default_data_dir({})
+
+    @property
     def saved_searches_path(self) -> Path | None:
         """Where the saved-searches file lives; ``None`` means keep them in memory."""
         if self.cache_backend == "memory" and not self.data_dir_set:
             return None
-        return self.data_dir / "saved_searches.sqlite3"
+        return self.data_directory / "saved_searches.sqlite3"
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> Settings:
@@ -74,12 +93,10 @@ class Settings:
         """
         defaults = cls()
         cache_dir = env.get("BOE_INSIGHTS_CACHE_DIR")
-        data_dir = env.get("BOE_INSIGHTS_DATA_DIR")
         return cls(
             cache_backend=_backend(env.get("BOE_INSIGHTS_CACHE"), defaults.cache_backend),
             cache_dir=Path(cache_dir) if cache_dir else default_cache_dir(env),
-            data_dir=default_data_dir(env),
-            data_dir_set=bool(data_dir),
+            data_dir=_explicit_data_dir(env),
             min_interval=_min_interval(env.get("BOE_INSIGHTS_MIN_INTERVAL"), defaults.min_interval),
             max_concurrency=_max_concurrency(
                 env.get("BOE_INSIGHTS_MAX_CONCURRENCY"), defaults.max_concurrency

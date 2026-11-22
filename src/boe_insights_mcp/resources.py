@@ -18,7 +18,7 @@ only maps URIs onto them and turns expected failures into ``ResourceError`` mess
 from __future__ import annotations
 
 import re
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Callable
 from datetime import date
 from typing import Any, Literal, TypeVar
 
@@ -31,7 +31,7 @@ from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.clock import utc_now
 from boe_insights_mcp.guard import guarded, invalid_argument
 from boe_insights_mcp.legislation import CODE_TABLES
-from boe_insights_mcp.schemas import Provenance
+from boe_insights_mcp.schemas import Provenance, SavedSearchList
 
 __all__ = ["CodeEntry", "CodeTable", "register"]
 
@@ -99,6 +99,11 @@ def _as_json(result: BaseModel) -> str:
     return result.model_dump_json()
 
 
+async def _owned(use_case: Callable[[str], Awaitable[_T]]) -> _T:
+    """Run ``use_case`` for the owner of the current request (see ``server._owned``)."""
+    return await use_case(owner.current_owner())
+
+
 async def _law(law_id: str, ctx: Context) -> str:
     """Overview of a law, as ``get_law_overview`` returns it."""
     return _as_json(
@@ -152,16 +157,15 @@ async def _codes(kind: str, ctx: Context) -> str:
 
 async def _saved_searches(ctx: Context) -> str:
     """The current owner's saved searches, as ``list_saved_searches`` returns them."""
+
     # The owner comes from the request, never from the URI, so one person's list cannot be read
     # by naming another.
-    return _as_json(
-        await _guard(
-            saved_searches.list_saved_searches(
-                ctx.lifespan_context["searches"], owner.current_owner()
-            ),
-            "list_saved_searches",
-        )
-    )
+    async def listing(who: str) -> SavedSearchList:
+        """The list for ``who``."""
+        return await saved_searches.list_saved_searches(ctx.lifespan_context["searches"], who)
+
+    # The owner is looked up inside the guard so that a missing identity is a curated message.
+    return _as_json(await _guard(_owned(listing), "list_saved_searches"))
 
 
 def register(server: FastMCP) -> None:

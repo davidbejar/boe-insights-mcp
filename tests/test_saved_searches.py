@@ -8,6 +8,7 @@ store when a test needs a search saved "a while ago".
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
@@ -2080,3 +2081,257 @@ async def test_every_use_case_acts_for_the_owner_it_is_given(store: SavedSearchS
     stored = await store.get(OTHER, "otra")
     assert stored.owner == OTHER
     assert stored.checked_through == ago(1)
+
+
+# --- review fixes: laws and the total, lost updates, names, words -------------------------------
+
+
+async def test_law_changes_count_toward_the_total_of_a_call(store: SavedSearchStore) -> None:
+    many = [ref(f"BOE-A-2026-{n}", "270", "SE MODIFICA", f"art. {n}") for n in range(50)]
+    await seed_law(store, "ley", LAW, minutes=0)
+    await seed_gazette(store, "vivienda", checked_through=ago(1), minutes=1)
+    await seed_gazette(store, "otra", checked_through=ago(1), minutes=2)
+    todays = [item(f"A{n:02}", "Vivienda") for n in range(30)]
+    fake = FakeBoe(analyses={LAW: later(*many)}, days={TODAY: summary(TODAY, *todays)})
+
+    result = await check(store, fake, limit=50)
+
+    law_check, first, second = result.results
+    assert len(law_check.changes) == 50
+    assert len(first.items) == 10  # 60 - 50
+    assert second.items == []
+    assert second.status == "partial"
+    assert second.note == "Not reached in this call; call again."
+
+
+async def test_a_law_the_total_did_not_reach_is_partial_and_marks_nothing(
+    store: SavedSearchStore,
+) -> None:
+    second_law, third_law = "BOE-A-2000-7", "BOE-A-2000-8"
+    await seed_law(store, "uno", LAW, minutes=0)
+    await seed_law(store, "dos", second_law, minutes=1)
+    seed = await seed_law(store, "tres", third_law, minutes=2)
+    fifty = [ref(f"BOE-A-2026-{n}", "270", "SE MODIFICA", f"art. {n}") for n in range(50)]
+    ten = [ref(f"BOE-A-2027-{n}", "270", "SE MODIFICA", f"art. {n}") for n in range(10)]
+    fake = FakeBoe(
+        analyses={LAW: later(*fifty), second_law: later(*ten), third_law: later(MODIFIES, JUDICIAL)}
+    )
+
+    result = await check(store, fake, limit=50)
+    untouched = await store.get(OWNER, "tres")
+    again = await check(store, fake, limit=50)
+
+    assert [len(r.changes) for r in result.results] == [50, 10, 0]
+    waiting = result.results[2]
+    assert (waiting.status, waiting.changes_total) == ("partial", 1)
+    assert waiting.note == "Not reached in this call; call again."
+    assert waiting.other_new is None
+    assert untouched == seed
+    # The next call finds the first two done and serves the third, rulings included.
+    assert change_ids(again.results[2]) == [MODIFIES.law_id]
+    assert again.results[2].other_new == {"court_rulings": 1}
+    assert again.complete is True
+
+
+async def test_other_new_counts_each_kind_and_leaves_zeros_out(store: SavedSearchStore) -> None:
+    other = ref("BOE-A-2022-5", "999", "OTRA RELACION", "art. 9")
+    await seed_law(store)
+    fake = FakeBoe(analyses={LAW: later(JUDICIAL, JUDICIAL, CITES, other)})
+
+    result = await check(store, fake)
+
+    law_check = result.results[0]
+    assert law_check.other_new == {"court_rulings": 1, "citations": 1, "other": 1}
+    # Rulings with the same key are one reference; two different ones are two.
+
+
+async def test_court_rulings_are_counted_and_the_note_says_where_to_see_them(
+    store: SavedSearchStore,
+) -> None:
+    rulings = [ref(f"BOE-A-2022-{n}", "470", "SENTENCIA", f"STC {n}/2022") for n in range(1, 4)]
+    await seed_law(store)
+    fake = FakeBoe(analyses={LAW: later(MODIFIES, *rulings)})
+
+    result = await check(store, fake)
+
+    law_check = result.results[0]
+    assert law_check.other_new == {"court_rulings": 3}
+    assert law_check.note == (
+        "3 new court rulings on this law are not listed; explore_amendment_chain with "
+        "include='all' shows them."
+    )
+
+
+async def test_a_failed_and_a_partial_search_say_both_things(store: SavedSearchStore) -> None:
+    other = "BOE-A-2000-7"
+    await seed_law(store, "uno", LAW, minutes=0)
+    await seed_law(store, "dos", other, minutes=1)
+    fake = FakeBoe(
+        analyses={LAW: BoeNotFoundError("gone", status=404), other: BoeUnavailableError("down")}
+    )
+
+    result = await check(store, fake)
+
+    assert result.complete is False
+    assert result.note == (
+        "1 saved search could not be checked; see its note. "
+        "0 of 2 saved searches fully checked. Call again to continue."
+    )
+
+
+async def test_several_failed_searches_are_counted(store: SavedSearchStore) -> None:
+    await seed_law(store, "uno", LAW, minutes=0)
+    await seed_law(store, "dos", "BOE-A-2000-7", minutes=1)
+    gone = BoeNotFoundError("gone", status=404)
+    fake = FakeBoe(analyses={LAW: gone, "BOE-A-2000-7": gone})
+
+    result = await check(store, fake)
+
+    assert result.complete is True
+    assert result.note == "2 saved searches could not be checked; see their notes."
+
+
+async def test_the_provenance_of_a_check_of_both_kinds_carries_both_statements(
+    store: SavedSearchStore,
+) -> None:
+    await seed_law(store)
+    await seed_gazette(store, minutes=1)
+    fake = FakeBoe(analyses={LAW: later()})
+
+    result = await check(store, fake)
+
+    notice = result.provenance.notice
+    assert "summaries of the official gazette" in notice
+    assert "Consolidated texts are provided for information only" in notice
+
+
+class GatedBoe(FakeBoe):
+    """A fake whose day reads wait for a gate, so another tool can run in the middle."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.gate = asyncio.Event()
+        self.entered = asyncio.Event()
+
+    async def get_daily_summary(self, day: date, *, today: date) -> DailySummary | None:
+        self.entered.set()
+        await self.gate.wait()
+        return await super().get_daily_summary(day, today=today)
+
+
+async def start_check(store: SavedSearchStore, fake: GatedBoe, **kwargs: Any) -> asyncio.Task[Any]:
+    """Start a check and wait until it is reading."""
+    task = asyncio.create_task(check(store, fake, **kwargs))
+    await fake.entered.wait()
+    return task
+
+
+async def test_a_check_does_not_undo_an_edit_made_while_it_was_reading(
+    store: SavedSearchStore,
+) -> None:
+    await seed_gazette(store, checked_through=ago(1))
+    fake = GatedBoe(days={TODAY: summary(TODAY, item("A1"))})
+    task = await start_check(store, fake)
+
+    await saved_searches.edit_saved_search(store, OWNER, "vivienda", words="alquiler")
+    fake.gate.set()
+    result = await task
+
+    assert ids(result.results[0]) == ["A1"]
+    stored = await store.get(OWNER, "vivienda")
+    assert stored.words == "alquiler"
+    assert stored.seen_items == {TODAY: frozenset({"A1"})}
+
+
+async def test_a_check_of_a_search_renamed_meanwhile_marks_nothing(
+    store: SavedSearchStore,
+) -> None:
+    await seed_gazette(store, checked_through=ago(1))
+    fake = GatedBoe(days={TODAY: summary(TODAY, item("A1"))})
+    task = await start_check(store, fake)
+
+    await saved_searches.edit_saved_search(store, OWNER, "vivienda", new_name="piso")
+    fake.gate.set()
+    result = await task
+
+    gazette_check = result.results[0]
+    assert gazette_check.status == "partial"
+    assert gazette_check.items == []
+    assert gazette_check.note == "Changed during the check; nothing was marked as seen."
+    assert result.complete is False
+    assert await store.names(OWNER) == {"piso"}
+    assert (await store.get(OWNER, "piso")).seen_items == {}
+
+
+async def test_a_check_of_a_search_deleted_meanwhile_is_harmless(store: SavedSearchStore) -> None:
+    await seed_gazette(store, "vivienda", checked_through=ago(1), minutes=0)
+    await seed_gazette(store, "becas", words="becas", checked_through=ago(1), minutes=1)
+    fake = GatedBoe(days={TODAY: summary(TODAY, item("A1"), item("A2", "Becas"))})
+    task = await start_check(store, fake)
+
+    await saved_searches.delete_saved_search(store, OWNER, "becas")
+    fake.gate.set()
+    result = await task
+
+    assert [(r.name, r.status) for r in result.results] == [
+        ("vivienda", "checked"),
+        ("becas", "partial"),
+    ]
+    assert await store.names(OWNER) == {"vivienda"}
+
+
+async def test_two_checks_at_once_deliver_each_item_once(store: SavedSearchStore) -> None:
+    await seed_law(store)
+    fake = FakeBoe(analyses={LAW: later(MODIFIES)})
+
+    first, second = await asyncio.gather(check(store, fake), check(store, fake))
+
+    shown = [change_ids(r.results[0]) for r in (first, second)]
+    assert sum(len(ids_) for ids_ in shown) == 1  # delivered once, whoever got there first
+    for r in (first, second):
+        if r.results[0].status == "partial":
+            assert r.results[0].note == "Changed during the check; nothing was marked as seen."
+
+
+async def test_two_unnamed_saves_at_once_get_two_names(store: SavedSearchStore) -> None:
+    results = await asyncio.gather(
+        save(store, FakeBoe(), words="vivienda"), save(store, FakeBoe(), words="vivienda")
+    )
+
+    assert sorted(r.search.name for r in results) == ["vivienda", "vivienda-2"]
+
+
+async def test_a_chosen_name_taken_in_the_meantime_is_still_an_error(
+    store: SavedSearchStore,
+) -> None:
+    results = await asyncio.gather(
+        save(store, FakeBoe(), words="vivienda", name="mia"),
+        save(store, FakeBoe(), words="vivienda", name="mia"),
+        return_exceptions=True,
+    )
+
+    assert sum(isinstance(r, ValueError) for r in results) == 1
+
+
+async def test_words_longer_than_200_characters_are_refused_on_save_and_edit(
+    store: SavedSearchStore,
+) -> None:
+    await save(store, FakeBoe(), words="vivienda")
+    too_long = "vivienda " * 30
+
+    with pytest.raises(ValueError, match="words must be at most 200 characters"):
+        await save(store, FakeBoe(), words=too_long)
+    with pytest.raises(ValueError, match="words must be at most 200 characters"):
+        await saved_searches.edit_saved_search(store, OWNER, "vivienda", words=too_long)
+    await save(store, FakeBoe(), words="x" * 200, name="limite")
+
+
+async def test_a_failure_reading_a_save_baseline_is_the_only_error_swallowed(
+    store: SavedSearchStore,
+) -> None:
+    fake = FakeBoe(days={TODAY: BoeResponseError("unreadable")})
+
+    result = await save(store, fake, words="vivienda")
+
+    assert result.note is not None
+    assert "Today's issue could not be read" in result.note

@@ -14,7 +14,8 @@ def test_defaults_without_environment() -> None:
     settings = Settings.from_env({})
 
     assert settings.cache_backend == "disk"
-    assert settings.cache_dir == default_cache_dir()
+    # The empty mapping given to from_env, not the process environment, decides the default.
+    assert settings.cache_dir == default_cache_dir({})
     assert settings.min_interval == 1.0
     assert settings.max_concurrency == 2
 
@@ -34,7 +35,6 @@ def test_variables_override_every_setting(tmp_path: Path) -> None:
         cache_backend="memory",
         cache_dir=tmp_path,
         data_dir=tmp_path / "data",
-        data_dir_set=True,
         min_interval=0.25,
         max_concurrency=4,
     )
@@ -104,8 +104,9 @@ def test_settings_are_immutable() -> None:
 def test_data_dir_defaults_to_the_platform_data_dir() -> None:
     settings = Settings.from_env({})
 
-    assert settings.data_dir == default_data_dir({})
-    assert settings.data_dir != settings.cache_dir
+    assert settings.data_dir is None
+    assert settings.data_directory == default_data_dir({})
+    assert settings.data_directory != settings.cache_dir
     assert settings.data_dir_set is False
 
 
@@ -113,6 +114,7 @@ def test_data_dir_variable_overrides_it(tmp_path: Path) -> None:
     settings = Settings.from_env({"BOE_INSIGHTS_DATA_DIR": str(tmp_path)})
 
     assert settings.data_dir == tmp_path
+    assert settings.data_directory == tmp_path
     assert settings.data_dir_set is True
     assert settings.saved_searches_path == tmp_path / "saved_searches.sqlite3"
 
@@ -120,7 +122,7 @@ def test_data_dir_variable_overrides_it(tmp_path: Path) -> None:
 def test_empty_data_dir_variable_keeps_the_default() -> None:
     settings = Settings.from_env({"BOE_INSIGHTS_DATA_DIR": ""})
 
-    assert settings.data_dir == default_data_dir({})
+    assert settings.data_directory == default_data_dir({})
     assert settings.data_dir_set is False
 
 
@@ -135,7 +137,7 @@ def test_default_data_dir_follows_the_environment_at_call_time(
 ) -> None:
     monkeypatch.setenv("BOE_INSIGHTS_DATA_DIR", str(tmp_path))
 
-    assert Settings().data_dir == tmp_path
+    assert Settings().data_directory == tmp_path
 
 
 def test_memory_backend_without_a_data_dir_keeps_searches_in_memory() -> None:
@@ -148,3 +150,39 @@ def test_memory_backend_with_a_data_dir_still_persists_searches(tmp_path: Path) 
     )
 
     assert settings.saved_searches_path == tmp_path / "saved_searches.sqlite3"
+
+
+def test_a_settings_built_directly_and_from_env_agree_about_the_data_dir(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("BOE_INSIGHTS_DATA_DIR", raising=False)
+    assert Settings().data_dir_set is False
+    assert Settings.from_env().data_dir_set is False
+
+    monkeypatch.setenv("BOE_INSIGHTS_DATA_DIR", str(tmp_path))
+    assert Settings().data_dir_set is True
+    assert Settings().data_dir == Settings.from_env().data_dir == tmp_path
+
+
+def test_an_explicit_data_dir_is_set_whatever_the_environment(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("BOE_INSIGHTS_DATA_DIR", raising=False)
+
+    settings = Settings(cache_backend="memory", data_dir=tmp_path)
+
+    assert settings.data_dir_set is True
+    assert settings.saved_searches_path == tmp_path / "saved_searches.sqlite3"
+
+
+def test_the_memory_backend_without_any_data_dir_keeps_searches_in_memory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("BOE_INSIGHTS_DATA_DIR", raising=False)
+
+    assert Settings(cache_backend="memory").saved_searches_path is None
+
+
+def test_data_dir_set_cannot_be_given_to_the_constructor() -> None:
+    with pytest.raises(TypeError):
+        Settings(data_dir_set=True)  # type: ignore[call-arg]

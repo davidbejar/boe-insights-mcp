@@ -35,7 +35,22 @@ def test_a_token_gives_a_user_owner_from_its_subject(monkeypatch: pytest.MonkeyP
     assert owner.current_owner() == "user:abc-123"
 
 
-@pytest.mark.parametrize("claims", [{}, {"sub": ""}, {"sub": None}, {"other": "x"}])
+@pytest.mark.parametrize(
+    "claims",
+    [
+        {},
+        {"sub": ""},
+        {"sub": None},
+        {"other": "x"},
+        {"sub": "   "},
+        {"sub": " alice"},
+        {"sub": "alice "},
+        {"sub": "al\nice"},
+        {"sub": "al\x00ice"},
+        {"sub": "al\u200bice"},
+        {"sub": 42},
+    ],
+)
 def test_a_token_without_a_subject_is_refused(
     monkeypatch: pytest.MonkeyPatch, claims: dict[str, Any]
 ) -> None:
@@ -43,6 +58,24 @@ def test_a_token_without_a_subject_is_refused(
 
     with pytest.raises(PermissionError):
         owner.current_owner()
+
+
+def test_the_refusal_is_the_error_the_server_turns_into_a_curated_message(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with_token(monkeypatch, SimpleNamespace(claims={}))
+
+    with pytest.raises(owner.NotSignedInError):
+        owner.current_owner()
+
+
+@pytest.mark.parametrize("subject", ["abc-123", "a b", "ñandú", "auth0|12345", "x@y.org"])
+def test_ordinary_subjects_are_accepted_as_they_are(
+    monkeypatch: pytest.MonkeyPatch, subject: str
+) -> None:
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": subject}))
+
+    assert owner.current_owner() == f"user:{subject}"
 
 
 def test_two_subjects_are_two_owners(monkeypatch: pytest.MonkeyPatch) -> None:

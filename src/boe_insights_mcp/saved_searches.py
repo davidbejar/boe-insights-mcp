@@ -190,11 +190,16 @@ def _normalised(
     words: str | None, section: str | None, department: str | None
 ) -> tuple[str | None, str | None, str | None]:
     """Blank filters become ``None``; the section is upper-cased (as ``GazetteFilter`` does)."""
-    words = strip_or_none(words)
-    if words is not None and len(words) > MAX_WORDS:
-        raise ValueError(f"words must be at most {MAX_WORDS} characters")
+    words = _checked_words(strip_or_none(words))
     section = strip_or_none(section)
     return words, section.upper() if section else None, strip_or_none(department)
+
+
+def _checked_words(words: str | None) -> str | None:
+    """Return ``words`` unchanged; ``ValueError`` when longer than ``MAX_WORDS`` characters."""
+    if words is not None and len(words) > MAX_WORDS:
+        raise ValueError(f"words must be at most {MAX_WORDS} characters")
+    return words
 
 
 def _reference_key(reference: LawReference) -> str:
@@ -382,7 +387,7 @@ async def edit_saved_search(
     else:
         changed = replace(
             current,
-            words=_edited(words, current.words),
+            words=_checked_words(_edited(words, current.words)),
             section=_edited(section, current.section, upper=True),
             department_code=_edited(department_code, current.department_code),
         )

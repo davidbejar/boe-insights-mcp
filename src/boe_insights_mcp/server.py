@@ -143,6 +143,16 @@ async def _guard(call: Awaitable[_T], tool: str) -> _T:
     return await guarded(call, tool, ToolError)
 
 
+async def _owned(use_case: Callable[[str], Awaitable[_T]]) -> _T:
+    """Run ``use_case`` for the owner of the current request.
+
+    The owner is looked up here, inside the awaited call, so that a request without a usable
+    identity fails inside ``_guard`` and reaches the model as a curated message, not as a masked
+    generic error.
+    """
+    return await use_case(owner.current_owner())
+
+
 def _build_cache(settings: Settings) -> Cache:
     """Create the cache backend that ``settings`` selects."""
     if settings.cache_backend == "memory":
@@ -1030,15 +1040,17 @@ async def save_search(
     # The owner comes from the authenticated request and is never an argument: a model (or
     # anyone steering it) must not be able to name another person's searches.
     return await _guard(
-        saved_searches.save_search(
-            _searches(ctx),
-            _client(ctx),
-            owner.current_owner(),
-            name=name,
-            words=words,
-            section=section,
-            department_code=department_code,
-            law_id=law_id,
+        _owned(
+            lambda who: saved_searches.save_search(
+                _searches(ctx),
+                _client(ctx),
+                who,
+                name=name,
+                words=words,
+                section=section,
+                department_code=department_code,
+                law_id=law_id,
+            )
         ),
         "save_search",
     )
@@ -1047,7 +1059,7 @@ async def save_search(
 async def list_saved_searches(ctx: Context) -> SavedSearchList:
     """The saved searches, with their filters and when each was last checked."""
     return await _guard(
-        saved_searches.list_saved_searches(_searches(ctx), owner.current_owner()),
+        _owned(lambda who: saved_searches.list_saved_searches(_searches(ctx), who)),
         "list_saved_searches",
     )
 
@@ -1074,14 +1086,16 @@ async def check_saved_searches(
     anything. When complete is false, call again to continue.
     """
     return await _guard(
-        saved_searches.check_saved_searches(
-            _searches(ctx),
-            _client(ctx),
-            owner.current_owner(),
-            name=name,
-            since=since,
-            limit=limit,
-            progress=ctx.report_progress,
+        _owned(
+            lambda who: saved_searches.check_saved_searches(
+                _searches(ctx),
+                _client(ctx),
+                who,
+                name=name,
+                since=since,
+                limit=limit,
+                progress=ctx.report_progress,
+            )
         ),
         "check_saved_searches",
     )
@@ -1106,14 +1120,16 @@ async def edit_saved_search(
 ) -> SaveSearchResult:
     """Rename a saved search or change its gazette filters. Its last-checked point is kept."""
     return await _guard(
-        saved_searches.edit_saved_search(
-            _searches(ctx),
-            owner.current_owner(),
-            name,
-            new_name=new_name,
-            words=words,
-            section=section,
-            department_code=department_code,
+        _owned(
+            lambda who: saved_searches.edit_saved_search(
+                _searches(ctx),
+                who,
+                name,
+                new_name=new_name,
+                words=words,
+                section=section,
+                department_code=department_code,
+            )
         ),
         "edit_saved_search",
     )
@@ -1125,7 +1141,7 @@ async def delete_saved_search(
 ) -> DeleteSearchResult:
     """Delete a saved search. This cannot be undone."""
     return await _guard(
-        saved_searches.delete_saved_search(_searches(ctx), owner.current_owner(), name),
+        _owned(lambda who: saved_searches.delete_saved_search(_searches(ctx), who, name)),
         "delete_saved_search",
     )
 

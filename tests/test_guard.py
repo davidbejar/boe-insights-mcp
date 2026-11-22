@@ -7,6 +7,8 @@ from pydantic import BaseModel, ValidationError
 
 from boe_insights_mcp.errors import BoeNotFoundError
 from boe_insights_mcp.guard import guarded, invalid_argument
+from boe_insights_mcp.owner import NotSignedInError
+from boe_insights_mcp.searchstore import SearchStoreError
 
 
 class CallerError(Exception):
@@ -55,3 +57,27 @@ async def test_a_validation_error_is_a_bug_and_propagates_unchanged() -> None:
 async def test_anything_else_propagates() -> None:
     with pytest.raises(PermissionError):
         await guarded(fails_with(PermissionError("no subject")), "tool", CallerError)
+
+
+async def test_a_store_failure_is_a_curated_storage_error() -> None:
+    with pytest.raises(CallerError) as caught:
+        await guarded(
+            fails_with(SearchStoreError("the saved-searches file cannot be used")),
+            "list_saved_searches",
+            CallerError,
+        )
+
+    assert str(caught.value) == (
+        "Saved searches are unavailable (storage_error, not retryable): "
+        "the saved-searches file cannot be used."
+    )
+
+
+async def test_a_missing_identity_is_a_curated_unauthorized_error() -> None:
+    with pytest.raises(CallerError) as caught:
+        await guarded(fails_with(NotSignedInError("no subject")), "save_search", CallerError)
+
+    assert str(caught.value) == (
+        "Not signed in (unauthorized, not retryable): saved searches need an identified user."
+    )
+    assert "no subject" not in str(caught.value)
