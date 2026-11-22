@@ -78,6 +78,7 @@ __all__ = [
     "AuxiliaryTable",
     "BoeClient",
     "ClientStats",
+    "absence_is_settled",
 ]
 
 BASE_URL = "https://www.boe.es/datosabiertos/api/"
@@ -118,6 +119,13 @@ SUMMARY_TODAY_TTL = 3600.0
 SUMMARY_RECENT_ABSENCE_TTL = 24 * 3600.0
 # Days after which a remembered "no issue" is trusted for ``SUMMARY_PAST_TTL``.
 SUMMARY_ABSENCE_SETTLED_DAYS = 7
+
+
+def absence_is_settled(day: date, today: date) -> bool:
+    """Whether ``day`` is old enough for a "no issue" (or a failed read) to be treated as final."""
+    return (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
+
+
 # The first day the BOE summary endpoint answers; every earlier date is a 404 (api-notes, fourth
 # probe, "Daily summaries").
 FIRST_SUMMARY_DAY = date(1960, 9, 1)
@@ -569,11 +577,12 @@ class BoeClient:
             # fourth probe). Only a past day's absence is remembered, for a day when the day is
             # recent and for a month once it is settled.
             if final:
-                settled = (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
                 await self._cache.set(
                     key,
                     _NO_SUMMARY,
-                    SUMMARY_PAST_TTL if settled else SUMMARY_RECENT_ABSENCE_TTL,
+                    SUMMARY_PAST_TTL
+                    if absence_is_settled(day, today)
+                    else SUMMARY_RECENT_ABSENCE_TTL,
                 )
             return None
 

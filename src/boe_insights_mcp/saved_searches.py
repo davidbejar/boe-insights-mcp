@@ -28,11 +28,12 @@ from collections import Counter
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
+from enum import Enum
 from typing import Protocol
 
 from boe_insights_mcp.catalogue import ProgressCallback
 from boe_insights_mcp.chains import AMENDING_KINDS, RelationKind, relation_kind
-from boe_insights_mcp.client import SUMMARY_ABSENCE_SETTLED_DAYS
+from boe_insights_mcp.client import absence_is_settled
 from boe_insights_mcp.clock import madrid_today, midnight_utc, utc_now
 from boe_insights_mcp.errors import BoeError, BoeNotFoundError
 from boe_insights_mcp.gazette import (
@@ -450,43 +451,67 @@ async def delete_saved_search(
 # --- check_saved_searches ----------------------------------------------------------------------
 
 
+class _Gap(Enum):
+    """A day that has no issue to read: what the read of it ended in."""
+
+    ABSENT = "absent"
+    """The BOE answered "no issue" (today included: it may just not be out yet)."""
+    UNREADABLE = "unreadable"
+    """The read raised a ``BoeError``, of any kind."""
+
+
+def _is_quiet_day(day: date, today: date) -> bool:
+    """Whether a past "no issue" on ``day`` is final: a Sunday, or old enough to be remembered.
+
+    A recent weekday's 404 can be a late publication or a transient error, so it is not.
+    """
+    return day.weekday() == _SUNDAY or absence_is_settled(day, today)
+
+
 @dataclass
 class _Reading:
-    """The days read once for all gazette searches of one check."""
+    """The days read once for all gazette searches of one check, each in one of three states."""
 
-    summaries: dict[date, DailySummary] = field(default_factory=dict)
-    """Days that had an issue."""
-    empty: set[date] = field(default_factory=set)
-    """Days that answered "no issue" (today included: it may just not be out yet)."""
-    unreadable: set[date] = field(default_factory=set)
-    """Days whose read raised a ``BoeError``, of any kind."""
+    days: dict[date, DailySummary | _Gap] = field(default_factory=dict)
+    """What each attempted day gave: its issue, or why it has none. Unattempted days are absent."""
 
-    def read(self, day: date) -> bool:
-        """Whether ``day`` was attempted: it has an issue, no issue, or was unreadable."""
-        return day in self.summaries or day in self.empty or day in self.unreadable
+    def issue(self, day: date) -> DailySummary | None:
+        """The day's summary, or ``None`` when it had no issue, failed or was not read."""
+        state = self.days.get(day)
+        return None if isinstance(state, _Gap) else state
 
-    def given_up(self, day: date, today: date) -> bool:
-        """Whether ``day`` was unreadable and is old enough to stop retrying it."""
-        return day in self.unreadable and (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
+    def has_several_issues(self, day: date) -> bool:
+        """Whether the BOE printed more than one issue on ``day``."""
+        found = self.issue(day)
+        return found is not None and len(found.issues) > 1
+
+    def latest_issue_day(self) -> date | None:
+        """The most recent day that had an issue, or ``None``."""
+        return max(
+            (day for day, state in self.days.items() if isinstance(state, DailySummary)),
+            default=None,
+        )
+
+    def is_unreadable(self, day: date) -> bool:
+        """Whether ``day``'s read raised a ``BoeError``."""
+        return self.days.get(day) is _Gap.UNREADABLE
 
     def settled(self, day: date, today: date) -> bool:
         """Whether what was read for ``day`` can be trusted to be final.
 
         Today never is: its issue may still grow (docs/api-notes.md records a day with two
-        issues). A past day that had an issue is final. A past "no issue" is final only when it is
-        a Sunday or old enough that the client itself remembers it
-        (``SUMMARY_ABSENCE_SETTLED_DAYS``): a recent weekday's 404 can be a late publication or
-        a transient error, and trusting it would lose that issue. An unreadable day is final
-        only once given up: a 403 or an HTML maintenance page during a short outage looks
-        permanent but is not, so every error is retried for a week.
+        issues). A past day that had an issue is final. A past "no issue" is final when it is a
+        quiet day (see ``_is_quiet_day``). An unreadable day is final only once given up, when
+        it is old enough that the client itself would remember an absence: a 403 or an HTML
+        maintenance page during a short outage looks permanent but is not, so every error is
+        retried for a week.
         """
         if day >= today:
             return False
-        if day in self.summaries:
-            return True
-        if day in self.unreadable:
-            return self.given_up(day, today)
-        return day.weekday() == _SUNDAY or (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
+        state = self.days[day]
+        if state is _Gap.UNREADABLE:
+            return absence_is_settled(day, today)
+        return state is not _Gap.ABSENT or _is_quiet_day(day, today)
 
 
 @dataclass(frozen=True)
@@ -655,7 +680,7 @@ async def check_saved_searches(
         notes.append(
             f"{checked} of {len(results)} saved searches fully checked. Call again to continue."
         )
-    if current in reading.empty:
+    if reading.days.get(current) is _Gap.ABSENT:
         notes.append(TODAY_MISSING_NOTE)
     kinds = {search.kind for search in searches}
     return CheckSearchesResult(
@@ -666,7 +691,7 @@ async def check_saved_searches(
         note=" ".join(notes) or None,
         provenance=Provenance(
             generated_at=moment,
-            data_updated_at=midnight_utc(max(reading.summaries, default=None)),
+            data_updated_at=midnight_utc(reading.latest_issue_day()),
             **_notice(kinds),
         ),
     )
@@ -888,12 +913,9 @@ async def _read_days(
         except BoeError:
             # Whatever the error, the day is retried by the next check until it is a week old
             # (see ``_Reading.settled``): an error that looks permanent can be a short outage.
-            reading.unreadable.add(day)
+            reading.days[day] = _Gap.UNREADABLE
         else:
-            if found is not None:
-                reading.summaries[day] = found
-            else:
-                reading.empty.add(day)
+            reading.days[day] = found if found is not None else _Gap.ABSENT
         await tally.step()
     return reading
 
@@ -934,14 +956,14 @@ def _gazette_outcome(
     days = _days(span.start, span.end)
     run: list[date] = []
     for day in days:
-        if not reading.read(day):
+        if day not in reading.days:
             break
         run.append(day)
 
     wanted = GazetteFilter(search.words, search.section, search.department_code)
     fresh: dict[date, list[GazetteItem]] = {}
     for day in run:
-        found = reading.summaries.get(day)
+        found = reading.issue(day)
         if found is None:
             continue
         # With ``since`` what was delivered before is shown again: it is a re-read.
@@ -961,7 +983,7 @@ def _gazette_outcome(
         if taken:
             delivered[day] = taken
     entries = [
-        scanned_entry(day, item, several_issues=len(reading.summaries[day].issues) > 1)
+        scanned_entry(day, item, several_issues=reading.has_several_issues(day))
         for day, taken in delivered.items()
         for item in taken
     ]
@@ -974,7 +996,9 @@ def _gazette_outcome(
     )
     # The bookmark moves over the unbroken run of finished days from the start. A call that
     # stores nothing (``since``, or nothing reached) moves no day, so reports none as given up.
-    stores = since is None and not not_reached and any(day not in reading.unreadable for day in run)
+    stores = (
+        since is None and not not_reached and any(not reading.is_unreadable(day) for day in run)
+    )
     through = search.checked_through
     for day in run:
         if not (
@@ -983,8 +1007,8 @@ def _gazette_outcome(
             break
         through = day
     passed = [day for day in run if through is not None and day <= through]
-    skipped_days = [day for day in passed if day in reading.unreadable] if stores else []
-    retrying = [day for day in run if day in reading.unreadable and day not in skipped_days]
+    skipped_days = [day for day in passed if reading.is_unreadable(day)] if stores else []
+    retrying = [day for day in run if reading.is_unreadable(day) and day not in skipped_days]
 
     notes: list[str] = []
     if span.skipped:
