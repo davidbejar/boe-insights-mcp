@@ -2032,3 +2032,46 @@ async def test_the_gazette_notice_is_used_only_when_a_gazette_search_is_checked(
 
     assert result.provenance.notice == Provenance(generated_at=NOW).notice
     assert result.provenance.notice != GAZETTE_NOTICE
+
+
+# --- the acting owner is never assumed to be "local" -------------------------------------------
+
+
+async def test_every_use_case_acts_for_the_owner_it_is_given(store: SavedSearchStore) -> None:
+    fake = FakeBoe(
+        days={ago(1): summary(ago(1), item("A1"))},
+        analyses={LAW: later(MODIFIES)},
+        metadata={LAW: metadata()},
+    )
+    # A row of the local owner with the same names must be left alone throughout.
+    local_gazette = await seed_gazette(store, "vivienda", checked_through=ago(2), owner=OWNER)
+    local_law = await seed_law(store, "ley-39-2015", owner=OWNER, minutes=1)
+
+    saved = await saved_searches.save_search(
+        store, fake, OTHER, words="vivienda", name="vivienda", now=NOW, today=ago(2)
+    )
+    saved_law = await saved_searches.save_search(
+        store, fake, OTHER, law_id=LAW, name="ley-39-2015", now=NOW, today=ago(2)
+    )
+    listed = await saved_searches.list_saved_searches(store, OTHER, now=NOW)
+    checked = await saved_searches.check_saved_searches(
+        store, fake, OTHER, now=NOW, today=TODAY, clock=fake.clock
+    )
+    edited = await saved_searches.edit_saved_search(
+        store, OTHER, "vivienda", new_name="otra", now=NOW
+    )
+    deleted = await saved_searches.delete_saved_search(store, OTHER, "ley-39-2015", now=NOW)
+
+    assert (saved.total, saved_law.total) == (1, 2)
+    # Both were created at the same moment, so the list falls back to the order of the names.
+    assert [s.name for s in listed.searches] == ["ley-39-2015", "vivienda"]
+    assert [r.name for r in checked.results] == ["ley-39-2015", "vivienda"]
+    assert edited.search.name == "otra"
+    assert (deleted.deleted, deleted.remaining) == ("ley-39-2015", 1)
+    assert await store.names(OTHER) == {"otra"}
+    # The same-named rows of the local owner are untouched.
+    assert await store.get(OWNER, "vivienda") == local_gazette
+    assert await store.get(OWNER, "ley-39-2015") == local_law
+    stored = await store.get(OTHER, "otra")
+    assert stored.owner == OTHER
+    assert stored.checked_through == ago(1)
