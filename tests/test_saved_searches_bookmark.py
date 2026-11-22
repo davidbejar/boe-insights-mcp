@@ -692,3 +692,19 @@ async def test_every_item_is_delivered_exactly_once_whatever_the_calls(
 
     assert set(delivered) == published
     assert all(count == 1 for count in delivered.values()), delivered
+
+
+async def test_since_reports_an_unreadable_day_and_stores_nothing(
+    store: SavedSearchStore,
+) -> None:
+    await seed_gazette(store, checked_through=THU)
+    before = await stored(store)
+    fake = FakeBoe(days={THU: BoeUnavailableError("down", status=503), FRI: issue(FRI, item("F1"))})
+
+    result = await check_on(store, fake, FRI, since=THU)
+
+    gazette = result.results[0]
+    assert gazette.status == "checked"
+    assert gazette.days_retrying == 1
+    assert gazette.note == "1 day could not be read; ask again later."
+    assert await stored(store) == before

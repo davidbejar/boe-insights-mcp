@@ -722,6 +722,20 @@ async def test_update_progress_compares_the_seen_items_too(store: SavedSearchSto
     assert (await store.get(ALICE, "uno")).seen_items == {day: frozenset({"A"})}
 
 
+async def test_update_progress_is_false_when_only_the_seen_items_moved(
+    store: SavedSearchStore,
+) -> None:
+    original = gazette(ALICE, "uno")
+    await store.add(original)
+    day = date(2026, 11, 10)
+    same = {"checked_through": original.checked_through, "last_checked_at": None}
+    # Everything but the seen items stays as it was, so only they can tell the row has moved.
+    assert await progress(store, original, seen_items={day: frozenset({"A"})}, **same) is True
+
+    assert await progress(store, original, seen_items={day: frozenset({"B"})}, **same) is False
+    assert (await store.get(ALICE, "uno")).seen_items == {day: frozenset({"A"})}
+
+
 async def test_update_progress_touches_only_the_owner_given(store: SavedSearchStore) -> None:
     mine = gazette(ALICE, "uno")
     await store.add(mine)
