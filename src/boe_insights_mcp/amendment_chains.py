@@ -40,11 +40,14 @@ __all__ = [
     "MAX_EDGES",
     "MAX_LAWS",
     "MAX_NODES",
+    "MAX_SHOWN_NODES",
+    "Details",
     "Include",
     "explore_amendment_chain",
 ]
 
 Include = Literal["amendments", "all"]
+Details = Literal["root", "all", "none"]
 
 DEFAULT_DEPTH = 2
 DEFAULT_MAX_LAWS = 25
@@ -52,10 +55,13 @@ DEFAULT_MAX_LAWS = 25
 MAX_LAWS = 50
 # The chain stops growing at this many laws; the result lists them all.
 MAX_NODES = 150
-# A chain of 150 laws held up to about 400 edges in the recorded analyses; the cap keeps the
-# result readable and ``edges_total`` says how many were found.
-MAX_EDGES = 400
+# The walk may reach 150 laws, but a result of that size is too long for a model to read (94 000
+# characters for one law with include="all"), so only the first nodes and edges are listed and
+# ``nodes_total`` and ``edges_total`` say how many were found.
+MAX_SHOWN_NODES = 100
+MAX_EDGES = 250
 _MAX_DETAIL = 200
+_MAX_TITLE = 100
 # Same budget as ``most_amended_laws``: no fresh request starts in the last 5 seconds of 40.
 CHAIN_TIME_LIMIT = 40.0
 _TIME_MARGIN = 5.0
@@ -67,9 +73,9 @@ _ALL_KINDS: frozenset[RelationKind] = frozenset(
 )
 
 
-def _shorten(text: str) -> str:
-    """Cut a reference text to ``_MAX_DETAIL`` characters, the last one being "…" when cut."""
-    return text if len(text) <= _MAX_DETAIL else text[: _MAX_DETAIL - 1] + "…"
+def _cut(text: str, limit: int) -> str:
+    """Cut ``text`` to ``limit`` characters, the last one being "…" when cut."""
+    return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
 def _incomplete_note(examined: int, pending: int) -> str:
@@ -86,7 +92,7 @@ def _node_info(node: chains.ChainNode, laws: Mapping[str, LawSummary]) -> ChainN
     return ChainNodeInfo(
         law_id=node.law_id,
         depth=node.depth,
-        title=law.title if law is not None else None,
+        title=_cut(law.title, _MAX_TITLE) if law is not None else None,
         rank=law.rank.text if law is not None and law.rank is not None else None,
         published_on=law.published_on if law is not None else None,
         in_collection=law is not None,
@@ -103,6 +109,7 @@ async def explore_amendment_chain(
     direction: Direction = "amended_by",
     depth: int = DEFAULT_DEPTH,
     include: Include = "amendments",
+    details: Details = "root",
     max_laws: int = DEFAULT_MAX_LAWS,
     progress: ProgressCallback | None = None,
     now: datetime | None = None,
@@ -114,9 +121,10 @@ async def explore_amendment_chain(
     At most ``max_laws`` analyses that are not cached are read per call, and no fresh request
     starts once ``time_limit`` seconds minus a 5 s margin have passed since the call began;
     ``complete`` is false then, and calling again with the same arguments continues from the cache.
-    Raises ``ValueError`` for a malformed identifier or an argument out of range, and the client's
-    error when the starting law's own analysis cannot be read (``BoeNotFoundError`` for an
-    unknown law).
+    ``details`` says which edges carry their reference text: those touching ``law_id``, all or
+    none. Raises ``ValueError`` for a malformed identifier or an argument out of range, and the
+    client's error when the starting law's own analysis cannot be read (``BoeNotFoundError`` for
+    an unknown law).
     """
     # The clock starts before the catalogue download for the reason given in ``most_amended_laws``:
     # the caller gives up on the whole call, not on the loop.
@@ -132,6 +140,8 @@ async def explore_amendment_chain(
         raise ValueError("direction must be 'amended_by' or 'amends'")
     if include not in ("amendments", "all"):
         raise ValueError("include must be 'amendments' or 'all'")
+    if details not in ("root", "all", "none"):
+        raise ValueError("details must be 'root', 'all' or 'none'")
     kinds = AMENDING_KINDS if include == "amendments" else _ALL_KINDS
     moment = utc_now(now)
 
@@ -146,7 +156,7 @@ async def explore_amendment_chain(
     # Ids that failed temporarily in this call: not asked again in the same call, because a
     # request that just failed would most likely fail again and burn the budget.
     failed_ids: set[str] = set()
-    examined = fresh = 0
+    examined = fresh = read_before = 0
     stopped = False
 
     while True:
@@ -155,6 +165,8 @@ async def explore_amendment_chain(
         todo = [law for law in chain.to_fetch if law not in failed_ids]
         if stopped or not todo:
             break
+        # Laws read before this round plus every law still to read: what is known to be needed.
+        read_before = examined
         for target in todo:
             cached = await client.has_cached_analysis(target)
             # A cached analysis costs nothing, so it never counts against the budget; the first
@@ -183,7 +195,7 @@ async def explore_amendment_chain(
                 await reporter(
                     examined + len(failed_ids),
                     None,
-                    f"Read {examined} laws ({len(chain.to_fetch)} needed so far)",
+                    f"Read {examined} of {read_before + len(chain.to_fetch)} laws known so far.",
                 )
 
     pending = len(chain.to_fetch)
@@ -194,22 +206,30 @@ async def explore_amendment_chain(
     if not complete:
         notes.append(_incomplete_note(examined, pending))
     if chain.truncated:
-        notes.append(f"Stopped at {MAX_NODES} laws; use a smaller depth or include='amendments'.")
+        advice = (
+            "a smaller depth"
+            if include == "amendments"
+            else "a smaller depth or include='amendments'"
+        )
+        notes.append(f"Stopped at {MAX_NODES} laws; use {advice}.")
+    # Court rulings are left out by default; say so when the starting law has some, because they
+    # are often what a reader wants to know about a law that was struck down in part.
+    rulings = 0
+    root_analysis = known.get(root)
+    if "judicial" not in kinds and root_analysis is not None:
+        rulings = chains.count_references(root, root_analysis, direction, "judicial")
+    if rulings:
+        noun = "court ruling" if rulings == 1 else "court rulings"
+        verb = "is" if rulings == 1 else "are"
+        notes.append(f"{rulings} {noun} on this law {verb} not shown; use include='all'.")
+    shown_edges = chain.edges[:MAX_EDGES]
     return AmendmentChainResult(
         law_id=root,
         direction=direction,
         depth=depth,
-        nodes=[_node_info(node, laws) for node in chain.nodes],
-        edges=[
-            ChainEdgeInfo(
-                amending=edge.amending,
-                amended=edge.amended,
-                relation=edge.relation,
-                kind=edge.kind,
-                detail=_shorten(edge.detail),
-            )
-            for edge in chain.edges[:MAX_EDGES]
-        ],
+        nodes=[_node_info(node, laws) for node in chain.nodes[:MAX_SHOWN_NODES]],
+        edges=[_edge_info(edge, root, details) for edge in shown_edges],
+        nodes_total=len(chain.nodes),
         edges_total=len(chain.edges),
         levels=list(chains.level_counts(chain)),
         examined=examined,
@@ -217,8 +237,22 @@ async def explore_amendment_chain(
         failed=failed,
         complete=complete,
         truncated=chain.truncated,
+        court_rulings_excluded=rulings,
         note=" ".join(notes) or None,
         provenance=Provenance(generated_at=moment, data_updated_at=catalogue.newest_update),
+    )
+
+
+def _edge_info(edge: chains.ChainEdge, root: str, details: Details) -> ChainEdgeInfo:
+    """The tool-facing edge; its reference text is given only as ``details`` asks."""
+    # The text is by far the longest part of an edge. The edges touching the starting law are the
+    # ones the question is about; the rest can be asked for with details="all".
+    wanted = details == "all" or (details == "root" and root in (edge.amending, edge.amended))
+    return ChainEdgeInfo(
+        amending=edge.amending,
+        amended=edge.amended,
+        kind=edge.kind,
+        detail=_cut(edge.detail, _MAX_DETAIL) if wanted else None,
     )
 
 

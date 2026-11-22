@@ -7,7 +7,7 @@ remembered 404), today is not (one hour, and a 404 for today is never remembered
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import date
+from datetime import date, timedelta
 
 import httpx
 import pytest
@@ -16,6 +16,7 @@ import respx
 from boe_insights_mcp.client import (
     BASE_URL,
     SUMMARY_PAST_TTL,
+    SUMMARY_RECENT_ABSENCE_TTL,
     SUMMARY_TODAY_TTL,
     BoeClient,
 )
@@ -108,7 +109,44 @@ async def test_a_404_on_a_past_day_is_none_and_remembered_for_thirty_days(
 
     assert (first, second) == (None, None)
     assert route.call_count == 1
+    # Six days ago is recent: a 404 may be a transient failure, so it is remembered for a day only.
+    assert [ttl for _, ttl in cache.sets] == [SUMMARY_RECENT_ABSENCE_TTL]
+
+
+async def test_a_404_for_a_day_more_than_a_week_ago_is_remembered_for_a_month(
+    router: respx.MockRouter,
+    client: BoeClient,
+    cache: RecordingCache,
+    xml_response: Xml,
+    load_fixture: Loader,
+) -> None:
+    old_sunday = date(2026, 11, 8)  # 13 days before TODAY
+    router.get(f"{BASE_URL}boe/sumario/20261108").mock(
+        return_value=xml_response(load_fixture("error_404_sumario_sunday_20261115.xml"), 404)
+    )
+
+    assert await client.get_daily_summary(old_sunday, today=TODAY) is None
     assert [ttl for _, ttl in cache.sets] == [SUMMARY_PAST_TTL]
+
+
+@pytest.mark.parametrize(("ago", "ttl"), [(7, SUMMARY_RECENT_ABSENCE_TTL), (8, SUMMARY_PAST_TTL)])
+async def test_the_week_boundary_of_a_remembered_absence(
+    router: respx.MockRouter,
+    client: BoeClient,
+    cache: RecordingCache,
+    xml_response: Xml,
+    load_fixture: Loader,
+    ago: int,
+    ttl: float,
+) -> None:
+    day = TODAY - timedelta(days=ago)
+    router.get(f"{BASE_URL}boe/sumario/{day:%Y%m%d}").mock(
+        return_value=xml_response(load_fixture("error_404_sumario_sunday_20261115.xml"), 404)
+    )
+
+    await client.get_daily_summary(day, today=TODAY)
+
+    assert [t for _, t in cache.sets] == [ttl]
 
 
 async def test_a_404_for_today_is_none_and_not_remembered(

@@ -130,13 +130,14 @@ async def test_the_instructions_mention_the_two_tools(boe_client: BoeClient) -> 
         instructions = client.instructions or ""
 
     assert (
-        "verify_citation checks whether a law and article exist and whether quoted words "
-        "match the text."
+        "verify_citation takes names directly and checks whether a law and article exist and "
+        "whether quoted words match the text."
     ) in instructions
     assert (
-        "explore_amendment_chain follows amendments between laws for several levels; repeat it "
-        "while complete is false."
-    ) in instructions
+        "most_amended_laws, explore_amendment_chain and scan_gazette while complete is false"
+        in (instructions)
+    )
+    assert "and explore_amendment_chain download the collection on first use" in instructions
 
 
 async def test_the_descriptions_are_the_agreed_ones(mcp: Client[Any]) -> None:
@@ -150,8 +151,10 @@ async def test_the_descriptions_are_the_agreed_ones(mcp: Client[Any]) -> None:
     )
     assert " ".join((tools["explore_amendment_chain"].description or "").split()) == (
         "Follow amendments between laws for up to three levels: the laws that amended a law and "
-        "the laws that amended those (amended_by), or what a law amended (amends). Examines a "
-        "limited number of laws per call; when complete is false, call again to continue."
+        "the laws that amended those (amended_by), or what a law amended (amends). A law two "
+        "levels away amended the intermediate law, not necessarily the parts that touch the "
+        "starting law. Examines a limited number of laws per call; when complete is false, call "
+        "again to continue."
     )
 
 
@@ -167,12 +170,17 @@ async def test_the_input_schemas_carry_the_agreed_bounds_and_descriptions(
         verify["properties"]["citations"]["maxItems"],
     ) == (1, 10)
     item = verify["properties"]["citations"]["items"]
-    assert item["required"] == ["law", "article"]
+    assert item["required"] == ["law"]
     assert item["properties"]["law"]["description"] == (
         "Name, number or BOE identifier of the law, e.g. 'Ley 40/2015'."
     )
     assert item["properties"]["article"]["description"] == (
-        "The article or provision, e.g. 'artículo 48' or 'disposición adicional tercera'."
+        "The article or provision, e.g. 'artículo 48' or 'disposición adicional tercera'. "
+        "Omit when block_id is given."
+    )
+    assert item["properties"]["block_id"]["description"] == (
+        "Exact block of the law, from the candidates of an ambiguous article; used instead of "
+        "article."
     )
     assert item["properties"]["quote"]["description"] == (
         "Words attributed to it, to compare with the text. Use (...) for omissions."
@@ -197,6 +205,8 @@ async def test_the_input_schemas_carry_the_agreed_bounds_and_descriptions(
     assert props["direction"]["enum"] == ["amended_by", "amends"]
     assert props["direction"]["default"] == "amended_by"
     assert props["include"]["enum"] == ["amendments", "all"]
+    assert props["details"]["enum"] == ["root", "all", "none"]
+    assert props["details"]["default"] == "root"
 
 
 # --- verify_citation ---------------------------------------------------------------------------

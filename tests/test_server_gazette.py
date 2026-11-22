@@ -7,6 +7,7 @@ behaviour is covered with a fixed clock in ``test_gazette``.
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Callable
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -68,11 +69,19 @@ async def call(mcp: Client[Any], tool: str, **arguments: Any) -> dict[str, Any]:
 async def test_the_instructions_mention_the_gazette_tools(boe_client: BoeClient) -> None:
     async with Client(create_server(client=boe_client)) as client:
         instructions = client.instructions or ""
+        names = [tool.name for tool in await client.list_tools()]
 
     assert (
-        "get_daily_summary and scan_gazette read the daily BOE issues (everything published, "
-        "since 1960), which the other tools do not cover."
+        "the daily gazette (get_daily_summary and scan_gazette: everything published since 1960)"
     ) in instructions
+    assert "Most identifiers found in the gazette are not in the consolidated collection" in (
+        instructions
+    )
+    assert "resolve_reference turns a name" in instructions
+    # Every tool is named once the server has 18 of them, and the text stays short.
+    assert len(names) == 18
+    assert all(name in instructions for name in names)
+    assert len(instructions) <= 1659
 
 
 async def test_the_tools_carry_the_agreed_descriptions_and_schemas(mcp: Client[Any]) -> None:
@@ -136,7 +145,7 @@ async def test_a_day_is_returned_as_structured_content(
     assert (page.returned, page.has_more, page.next_offset) == (5, True, 5)
     assert page.total_items == page.matched == 31
     assert page.provenance.attribution.startswith("Basado en datos")
-    assert page.provenance.data_updated_at is None
+    assert page.provenance.data_updated_at == datetime(2026, 11, 20, tzinfo=UTC)
     assert result["provenance"]["source_url"] == "https://www.boe.es"
 
 

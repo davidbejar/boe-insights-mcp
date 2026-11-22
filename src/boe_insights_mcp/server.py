@@ -46,7 +46,7 @@ from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
 from boe_insights_mcp.catalogue import CatalogueStore
 from boe_insights_mcp.chains import Direction
 from boe_insights_mcp.client import BoeClient
-from boe_insights_mcp.errors import BoeError
+from boe_insights_mcp.errors import BoeError, describe_error
 from boe_insights_mcp.legislation import (
     MAX_AMENDMENT_LIMIT,
     MAX_LIMIT,
@@ -86,86 +86,27 @@ __all__ = ["create_server", "main"]
 _T = TypeVar("_T")
 
 _INSTRUCTIONS = (
-    "Tools over Spanish legislation from the BOE (Boletín Oficial del Estado) consolidated "
-    "legislation open data. Call resolve_reference first to turn a name such as 'Ley 40/2015' "
-    "into a BOE identifier, then use that identifier with the other tools. Use "
-    "search_legislation to explore by topic, rank, department or date; find_codes looks up the "
-    "department, subject and rank codes its filters take. read_article gives an article's text "
-    "on a date, compare_article_versions shows what changed between two dates and "
-    "get_article_history lists the amendments of one article; get_amendment_history lists the "
-    "norms that amended a whole law; get_law_structure gives a law's table of contents with the "
-    "block_id of each article. legislation_over_time, top_departments, compare_topics, "
-    "explain_spike and most_amended_laws count laws from a downloaded copy of the collection "
-    "(the first call can take about 30 seconds); most_amended_laws examines a limited number of "
-    "laws per call, so repeat it while complete is false. The status of a law is derived from "
-    "BOE flags and amendment references, so treat it as an indication. get_daily_summary and "
-    "scan_gazette read the daily BOE issues (everything published, since 1960), which the other "
-    "tools do not cover. verify_citation checks whether a law and article exist and whether "
-    "quoted words match the text. explore_amendment_chain follows amendments between laws for "
-    "several levels; repeat it while complete is false. When quoting results, "
-    "pass on the attribution 'Basado en datos de la Agencia Estatal Boletín Oficial del "
-    "Estado' (https://www.boe.es) and say that consolidated texts are informational and have "
-    "no official legal value."
+    "Tools over Spanish legislation from the BOE (Boletín Oficial del Estado): the consolidated "
+    "legislation (most tools) and the daily gazette (get_daily_summary and scan_gazette: "
+    "everything published since 1960). Most identifiers found in the gazette are not in the "
+    "consolidated collection, so the law tools will not find them. resolve_reference turns a "
+    "name such as 'Ley 40/2015' into an identifier for the law tools; verify_citation takes "
+    "names directly and checks whether a law and article exist and whether quoted words match "
+    "the text. search_legislation explores by topic, rank, department or date; find_codes looks "
+    "up the codes its filters take; get_law_overview summarises a law. read_article, "
+    "compare_article_versions and get_article_history work on one article; "
+    "get_amendment_history lists the norms that amended a law; get_law_structure gives its "
+    "table of contents with each article's block_id. legislation_over_time, top_departments, "
+    "compare_topics, explain_spike, most_amended_laws and explore_amendment_chain download the "
+    "collection on first use (about 30 seconds). Repeat most_amended_laws, "
+    "explore_amendment_chain and scan_gazette while complete is false. The status of a law is "
+    "derived from BOE flags, so treat it as an indication. When quoting results, pass on the "
+    "attribution 'Basado en datos de la Agencia Estatal Boletín Oficial del Estado' "
+    "(https://www.boe.es) and say that consolidated texts are informational and have no "
+    "official legal value."
 )
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
-
-# Tool error messages are assembled from these fixed texts, keyed by ``BoeError.code``. The API's
-# own message is deliberately not included: it is Spanish, and can leak internals such as the
-# index name ``TITULOS`` (api-notes 2, "Errors"). Only what to *do* about it is told to the model.
-_ERROR_SUMMARIES = {
-    "not_found": "BOE has no law with that identifier",
-    "invalid_query": "BOE rejected the search",
-    "unavailable": "BOE API unavailable",
-    "bad_response": "BOE returned an unexpected response",
-}
-_ERROR_ADVICE = {
-    "not_found": "Use resolve_reference to find the correct identifier.",
-    "unavailable": "Wait a few seconds and try again.",
-    "bad_response": "Try again later; if it persists, the BOE API may have changed.",
-}
-# What to do when the BOE rejects a request as invalid depends on what the tool sent.
-_INVALID_QUERY_ADVICE = {
-    "search_legislation": "Simplify the search terms or remove filters, then try again.",
-    "resolve_reference": "Check the reference: use a form such as 'Ley 40/2015' or an "
-    "identifier, or search by title with search_legislation.",
-    "get_law_overview": "Check the identifier (for example BOE-A-2015-10566) or get it again "
-    "from resolve_reference.",
-    "get_amendment_history": "Check the identifier (for example BOE-A-2015-10566) or get it "
-    "again from resolve_reference.",
-    "read_article": "Check the identifier and the article wording, or get the identifier again "
-    "from resolve_reference.",
-    "compare_article_versions": "Check the identifier, the article wording and the ISO dates, "
-    "or get the identifier again from resolve_reference.",
-    "get_article_history": "Check the identifier and the article wording, or get the identifier "
-    "again from resolve_reference.",
-    "get_law_structure": "Check the identifier (for example BOE-A-2015-10566) or get it again "
-    "from resolve_reference.",
-    # The trend tools send the BOE only the text and subject_code filters.
-    "legislation_over_time": "Simplify the text filter or check subject_code, then try again.",
-    "top_departments": "Simplify the text filter or check subject_code, then try again.",
-    "compare_topics": "Simplify the text words or check the subject codes, then try again.",
-    "explain_spike": "Simplify the text filter or check subject_code, then try again.",
-    "most_amended_laws": "Simplify the text filter or check subject_code, then try again.",
-    # The gazette tools send the BOE nothing but a date, which the arguments already constrain.
-    "get_daily_summary": "Check the date, then try again.",
-    "scan_gazette": "Check the dates, then try again.",
-    "verify_citation": "Check the law references, the article wordings and the ISO dates, then "
-    "try again.",
-    "explore_amendment_chain": "Check the identifier (for example BOE-A-2020-3824) or get it "
-    "again from resolve_reference.",
-}
-
-
-def _boe_error_message(error: BoeError, tool: str) -> str:
-    """Describe a client error with its stable code, retryability and what to do next."""
-    retry = "retryable" if error.retryable else "not retryable"
-    summary = _ERROR_SUMMARIES.get(error.code, "BOE request failed")
-    if error.code == "invalid_query":
-        advice = _INVALID_QUERY_ADVICE.get(tool, "Check the arguments, then try again.")
-    else:
-        advice = _ERROR_ADVICE.get(error.code, "Try again later.")
-    return f"{summary} ({error.code}, {retry}): {advice}"
 
 
 async def _guard(call: Awaitable[_T], tool: str) -> _T:
@@ -185,7 +126,7 @@ async def _guard(call: Awaitable[_T], tool: str) -> _T:
     try:
         return await call
     except BoeError as error:
-        raise ToolError(_boe_error_message(error, tool)) from error
+        raise ToolError(describe_error(error, tool)) from error
     except ValidationError:
         # Must come before ``except ValueError``, which it would otherwise be caught by.
         raise
@@ -981,6 +922,13 @@ async def explore_amendment_chain(
             "which adds corrections, citations and judicial references."
         ),
     ] = "amendments",
+    details: Annotated[
+        amendment_chains.Details,
+        Field(
+            description="Which edges carry the BOE's reference text: 'root' (those touching the "
+            "starting law), 'all' or 'none'."
+        ),
+    ] = "root",
     max_laws: Annotated[
         int,
         Field(
@@ -991,8 +939,9 @@ async def explore_amendment_chain(
     ] = amendment_chains.DEFAULT_MAX_LAWS,
 ) -> AmendmentChainResult:
     """Follow amendments between laws for up to three levels: the laws that amended a law and
-    the laws that amended those (amended_by), or what a law amended (amends). Examines a limited
-    number of laws per call; when complete is false, call again to continue.
+    the laws that amended those (amended_by), or what a law amended (amends). A law two levels
+    away amended the intermediate law, not necessarily the parts that touch the starting law.
+    Examines a limited number of laws per call; when complete is false, call again to continue.
     """
     return await _guard(
         amendment_chains.explore_amendment_chain(
@@ -1002,6 +951,7 @@ async def explore_amendment_chain(
             direction=direction,
             depth=depth,
             include=include,
+            details=details,
             max_laws=max_laws,
             progress=ctx.report_progress,
         ),

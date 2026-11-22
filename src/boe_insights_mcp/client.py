@@ -68,7 +68,9 @@ __all__ = [
     "INITIAL_NOTE_TTL",
     "METADATA_TTL",
     "SEARCH_TTL",
+    "SUMMARY_ABSENCE_SETTLED_DAYS",
     "SUMMARY_PAST_TTL",
+    "SUMMARY_RECENT_ABSENCE_TTL",
     "SUMMARY_TODAY_TTL",
     "TEXT_BLOCK_TTL",
     "TEXT_BLOCK_VERSIONED_TTL",
@@ -106,10 +108,16 @@ INITIAL_NOTE_TTL = 6 * 3600.0
 # from. Like the other per-law data it can change when the law is amended, so it gets the same
 # six hours; there is no per-block revision date to key it on.
 FULL_TEXT_TTL = 6 * 3600.0
-# A daily summary of a past day never changes again, so it and a remembered "no issue" are kept
-# for a month; today's summary can still gain an issue or be corrected, so it only lives an hour.
+# A daily summary of a past day never changes again, so it is kept for a month; today's summary
+# can still gain an issue or be corrected, so it only lives an hour. A remembered "no issue" is
+# kept for a month only when the day is well in the past: a 404 for a recent day may be a
+# transient failure of a real issue (api-notes 8 cannot tell a Sunday from an error), and must not
+# hide it for a month.
 SUMMARY_PAST_TTL = 30 * 24 * 3600.0
 SUMMARY_TODAY_TTL = 3600.0
+SUMMARY_RECENT_ABSENCE_TTL = 24 * 3600.0
+# Days after which a remembered "no issue" is trusted for ``SUMMARY_PAST_TTL``.
+SUMMARY_ABSENCE_SETTLED_DAYS = 7
 # The first day the BOE summary endpoint answers; every earlier date is a 404 (api-notes, fourth
 # probe, "Daily summaries").
 FIRST_SUMMARY_DAY = date(1960, 9, 1)
@@ -555,9 +563,15 @@ class BoeClient:
             )
         except BoeNotFoundError:
             # Sunday, holiday and future date all answer 404 and cannot be told apart (api-notes,
-            # fourth probe). Only a past day's absence is permanent.
+            # fourth probe). Only a past day's absence is remembered, for a day when the day is
+            # recent and for a month once it is settled.
             if final:
-                await self._cache.set(key, _NO_SUMMARY, SUMMARY_PAST_TTL)
+                settled = (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
+                await self._cache.set(
+                    key,
+                    _NO_SUMMARY,
+                    SUMMARY_PAST_TTL if settled else SUMMARY_RECENT_ABSENCE_TTL,
+                )
             return None
 
     async def has_cached_summary(self, day: date) -> bool:

@@ -25,6 +25,7 @@ __all__ = [
     "Direction",
     "NodeReason",
     "RelationKind",
+    "count_references",
     "explore",
     "level_counts",
     "relation_kind",
@@ -55,17 +56,21 @@ def _register(kind: RelationKind, codes: Collection[int]) -> None:
         _CODE_KINDS[str(code)] = kind
 
 
-# 247 (ENMIENDAS / SE PUBLICA Enmienda) amends an international treaty, so it counts as a
-# modification even though no ordinary law is involved.
-_register("modifies", [270, 271, 272, 220, 221, 245, 247])
-_register("repeals", [*range(210, 218), 230, 235])
+# 220 and 221 (ANULA) are repeals: the norm acted on stops having effect. 247 (ENMIENDAS / SE
+# PUBLICA Enmienda) amends an international treaty, so it counts as a modification even though no
+# ordinary law is involved. 401, 404 and 406 (PRORROGA, ACTUALIZA, AMPLÍA) extend, update or widen
+# the norm they act on, which changes its content or its period of validity. 470 is not a
+# citation: every row seen is a Constitutional Court ruling on the norm ("en el Recurso 3903/2016,
+# la inconstitucionalidad de ... por Sentencia 33/2019"), so it is judicial (api-notes 5, "Relation
+# codes").
+_register("modifies", [270, 271, 272, 245, 247, 401, 404, 406])
+_register("repeals", [*range(210, 218), 220, 221, 230, 235])
 _register("adds", [407, 408])
 _register("suspends", [231])
 _register("corrects", range(201, 205))
-_register("judicial", [520, 530, 540, 552, 693, 694])
-# 407 and 408 are registered above as "adds"; they must stay out of the 400 to 406 citation range.
-_register("cites", [300, 301, 302, 303, 330, 331, *range(400, 407), *range(420, 428)])
-_register("cites", [430, 440, 470, 480, 490])
+_register("judicial", [470, 520, 530, 540, 552, 693, 694])
+_register("cites", [300, 301, 302, 303, 330, 331, 400, 402, 403, 405, *range(420, 428)])
+_register("cites", [430, 440, 480, 490])
 
 
 def relation_kind(code: str) -> RelationKind:
@@ -232,6 +237,22 @@ def _references(analysis: LawAnalysis, direction: Direction) -> list[LawReferenc
     # ``later`` lists the norms that act on this one, ``earlier`` the norms this one acts on
     # (api-notes, fourth probe, "Direction").
     return analysis.later if direction == "amended_by" else analysis.earlier
+
+
+def count_references(
+    law_id: str, analysis: LawAnalysis, direction: Direction, kind: RelationKind
+) -> int:
+    """How many distinct other norms the analysis of ``law_id`` relates to, by ``kind``."""
+    # Counted like the walk does: an empty id or a self reference is not a link (see ``explore``).
+    return len(
+        {
+            reference.law_id
+            for reference in _references(analysis, direction)
+            if reference.law_id
+            and reference.law_id != law_id
+            and relation_kind(reference.relation.code) == kind
+        }
+    )
 
 
 def level_counts(chain: Chain) -> tuple[int, ...]:

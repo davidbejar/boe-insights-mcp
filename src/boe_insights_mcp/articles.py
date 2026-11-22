@@ -150,6 +150,8 @@ class LoadedArticle:
     """``None`` when no block was fetched (nothing to judge)."""
     notes: tuple[str, ...]
     """Sentences for the result's ``note`` that arose while locating."""
+    ignored: str = ""
+    """The part of the article wording the locator did not use (``".8"`` of ``"48.8"``)."""
 
 
 def _check_selector(article: str | None, block_id: str | None) -> None:
@@ -250,7 +252,7 @@ async def load_article(
             f"Located {entry.title or entry.block_id}; the rest of the request "
             f"('{located.ignored}') was ignored: this tool returns whole articles.",
         )
-    return LoadedArticle(location, block, repeal, notes)
+    return LoadedArticle(location, block, repeal, notes, located.ignored or "")
 
 
 def law_state(

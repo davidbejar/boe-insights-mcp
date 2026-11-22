@@ -138,7 +138,8 @@ def citation_match(
         ("   \n\t ", []),
         ("Los convenios se perfeccionan", ["los", "convenios", "se", "perfeccionan"]),
         ("convenio, sujeto; público: (privado).", ["convenio", "sujeto", "público", "privado"]),
-        ("5.000 euros", ["5", "000", "euros"]),
+        ("5.000 euros", ["5000", "euros"]),  # thousands separator is typography (A9)
+        ("5.00 euros", ["5", "00", "euros"]),  # groups after the first need exactly 3 digits
         ("Ley 40/2015, de 1 de octubre", ["ley", "40", "2015", "de", "1", "de", "octubre"]),
         ("uno_dos", ["uno", "dos"]),
     ],
@@ -200,12 +201,16 @@ def test_every_dash_is_a_separator(dash: str) -> None:
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("1.ª", ["1", "ª"]),
-        ("2.º", ["2", "º"]),
+        # A9: the dot between a word character and an ordinal indicator is typography.
+        ("1.ª", ["1ª"]),
+        ("2.º", ["2º"]),
+        ("N.º 5", ["nº", "5"]),
         ("apartado 1.a)", ["apartado", "1", "a"]),
-        ("art. 3.º bis", ["art", "3", "º", "bis"]),
-        ("1ª edición", ["1ª", "edición"]),  # maximal run: no dot, so the indicator stays attached
-        ("Tercera.ª", ["tercera", "ª"]),
+        ("art. 3.º bis", ["art", "3º", "bis"]),
+        ("1ª edición", ["1ª", "edición"]),
+        ("Tercera.ª", ["terceraª"]),
+        ("1.°", ["1º"]),  # the degree sign stands for the masculine ordinal
+        ("1°", ["1º"]),
     ],
 )
 def test_ordinal_indicators_are_token_characters(text: str, expected: list[str]) -> None:
@@ -367,9 +372,9 @@ def test_segments_must_appear_in_order() -> None:
     assert match_quote("a1 a2 a3 a4 (...) b1 b2 b3 b4", text).level == "exact"
     result = match_quote("b1 b2 b3 b4 (...) a1 a2 a3 a4", text)
     assert result.level != "exact"
-    # Nothing of the text is left for the second segment after the first one is aligned.
-    assert result.level == "partial"
-    assert result.similarity == pytest.approx(0.5)
+    # Nothing of the text is left for the second segment after the first one is aligned: the
+    # score is 0.5, under the partial threshold of 0.6 (A8).
+    assert result.level == "none"
 
 
 def test_segments_may_not_overlap() -> None:
@@ -429,6 +434,8 @@ def test_quote_match_is_a_frozen_dataclass_with_the_specified_fields() -> None:
         "matched_text",
         "differences",
         "segments",
+        "omitted",
+        "flags",
     ]
     with pytest.raises(dataclasses.FrozenInstanceError):
         result.level = "none"  # type: ignore[misc]
@@ -461,19 +468,25 @@ def fuzzy(n: int, changed: int) -> QuoteMatch:
         (25, 4, "partial", 0.84),
         (20, 4, "partial", 0.80),
         (20, 8, "partial", 0.60),
-        (8, 4, "partial", 0.50),  # the boundary itself is partial
-        (100, 50, "partial", 0.50),
-        (100, 51, "none", 0.49),  # one token below the boundary
-        (9, 5, "none", 4 / 9),
-        (20, 15, "none", 0.25),
+        (100, 40, "partial", 0.60),  # the boundary itself is partial (A8: 0.6, was 0.5)
+        (100, 41, "none", None),  # one token below the boundary
+        (8, 4, "none", None),  # 0.5 was partial before A8
+        (100, 50, "none", None),
+        (9, 5, "none", None),
+        (20, 15, "none", None),
     ],
 )
 def test_levels_on_both_sides_of_each_threshold(
-    n: int, changed: int, level: str, similarity: float
+    n: int, changed: int, level: str, similarity: float | None
 ) -> None:
     result = fuzzy(n, changed)
     assert result.level == level
-    assert result.similarity == pytest.approx(similarity)
+    if similarity is not None:
+        assert result.similarity == pytest.approx(similarity)
+    else:
+        # Windows under the threshold are never searched for, so a "none" carries no score
+        # worth reading; it only has to stay below the threshold.
+        assert result.similarity < 0.6
 
 
 def test_close_and_partial_report_the_aligned_passage() -> None:
@@ -929,20 +942,39 @@ def test_version_text_joins_paragraphs_with_newlines() -> None:
     assert found.current.match.matched_text == "Fin del uno.\nInicio del dos"
 
 
-def test_footnotes_and_quoted_paragraphs_are_part_of_the_version_text() -> None:
+def test_footnotes_and_quoted_paragraphs_are_not_the_version_text() -> None:
+    # A3: only the article's own words are compared; the notes the BOE adds are kept apart.
     version = make_version(
         para("Artículo 8. Texto del artículo.", "articulo"),
         para("Se modifica por la disposición final segunda.", "nota_pie", quoted=True),
         para("Texto de una cita.", "parrafo", quoted=True),
+        para("Se corrige por la disposición final tercera.", "nota_pie"),
         effective=D1,
     )
     block = make_block(version)
-    note = match_versions("se modifica por la disposición final", block, D1)
-    assert note.current is not None
-    assert note.current.match.level == "exact"
-    cited = match_versions("segunda. Texto de una cita", block, D1)
-    assert cited.current is not None
-    assert cited.current.match.level == "exact"
+    for quote in (
+        "se modifica por la disposición final",
+        "segunda. Texto de una cita",
+        "se corrige por la disposición final tercera",
+    ):
+        found = match_versions(quote, block, D1)
+        assert found.current is not None
+        assert found.current.match.level == "none"
+        assert found.editorial is True
+    own = match_versions("texto del artículo", block, D1)
+    assert own.current is not None
+    assert own.current.match.level == "exact"
+    assert own.editorial is False
+
+
+def test_editorial_is_not_set_when_a_version_text_matches_closely() -> None:
+    version = make_version(
+        para("uno dos tres cuatro cinco seis siete ocho"),
+        para("uno dos tres cuatro cinco seis siete ocho", "nota_pie"),
+        effective=D1,
+    )
+    found = match_versions("uno dos tres cuatro cinco seis siete ocho", make_block(version), D1)
+    assert found.editorial is False
 
 
 # --- 1.3 match_versions: which other version is reported ----------------------------------------
@@ -1018,7 +1050,7 @@ def test_an_other_version_that_matches_worse_is_not_reported() -> None:
 @pytest.mark.parametrize(
     ("current_changed", "other_changed", "current_sim", "other_sim"),
     [
-        (9, 8, 0.55, 0.60),  # K6: float subtraction gives 0.04999999999999993; still reported
+        (8, 7, 0.60, 0.65),  # the lowest "partial" pair; same level, margin exactly 0.05
         (7, 6, 0.65, 0.70),
         (5, 4, 0.75, 0.80),
         (3, 2, 0.85, 0.90),  # same level (close)
@@ -1071,7 +1103,7 @@ def test_same_level_clearly_above_the_margin_is_reported() -> None:
     [
         (16, 15, "partial", "close"),  # 0.84 vs 0.85: higher level, margin 0.01
         (1, 0, "close", "exact"),  # 0.99 vs 1.00
-        (51, 50, "none", "partial"),  # 0.49 vs 0.50
+        (41, 40, "none", "partial"),  # 0.59 vs 0.60
     ],
 )
 def test_a_higher_level_wins_whatever_the_similarity_margin(
@@ -1248,7 +1280,7 @@ def test_article_outcomes_beat_state_repeal_and_match() -> None:
 @pytest.mark.parametrize(
     ("state", "law_repealed", "expected"),
     [
-        ("in_force", False, "matches"),
+        ("in_force", False, "in_force"),  # A5: without a quote nothing can "match"
         ("in_force", True, "not_in_force"),
         ("repealed", False, "not_in_force"),
         ("repealed", True, "not_in_force"),
@@ -1261,9 +1293,9 @@ def test_without_a_quote(state: str, law_repealed: bool, expected: str) -> None:
 
 
 def test_without_a_quote_any_match_is_ignored() -> None:
-    assert status(quote_given=False, match=citation_match("none")) == "matches"
-    assert status(quote_given=False, match=citation_match("none", "exact")) == "matches"
-    assert status(quote_given=False, match=citation_match("partial", "exact")) == "matches"
+    assert status(quote_given=False, match=citation_match("none")) == "in_force"
+    assert status(quote_given=False, match=citation_match("none", "exact")) == "in_force"
+    assert status(quote_given=False, match=citation_match("partial", "exact")) == "in_force"
 
 
 # With a quote: (current level, other level, state, law repealed) -> status.
@@ -1277,32 +1309,35 @@ QUOTED_ROWS: list[tuple[str, str | None, str | None, str, bool, str]] = [
     ("exact-did-not-exist", "exact", None, "did_not_exist", False, "not_in_force"),
     ("exact-law-repealed", "exact", None, "in_force", True, "not_in_force"),
     ("exact-both", "exact", None, "repealed", True, "not_in_force"),
-    # best_other exact or close beats everything below it, whatever the current level
+    # A2: only an EXACT other version is "matches_older_version"; a merely close one is a near
+    # miss and the status is text_differs.
     ("older-exact-current-close", "close", "exact", "in_force", False, "matches_older_version"),
     ("older-exact-current-partial", "partial", "exact", "in_force", False, "matches_older_version"),
     ("older-exact-current-none", "none", "exact", "in_force", False, "matches_older_version"),
-    ("older-exact-no-current", None, "exact", "in_force", False, "matches_older_version"),
-    ("older-close-current-partial", "partial", "close", "in_force", False, "matches_older_version"),
-    ("older-close-current-none", "none", "close", "in_force", False, "matches_older_version"),
-    ("older-close-no-current", None, "close", "in_force", False, "matches_older_version"),
-    # ... and it is checked before not_in_force and before quote_not_found
+    ("older-close-current-partial", "partial", "close", "in_force", False, "text_differs"),
+    ("older-close-current-none", "none", "close", "in_force", False, "text_differs"),
+    # A4: with no version in effect on the date the citation is not in force, whatever other
+    # versions say (they are reported as other_version).
+    ("older-exact-no-current", None, "exact", "in_force", False, "not_in_force"),
+    ("older-close-no-current", None, "close", "in_force", False, "not_in_force"),
+    # ... an exact other version is checked before not_in_force and before quote_not_found
     ("older-over-repealed", "partial", "exact", "repealed", False, "matches_older_version"),
-    ("older-over-law-repealed", "none", "close", "in_force", True, "matches_older_version"),
-    ("older-over-not-yet", None, "exact", "not_yet_in_force", False, "matches_older_version"),
-    ("older-over-did-not-exist", None, "close", "did_not_exist", False, "matches_older_version"),
-    # The precedence is literal: best_other first, even for an input that match_versions never
-    # builds (an exact current version cannot have a strictly better other version).
-    ("older-over-exact-current", "exact", "close", "repealed", False, "matches_older_version"),
-    # nothing found: current none or missing, no other version exact or close
+    ("older-over-law-repealed", "none", "close", "in_force", True, "text_differs"),
+    ("older-over-not-yet", None, "exact", "not_yet_in_force", False, "not_in_force"),
+    ("older-over-did-not-exist", None, "close", "did_not_exist", False, "not_in_force"),
+    # An exact current version cannot have a strictly better other version (match_versions never
+    # builds it), so a close other next to an exact current is ignored.
+    ("older-over-exact-current", "exact", "close", "repealed", False, "not_in_force"),
+    # nothing found: current none, no other version exact or close
     ("none-none", "none", None, "in_force", False, "quote_not_found"),
     ("none-not-in-force", "none", None, "repealed", False, "quote_not_found"),
     ("none-law-repealed", "none", None, "in_force", True, "quote_not_found"),
-    ("no-current-no-other", None, None, "did_not_exist", False, "quote_not_found"),
-    ("no-current-not-yet", None, None, "not_yet_in_force", False, "quote_not_found"),
+    ("no-current-no-other", None, None, "did_not_exist", False, "not_in_force"),
+    ("no-current-not-yet", None, None, "not_yet_in_force", False, "not_in_force"),
     # K7: a PARTIAL best_other is not exact/close, so a current "none" is quote_not_found even
     # though some version partly matches.
     ("none-other-partial", "none", "partial", "in_force", False, "quote_not_found"),
-    ("no-current-other-partial", None, "partial", "did_not_exist", False, "quote_not_found"),
+    ("no-current-other-partial", None, "partial", "did_not_exist", False, "not_in_force"),
     # current close or partial, no better older version -> text_differs
     ("close-only", "close", None, "in_force", False, "text_differs"),
     ("partial-only", "partial", None, "in_force", False, "text_differs"),
@@ -1343,6 +1378,17 @@ def test_older_version_is_checked_before_not_in_force_and_quote_not_found() -> N
     assert status(match=exact, state="repealed", law_repealed=True) == "not_in_force"
     assert status(match=exact) == "matches"
     assert status(match=citation_match("partial")) == "text_differs"
+
+
+def test_a_quote_found_only_in_an_editorial_note_is_not_found() -> None:
+    match = CitationMatch(current=version_match("none", 2, relation="current"), best_other=None)
+    assert status(match=match) == "quote_not_found"
+    noted = dataclasses.replace(match, editorial=True)
+    assert status(match=noted) == "quote_not_found"
+    partial = CitationMatch(
+        current=version_match("partial", 2, relation="current"), best_other=None, editorial=True
+    )
+    assert status(match=partial) == "quote_not_found"  # the note explains the words better
 
 
 def test_citation_status_takes_keyword_arguments_only() -> None:
@@ -1505,14 +1551,30 @@ def test_real_new_wording_before_it_took_effect_matches_the_newer_version(
     )
 
 
-def test_real_footnote_of_the_amending_law_is_searchable(article_48: Block) -> None:
+def test_real_footnote_of_the_amending_law_is_an_editorial_note_not_the_text(
+    article_48: Block,
+) -> None:
+    # A3: the footnote is the BOE's note about the article, so the article's text does not match
+    # it and the match says the words are found only in a note.
     found = match_versions(
         "Se modifica el apartado 8 por la disposición final 2.1 del Real Decreto-ley 36/2020",
         article_48,
         date(2022, 1, 1),
     )
     assert found.current is not None
-    assert found.current.match.level == "exact"
+    assert found.current.match.level == "none"
+    assert found.editorial is True
+    assert (
+        citation_status(
+            law_outcome="found",
+            article_outcome="found",
+            state="in_force",
+            law_repealed=False,
+            quote_given=True,
+            match=found,
+        )
+        == "quote_not_found"
+    )
 
 
 # --- clarifications: K1, K2, K5, K7 --------------------------------------------------------------
@@ -1528,10 +1590,12 @@ def test_k1_tie_on_the_start_goes_to_the_shorter_window() -> None:
 
 
 def test_k1_the_best_window_need_not_cover_every_quote_word() -> None:
-    # Dropping the unmatched first words scores higher than covering them: 4 / 5 beats 4 / 8.
-    result = match_quote("xx yy zz alfa beta gamma delta", "alfa beta gamma delta")
-    assert result.similarity == pytest.approx(4 / 7)
-    assert result.matched_text == "alfa beta gamma delta"
+    # The unmatched first word is not part of the window: 7 matches over max(8, 7) words.
+    result = match_quote(
+        "xx alfa beta gamma delta epsilon zeta eta", "alfa beta gamma delta epsilon zeta eta"
+    )
+    assert result.similarity == pytest.approx(7 / 8)
+    assert result.matched_text == "alfa beta gamma delta epsilon zeta eta"
 
 
 def test_k2_case_punctuation_and_typography_are_not_differences() -> None:
@@ -1672,16 +1736,16 @@ def test_k6_tolerance_keeps_the_exact_margin_pair_reported() -> None:
     ("current", "other", "relation", "expected"),
     [
         ("partial", "exact", "later", "matches_later_version"),
-        ("partial", "close", "later", "matches_later_version"),
+        ("partial", "close", "later", "text_differs"),  # A2: close is not exact
         ("none", "exact", "later", "matches_later_version"),
         ("close", "exact", "later", "matches_later_version"),
-        (None, "exact", "later", "matches_later_version"),
-        (None, "close", "later", "matches_later_version"),
+        (None, "exact", "later", "not_in_force"),  # A4: nothing in effect on the date
+        (None, "close", "later", "not_in_force"),
         ("partial", "exact", "earlier", "matches_older_version"),
-        (None, "exact", "earlier", "matches_older_version"),
+        (None, "exact", "earlier", "not_in_force"),
         ("partial", "partial", "later", "text_differs"),
         ("none", "partial", "later", "quote_not_found"),
-        (None, "partial", "later", "quote_not_found"),
+        (None, "partial", "later", "not_in_force"),
     ],
 )
 @pytest.mark.parametrize(
@@ -1711,3 +1775,140 @@ def test_k7_a_found_law_needs_an_article_outcome(quote_given: bool) -> None:
 def test_k7_a_missing_article_outcome_is_fine_when_the_law_is_not_usable() -> None:
     assert status(law_outcome="not_found", article_outcome=None) == "law_not_found"
     assert status(law_outcome="ambiguous", article_outcome=None) == "law_ambiguous"
+
+
+# --- A1: a quote that is not in the article must not take long ------------------------------------
+
+
+@pytest.fixture(scope="module")
+def ley40_blocks() -> dict[str, Block]:
+    """The blocks of the recorded Ley 40/2015 text, by block id."""
+    from pathlib import Path
+
+    from boe_insights_mcp.textparse import parse_full_text
+
+    raw = Path(__file__).parent / "fixtures" / "boe" / "texto_full_ley40_2015_trimmed.xml"
+    return {block.block_id: block for block in parse_full_text(raw.read_bytes())}
+
+
+def own_text(block: Block) -> str:
+    """The article's own words in its latest version."""
+    return " ".join(p.text for p in block.versions[-1].own_paragraphs)
+
+
+def test_a_350_word_quote_from_another_article_is_rejected_quickly(
+    ley40_blocks: dict[str, Block],
+) -> None:
+    quote = " ".join(own_text(ley40_blocks["a19"]).split()[:350])
+    started = time.monotonic()
+    found = match_versions(quote, ley40_blocks["a48"], date(2026, 11, 21))
+    assert time.monotonic() - started < 2.0
+    assert found.current is not None
+    assert found.current.match.level == "none"
+
+
+def test_a_5000_character_quote_from_another_article_is_rejected_quickly(
+    ley40_blocks: dict[str, Block],
+) -> None:
+    quote = own_text(ley40_blocks["a19"])[:5000]
+    assert len(quote) == 5000
+    started = time.monotonic()
+    found = match_versions(quote, ley40_blocks["a50"], date(2026, 11, 21))
+    assert time.monotonic() - started < 2.0
+    assert found.current is not None
+    assert found.current.match.level == "none"
+
+
+def test_a_quote_that_nearly_appears_is_still_found_in_a_long_article(
+    ley40_blocks: dict[str, Block],
+) -> None:
+    words_ = own_text(ley40_blocks["a19"]).split()[100:400]
+    words_[40] = "zzzz"
+    found = match_versions(" ".join(words_), ley40_blocks["a19"], date(2026, 11, 21))
+    assert found.current is not None
+    assert found.current.match.level == "close"
+
+
+def test_a_short_segment_next_to_a_long_exact_one_still_counts() -> None:
+    # The floor of a segment drops with the others' size: 4 exact words and 2 missing words
+    # score (4 + 0) / 6 = 0.67, which is "partial", not "none".
+    result = match_quote("uno dos tres cuatro (...) zz yy", "uno dos tres cuatro cinco seis")
+    assert result.level == "partial"
+    assert result.similarity == pytest.approx(4 / 6)
+
+
+# --- A6 / A7: omissions and one-word changes that can alter the meaning --------------------------
+
+
+def test_an_exact_multi_segment_match_reports_what_was_omitted() -> None:
+    text = "Los firmantes no podrán superar los gastos. Otra frase. Fin del texto."
+    result = match_quote("Los firmantes (...) superar los gastos (...) Fin del texto", text)
+    assert result.level == "exact"
+    # Verbatim between the segments' words, so the full stop that ended the sentence is included.
+    assert result.omitted == ("no podrán", ". Otra frase.")
+    assert result.flags == ("omitted_negation",)
+
+
+def test_an_exact_single_segment_has_nothing_omitted() -> None:
+    result = match_quote("uno dos tres cuatro", "uno dos tres cuatro cinco")
+    assert result.omitted == ()
+    assert result.flags == ()
+
+
+def test_omitted_numbers_are_flagged() -> None:
+    result = match_quote("plazo (...) días", "plazo de 15 días")
+    assert result.omitted == ("de 15",)
+    assert result.flags == ("omitted_number",)
+
+
+def test_a_dropped_negation_is_flagged() -> None:
+    law = "las aportaciones no podrán ser superiores a los gastos derivados del convenio"
+    result = match_quote(
+        "las aportaciones podrán ser superiores a los gastos derivados del convenio", law
+    )
+    assert result.level == "close"
+    assert result.flags == ("negation",)
+
+
+def test_a_changed_number_is_flagged_by_digit_and_by_word() -> None:
+    law = "se publicará en el plazo de 5 días hábiles desde su formalización en el registro"
+    digits = match_quote(law.replace("5", "15"), law)
+    assert digits.level == "close"
+    assert digits.flags == ("number",)
+    spelled = match_quote(law.replace("5", "cinco"), law)
+    assert spelled.flags == ("number",)
+
+
+def test_other_differences_carry_no_flag() -> None:
+    law = "los convenios se perfeccionan por la prestación del consentimiento de las partes"
+    result = match_quote(law.replace("prestación", "manifestación"), law)
+    assert result.level == "close"
+    assert result.flags == ()
+
+
+# --- A9: typography ------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("quote", "law"),
+    [
+        ("el n.º 5 del artículo", "el nº 5 del artículo"),
+        ("la 1.ª edición", "la 1ª edición"),
+        ("hasta 3.000 euros", "hasta 3000 euros"),
+        ("hasta 3000 euros", "hasta 3.000 euros"),
+        ("hasta 1.200.000 euros", "hasta 1200000 euros"),
+        ("el 1° apartado", "el 1º apartado"),
+    ],
+)
+def test_typography_variants_are_the_same_words(quote: str, law: str) -> None:
+    assert match_quote(quote, law).level == "exact"
+
+
+def test_a_decimal_is_not_a_thousands_separator() -> None:
+    assert comparison_tokens("2.50 euros") == ["2", "50", "euros"]
+    assert comparison_tokens("3.0001") == ["3", "0001"]
+
+
+def test_the_matched_text_keeps_the_original_typography() -> None:
+    result = match_quote("hasta 3000 euros", "Multa de hasta 3.000 euros anuales")
+    assert result.matched_text == "hasta 3.000 euros"

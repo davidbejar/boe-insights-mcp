@@ -283,6 +283,19 @@ class BlockVersion(_ApiModel):
         return tuple(p for p in self.paragraphs if not _is_footnote(p))
 
     @property
+    def own_paragraphs(self) -> tuple[Paragraph, ...]:
+        """The paragraphs that are the law's own words: not footnotes, not quoted notes."""
+        # Quoted paragraphs ("Téngase en cuenta...", "Redacción anterior:" citations, and the
+        # footnotes inside a blockquote) and ``nota_pie`` footnotes are the BOE's notes about the
+        # text, not the text (api-notes 6.1, "Blockquote").
+        return tuple(p for p in self.body if not p.quoted)
+
+    @property
+    def editorial_paragraphs(self) -> tuple[Paragraph, ...]:
+        """The paragraphs the BOE adds about the text: footnotes and quoted notes."""
+        return tuple(p for p in self.paragraphs if _is_footnote(p) or p.quoted)
+
+    @property
     def text(self) -> str:
         """The body paragraphs joined by blank lines; quoted ones are prefixed with ``> ``."""
         return "\n\n".join(f"> {p.text}" if p.quoted else p.text for p in self.body)

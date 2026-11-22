@@ -464,9 +464,24 @@ TITLE_CASES = [
     ("Ley de los dos", "do", False),
     ("Ley del gas", "gases", True),
     ("Ley de los gases", "gas", True),
-    # Only one ending is removed: "es" after a consonant, else "s".
+    # D: a word has several forms (itself, without "s", without "es", "ces" -> "z"), and two
+    # words match when they share one. "lunes" has "lune" (no "s") and "lun" (no "es").
     ("Ley de los lunes", "lun", True),
-    ("Ley de los lunes", "lune", False),
+    ("Ley de los lunes", "lune", True),
+    # D: words in -e, -s, -z and -ces that the single reduced form used to keep apart.
+    ("Ley de bases", "base", True),
+    ("Ley de la base", "bases", True),
+    ("Ley de partes", "parte", True),
+    ("Ley de la parte", "partes", True),
+    ("Tipo de interés", "intereses", True),
+    ("Tipo de los intereses", "interés", True),
+    ("Ley del país", "países", True),
+    ("Ley de los países", "país", True),
+    ("Ley del juez", "jueces", True),
+    ("Ley de los jueces", "juez", True),
+    ("Ley de la vez", "veces", True),
+    ("Ley de la ley", "leyes", True),
+    ("Ley de las leyes", "ley", True),
     ("Ley de Educación", "educ", False),
     ("Ley de Educación", "cacion", False),
     ("Ley (Orgánica) de «Educación».", "organica educacion", True),

@@ -141,9 +141,10 @@ async def test_one_level_reads_only_the_starting_law() -> None:
     assert (result.law_id, result.direction, result.depth) == (ROOT, "amended_by", 1)
     assert ids(result) == [ROOT, lid(2), lid(3)]
     assert result.levels == [1, 2]
-    assert [(e.amending, e.amended, e.relation, e.kind) for e in result.edges] == [
-        (lid(2), ROOT, "SE MODIFICA", "modifies"),
-        (lid(3), ROOT, "SE DEROGA", "repeals"),
+    # B3: the relation is not repeated on the edge: its kind says it, its detail has the wording.
+    assert [(e.amending, e.amended, e.kind) for e in result.edges] == [
+        (lid(2), ROOT, "modifies"),
+        (lid(3), ROOT, "repeals"),
     ]
     assert (result.examined, result.pending, result.failed) == (1, 0, 0)
     assert (result.complete, result.truncated, result.note) == (True, False, None)
@@ -168,9 +169,7 @@ async def test_the_direction_amends_follows_what_the_law_acted_on() -> None:
 
     result = await explore(catalogue_of(2), fake, direction="amends", depth=1)
 
-    assert [(e.amending, e.amended, e.relation) for e in result.edges] == [
-        (ROOT, lid(2), "MODIFICA")
-    ]
+    assert [(e.amending, e.amended, e.kind) for e in result.edges] == [(ROOT, lid(2), "modifies")]
 
 
 async def test_the_id_is_normalised_and_a_malformed_one_is_refused_before_any_request() -> None:
@@ -193,6 +192,7 @@ async def test_the_id_is_normalised_and_a_malformed_one_is_refused_before_any_re
         {"max_laws": 51},
         {"direction": "sideways"},
         {"include": "everything"},
+        {"details": "some"},
     ],
 )
 async def test_arguments_out_of_range_are_refused_before_any_request(
@@ -278,6 +278,57 @@ async def test_a_law_reached_twice_is_read_once_and_the_edge_to_it_is_kept() -> 
         (lid(4), lid(2)),
         (lid(4), lid(3)),
     ]
+
+
+async def test_details_root_gives_the_text_of_the_edges_that_touch_the_starting_law() -> None:
+    fake = FakeAnalyses({ROOT: later(ref(2, detail="uno")), lid(2): later(ref(3, detail="dos"))})
+
+    default = await explore(catalogue_of(2, 3), fake, depth=2)
+    everything = await explore(catalogue_of(2, 3), fake, depth=2, details="all")
+    nothing = await explore(catalogue_of(2, 3), fake, depth=2, details="none")
+
+    assert [e.detail for e in default.edges] == ["uno", None]
+    assert [e.detail for e in everything.edges] == ["uno", "dos"]
+    assert [e.detail for e in nothing.edges] == [None, None]
+    assert "detail" not in default.edges[1].model_dump()
+
+
+async def test_fields_equal_to_their_common_default_are_left_out() -> None:
+    fake = FakeAnalyses({ROOT: later(ref(2), ref("BOE-A-1999-77")), lid(2): later()})
+
+    result = await explore(catalogue_of(2), fake, depth=2)
+
+    root, inside, outside = (n.model_dump() for n in result.nodes)
+    assert "in_collection" not in root and "expanded" not in root
+    assert "in_collection" not in inside and "expanded" not in inside
+    assert outside["in_collection"] is False and outside["expanded"] is False
+    assert "relation" not in result.model_dump()["edges"][0]
+
+
+async def test_long_titles_are_cut_at_100_characters() -> None:
+    fake = FakeAnalyses({ROOT: later(ref(2))})
+    laws = [make_law(lid(1), title="t", published=date(2000, 1, 1), updated_at=NEWEST)]
+    laws.append(make_law(lid(2), title="T" * 300, published=date(2000, 1, 1)))
+    store = CatalogueStore(FakeSearch(laws), clock=lambda: NOW)
+
+    result = await explore(store, fake, depth=1)
+
+    assert result.nodes[1].title == "T" * 99 + "…"
+
+
+async def test_court_rulings_on_the_starting_law_are_counted_when_left_out() -> None:
+    rulings = later(ref(2), ref(3, "470", "SE DECLARA"), ref(4, "552", "Recurso"))
+    fake = FakeAnalyses({ROOT: rulings})
+
+    default = await explore(catalogue_of(2, 3, 4), fake, depth=1)
+    wide = await explore(catalogue_of(2, 3, 4), fake, depth=1, include="all")
+
+    assert default.court_rulings_excluded == 2
+    assert default.note == "2 court rulings on this law are not shown; use include='all'."
+    assert [e.kind for e in default.edges] == ["modifies"]
+    assert wide.court_rulings_excluded == 0
+    assert wide.note is None
+    assert [e.kind for e in wide.edges] == ["modifies", "judicial", "judicial"]
 
 
 async def test_a_long_detail_is_cut_at_200_characters() -> None:
@@ -429,7 +480,7 @@ async def test_a_temporary_failure_is_counted_pending_not_retried_and_retried_ne
 # --- output bounds -----------------------------------------------------------------------------
 
 
-async def test_at_most_400_edges_are_listed_and_edges_total_says_how_many_there_are() -> None:
+async def test_at_most_250_edges_are_listed_and_edges_total_says_how_many_there_are() -> None:
     codes = [("270", "SE MODIFICA"), ("271", "SE MODIFICA"), ("272", "SE MODIFICA")]
     codes += [("220", "SE MODIFICA"), ("221", "SE MODIFICA")]
     refs = [ref(n, code, text) for n in range(2, 102) for code, text in codes]
@@ -437,20 +488,29 @@ async def test_at_most_400_edges_are_listed_and_edges_total_says_how_many_there_
 
     result = await explore(catalogue_of(*range(2, 102)), fake, depth=1)
 
-    assert (len(result.edges), result.edges_total) == (400, 500)
-    assert len(result.nodes) == 101
+    assert (len(result.edges), result.edges_total) == (250, 500)
+    assert (len(result.nodes), result.nodes_total) == (100, 101)
     assert result.truncated is False
 
 
-async def test_at_most_150_laws_are_listed_and_the_chain_says_it_was_cut() -> None:
+async def test_at_most_100_laws_are_listed_and_the_chain_says_it_was_cut() -> None:
     fake = FakeAnalyses(fan(200))
 
     result = await explore(catalogue_of(*range(2, 202)), fake, depth=1)
 
-    assert len(result.nodes) == 150
+    assert (len(result.nodes), result.nodes_total) == (100, 150)
     assert result.truncated is True
-    assert result.note == ("Stopped at 150 laws; use a smaller depth or include='amendments'.")
+    # include is already 'amendments', so the note must not suggest it (B4).
+    assert result.note == "Stopped at 150 laws; use a smaller depth."
     assert result.complete is True
+
+
+async def test_the_truncation_note_suggests_include_amendments_only_when_it_is_not_set() -> None:
+    fake = FakeAnalyses(fan(200))
+
+    result = await explore(catalogue_of(*range(2, 202)), fake, depth=1, include="all")
+
+    assert result.note == "Stopped at 150 laws; use a smaller depth or include='amendments'."
 
 
 async def test_a_note_for_both_causes_gives_both_sentences() -> None:
@@ -460,7 +520,7 @@ async def test_a_note_for_both_causes_gives_both_sentences() -> None:
 
     assert result.complete is False and result.truncated is True
     assert (result.note or "").startswith("Examined 2 laws, ")
-    assert (result.note or "").endswith("include='amendments'.")
+    assert (result.note or "").endswith("use a smaller depth.")
 
 
 # --- progress and provenance -------------------------------------------------------------------

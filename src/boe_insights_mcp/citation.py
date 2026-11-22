@@ -10,7 +10,9 @@ It builds on ``models`` (``Block``) and ``versions`` (``version_on``, which deci
 version is in effect on a date, so the version rules live in one place).
 
 Words are compared as "comparison tokens" (``comparison_tokens``): case and typography never
-matter, accents do. Everything is deterministic: equal inputs give equal outputs, ties included.
+matter, accents do. Only the article's own words are compared; the notes the BOE adds about it
+are kept apart (``BlockVersion.own_paragraphs``). Everything is deterministic: equal inputs give
+equal outputs, ties included.
 """
 
 from __future__ import annotations
@@ -19,11 +21,12 @@ import re
 import unicodedata
 from bisect import bisect_right
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 from difflib import SequenceMatcher
 from fractions import Fraction
+from itertools import pairwise
 from typing import Literal
 
 from boe_insights_mcp.models import Block
@@ -46,6 +49,7 @@ MatchLevel = Literal["exact", "close", "partial", "none"]
 VersionRelation = Literal["current", "earlier", "later"]
 CitationStatus = Literal[
     "matches",
+    "in_force",
     "matches_older_version",
     "matches_later_version",
     "text_differs",
@@ -59,7 +63,10 @@ CitationStatus = Literal[
 Outcome = Literal["found", "ambiguous", "not_found"]
 
 _CLOSE = Fraction(85, 100)
-_PARTIAL = Fraction(1, 2)
+# Raised from 1/2: random sentences of other articles of the same law reached "partial" in about
+# 1 case in 85 at 0.5, mostly through shared legal boilerplate ("de la Administración General del
+# Estado"), and a "partial" reads as "the quote may come from here".
+_PARTIAL = Fraction(3, 5)
 # A quote this short matches by chance too easily: "uno dos tres" against "uno dos x tres" would
 # score 0.75. Below this many tokens the only honest answers are "exact" and "none".
 _MIN_APPROXIMATE_TOKENS = 4
@@ -71,6 +78,18 @@ _MARGIN = 0.05
 _MARGIN_TOLERANCE = 1e-9
 _SEEDS = 3
 
+# Words whose presence in a difference can reverse or change the figure of a provision. The
+# comparison reports them as flags because the similarity score treats "no" like any other word.
+_NEGATIONS = frozenset({"no", "ni", "nunca", "jamás", "tampoco", "sin", "salvo", "excepto"})
+_NUMBER_WORDS = frozenset(
+    {
+        *("uno", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"),
+        *("diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete"),
+        *("dieciocho", "diecinueve", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta"),
+        *("setenta", "ochenta", "noventa", "cien", "mil"),
+    }
+)
+
 # Quotation marks and the soft hyphen are invisible to the comparison: they are dropped without
 # splitting the word, so an apostrophe inside a word like "d'Aragó" or a soft hyphen at a line
 # break never creates a mismatch ("daragó" is one word, not "d" and "aragó").
@@ -79,9 +98,20 @@ _TRANSPARENT = "\u00ab\u00bb\u201c\u201d\u2018\u2019\u201e\u201a\u2039\u203a\"'\
 # must stay one word with its neighbours until NFC recomposes it.
 _MARKS = "̀-ͯ᪰-᫿᷀-᷿⃐-⃿︠-︯"
 _WORD_CHAR = rf"(?:[^\W_]|[{_MARKS}])"
+# Three typographic habits must not make two spellings of one word differ. They are absorbed into
+# the token and removed when it is folded (``_fold_token``), so the token's span still covers the
+# original spelling:
+# * a dot between a word character and an ordinal indicator: "1.º" and "N.ª" are "1º" and "Nª";
+# * the degree sign "°" typed in place of the masculine ordinal "º";
+# * thousands separators: "3.000" is "3000" (groups of exactly three digits after the first).
+_THOUSANDS = r"(?<![\d.])\d{1,3}(?:\.\d{3})+(?!\d)"
+_ORDINALS = "ªº°"
 # A transparent character only continues a word when a word character follows it, so the span of
 # a token (used to cut the original text) never ends on a closing quotation mark.
-_TOKEN = re.compile(rf"{_WORD_CHAR}(?:{_WORD_CHAR}|[{re.escape(_TRANSPARENT)}]+(?={_WORD_CHAR}))*")
+_TOKEN = re.compile(
+    rf"(?:{_THOUSANDS}|{_WORD_CHAR})"
+    rf"(?:{_WORD_CHAR}|[{re.escape(_TRANSPARENT)}]+(?={_WORD_CHAR})|\.(?=[{_ORDINALS}])|°)*"
+)
 _TRANSPARENT_CHARS = re.compile(f"[{re.escape(_TRANSPARENT)}]")
 _OMISSION = re.compile(r"\s*(?:\(\.\.\.\)|\[\.\.\.\]|…|\.{3,})\s*")
 
@@ -102,6 +132,12 @@ class QuoteMatch:
     """Inline diff of quote against passage, ``""`` when exact or none."""
     segments: int
     """Number of quote segments (1 unless the quote has omission marks)."""
+    omitted: tuple[str, ...] = ()
+    """For an exact match of several segments: the text of the article skipped between each pair of
+    consecutive segments, as published (``segments - 1`` entries)."""
+    flags: tuple[str, ...] = ()
+    """Words that can change the meaning: ``negation`` or ``number`` when such a word is among the
+    differences, ``omitted_negation`` or ``omitted_number`` when it is in an omitted passage."""
 
 
 @dataclass(frozen=True)
@@ -127,6 +163,9 @@ class CitationMatch:
     """The version in effect on the date; ``None`` if none was."""
     best_other: VersionMatch | None
     """The best-matching other version, only when it is strictly better than ``current``."""
+    editorial: bool = False
+    """True when no version's own text matches the quote exactly or closely but the notes the BOE
+    adds to some version do (``Paragraph`` footnotes and quoted notes)."""
 
 
 # --- 1.1 comparison tokens ----------------------------------------------------------------------
@@ -141,17 +180,19 @@ def _fold(raw: str) -> str:
     return unicodedata.normalize("NFC", unicodedata.normalize("NFC", raw).casefold())
 
 
+def _token_form(raw: str) -> str:
+    """The comparison form of one raw token: typography removed, then folded."""
+    # The only dots a token can hold are the thousands separators and the dot before an ordinal
+    # indicator that ``_TOKEN`` absorbs, and both are typography; the degree sign stands for "º".
+    return _fold(_TRANSPARENT_CHARS.sub("", raw).replace(".", "").replace("°", "º"))
+
+
 def _scan(text: str) -> list[tuple[str, int, int]]:
     """The comparison tokens of ``text`` with the character span of each in ``text``."""
     # Spans index the ORIGINAL string, which is why the scan works on it directly instead of on a
     # normalised copy: ``matched_text`` must be cut verbatim from the law.
     return [
-        (
-            _fold(_TRANSPARENT_CHARS.sub("", found.group())),
-            found.start(),
-            found.end(),
-        )
-        for found in _TOKEN.finditer(text)
+        (_token_form(found.group()), found.start(), found.end()) for found in _TOKEN.finditer(text)
     ]
 
 
@@ -160,7 +201,8 @@ def comparison_tokens(text: str) -> list[str]:
 
     Tokens are maximal runs of letters, digits and the ordinal indicators ``ª`` and ``º``; every
     other character separates, dashes included. Quotation marks and soft hyphens are dropped
-    without splitting a word. Case is folded and accents are kept.
+    without splitting a word. Case is folded and accents are kept. The dot of "1.º" and "N.ª" and
+    the dots of "3.000" are dropped, and the degree sign "°" equals "º".
     """
     return [token for token, _, _ in _scan(text)]
 
@@ -246,7 +288,16 @@ def _match_prepared(segments: Sequence[_Segment], text: _Text) -> QuoteMatch:
     exact = _exact_runs(segments, text)
     if exact is not None:
         first, last = exact[0][0], exact[-1][1]
-        return QuoteMatch("exact", 1.0, text.passage(first, last), "", len(segments))
+        # What an omission mark skipped is shown verbatim: the quote hides it, and one skipped
+        # word ("no", a figure) can reverse what the quoted words say.
+        omitted = tuple(
+            text.source[text.spans[before[1]][1] : text.spans[after[0]][0]].strip()
+            for before, after in pairwise(exact)
+        )
+        flags = _flags(comparison_tokens(" ".join(omitted)), prefix="omitted_")
+        return QuoteMatch(
+            "exact", 1.0, text.passage(first, last), "", len(segments), omitted, flags
+        )
     total = sum(len(s.tokens) for s in segments)
     if total < _MIN_APPROXIMATE_TOKENS:
         return QuoteMatch("none", 0.0, "", "", len(segments))
@@ -255,7 +306,9 @@ def _match_prepared(segments: Sequence[_Segment], text: _Text) -> QuoteMatch:
     position = 0
     weighted = Fraction(0)
     for segment in segments:
-        aligned = _best_window(segment.tokens, text.tokens, position)
+        aligned = _best_window(
+            segment.tokens, text.tokens, position, _segment_floor(len(segment.tokens), total)
+        )
         alignments.append(aligned)
         if aligned is not None:
             length = aligned.last - aligned.first + 1
@@ -268,13 +321,37 @@ def _match_prepared(segments: Sequence[_Segment], text: _Text) -> QuoteMatch:
         return QuoteMatch("none", float(similarity), "", "", len(segments))
     level: MatchLevel = "close" if similarity >= _CLOSE else "partial"
     found = [a for a in alignments if a is not None]
+    differences, flags = _differences(segments, alignments, text)
     return QuoteMatch(
         level,
         float(similarity),
         text.passage(found[0].first, found[-1].last),
-        _differences(segments, alignments, text),
+        differences,
         len(segments),
+        flags=flags,
     )
+
+
+def _segment_floor(size: int, total: int) -> Fraction | None:
+    """The lowest score one segment can have while the whole quote still reaches ``_PARTIAL``.
+
+    The other segments score at most 1, so a segment of ``size`` words among ``total`` must score
+    at least ``1 - (1 - _PARTIAL) * total / size``; below that the quote is "none" whatever the
+    rest does. ``None`` when that is not above 0 (a short segment next to long ones).
+    """
+    floor = 1 - (1 - _PARTIAL) * Fraction(total, size)
+    return floor if floor > 0 else None
+
+
+def _flags(words: Iterable[str], prefix: str = "") -> tuple[str, ...]:
+    """The meaning-changing kinds present among ``words``, each as ``prefix`` plus its name."""
+    found = list(words)
+    flags: list[str] = []
+    if any(word in _NEGATIONS for word in found):
+        flags.append(f"{prefix}negation")
+    if any(word in _NUMBER_WORDS or any(char.isdigit() for char in word) for word in found):
+        flags.append(f"{prefix}number")
+    return tuple(flags)
 
 
 def _exact_runs(segments: Sequence[_Segment], text: _Text) -> list[tuple[int, int]] | None:
@@ -357,13 +434,17 @@ def _overlaps(
     return result
 
 
-def _best_window(segment: Sequence[str], tokens: Sequence[str], lo: int) -> _Aligned | None:
+def _best_window(
+    segment: Sequence[str], tokens: Sequence[str], lo: int, floor: Fraction | None = None
+) -> _Aligned | None:
     """The window of ``tokens[lo:]`` that best matches ``segment``, or ``None`` if none does.
 
     The score of a window is ``matching / max(len(segment), len(window))`` with the matching
     count of ``SequenceMatcher``, and a window must start and end on a matched token. Ties go
-    to the earliest start, then the shorter window. The result is the exact optimum; the search
-    is only pruned with bounds that can never discard a window that would win:
+    to the earliest start, then the shorter window. With ``floor`` given, only windows scoring at
+    least ``floor`` are looked for (``None`` is returned when there is none); among those the
+    result is the exact optimum. The search is only pruned with bounds that can never discard a
+    window that would win:
 
     * A window can only start or end at a token that occurs in the segment (otherwise that end
       is unmatched and trimming it gives a better score), so only those positions are tried.
@@ -373,8 +454,8 @@ def _best_window(segment: Sequence[str], tokens: Sequence[str], lo: int) -> _Ali
       known is never aligned, and growing stops once even a perfect overlap could not beat it.
     * The best known score starts from the densest windows of the segment's own length, which
       are real windows scored for real, so a quote that nearly appears in the text prunes
-      almost everything at once. Scanning starts in order and replaces the best only on a strictly
-      higher score, which gives the tie-break for free.
+      almost everything at once, or from ``floor`` when that is higher. Scanning starts in order
+      and replaces the best only on a strictly higher score, which gives the tie-break for free.
     """
     size = len(segment)
     wanted = Counter(segment)
@@ -382,10 +463,16 @@ def _best_window(segment: Sequence[str], tokens: Sequence[str], lo: int) -> _Ali
     if not positions:
         return None
 
-    floor = _seed_score(segment, tokens, positions, wanted)
+    floor_n, floor_d = _seed_score(segment, tokens, positions, wanted)
+    # A quote that is nowhere in the text has no seed worth anything, and the search would then
+    # try thousands of windows that all end up below the "partial" threshold and are reported as
+    # "none" anyway. Starting from the threshold makes those windows prunable from the first step;
+    # a window scoring exactly ``floor`` is still looked at (the first comparison is not strict).
+    if floor is not None and floor.numerator * floor_d > floor_n * floor.denominator:
+        floor_n, floor_d = floor.numerator, floor.denominator
     # Windows with a bound of at least ``floor`` are worth looking at. The prefilter asks only
     # for starts whose longest still-useful window holds enough of the segment's words.
-    bound_n, bound_d, strict = floor[0], floor[1], False
+    bound_n, bound_d, strict = floor_n, floor_d, False
     widest = min(len(tokens) - lo, (size * bound_d) // bound_n)
     capacity = _overlaps(tokens, positions, wanted, widest)
 
@@ -416,6 +503,10 @@ def _best_window(segment: Sequence[str], tokens: Sequence[str], lo: int) -> _Ali
             if outcome is None or outcome[1] != 0 or outcome[2] != length - 1:
                 continue
             matched, denominator = outcome[0], max(size, length)
+            # The overlap bound above is only a ceiling: the real score can still fall below
+            # the floor, and such a window must not be returned.
+            if not beats(matched, denominator):
+                continue
             if best is None or matched * best[1] > best[0] * denominator:
                 best = (matched, denominator, start, end)
                 if matched * bound_d >= bound_n * denominator:
@@ -464,18 +555,21 @@ def _seed_score(
 
 def _differences(
     segments: Sequence[_Segment], alignments: Sequence[_Aligned | None], text: _Text
-) -> str:
-    """Inline diff of the quote against the aligned passages, capped at 600 characters.
+) -> tuple[str, tuple[str, ...]]:
+    """Inline diff of the quote against the aligned passages, and the flags of its words.
 
-    ``[-words-]`` are words only in the quote and ``{+words+}`` words only in the law. The
-    alignment runs on the comparison tokens, so case, punctuation and typography never show up
-    as differences, but each word is displayed in its original spelling (the law's for words that
-    agree, so the reader sees the text as published).
+    The diff is capped at 600 characters. ``[-words-]`` are words only in the quote and
+    ``{+words+}`` words only in the law. The alignment runs on the comparison tokens, so case,
+    punctuation and typography never show up as differences, but each word is displayed in its
+    original spelling (the law's for words that agree, so the reader sees the text as published).
+    The flags look at every differing word, also past the cap.
     """
     parts: list[str] = []
+    differing: list[str] = []
     for segment, aligned in zip(segments, alignments, strict=True):
         if aligned is None:
             parts.append(f"[-{' '.join(segment.words)}-]")
+            differing.extend(segment.tokens)
             continue
         window = range(aligned.first, aligned.last + 1)
         law_tokens = [text.tokens[i] for i in window]
@@ -485,6 +579,8 @@ def _differences(
             if tag == "equal":
                 pieces.extend(text.word(aligned.first + j) for j in range(j1, j2))
                 continue
+            differing.extend(segment.tokens[i1:i2])
+            differing.extend(law_tokens[j1:j2])
             if i2 > i1:
                 pieces.append(f"[-{' '.join(segment.words[i1:i2])}-]")
             if j2 > j1:
@@ -493,9 +589,10 @@ def _differences(
                 )
         parts.append(" ".join(pieces))
     joined = " (...) ".join(parts)
+    flags = _flags(differing)
     if len(joined) > _DIFFERENCES_CAP:
-        return joined[:_DIFFERENCES_CAP].rstrip() + "…"
-    return joined
+        return joined[:_DIFFERENCES_CAP].rstrip() + "…", flags
+    return joined, flags
 
 
 # --- 1.3 matching across an article's versions --------------------------------------------------
@@ -509,8 +606,9 @@ def match_versions(quote: str, block: Block, on: date) -> CitationMatch:
     ``current`` is the version in effect on ``on``. ``best_other`` is the best-matching other
     version, earlier or later, and only when it matches strictly better than ``current``: a
     higher level, or the same level with a similarity higher by at least 0.05. Among other
-    versions of equal level and similarity the latest wins. Raises ``ValueError`` when the quote
-    contains no words.
+    versions of equal level and similarity the latest wins. Only the versions' own text is
+    compared; ``editorial`` is set when the quote is found only in the notes about them. Raises
+    ``ValueError`` when the quote contains no words.
     """
     segments = _split_quote(quote)
     in_effect = version_on(block, on)
@@ -527,7 +625,7 @@ def match_versions(quote: str, block: Block, on: date) -> CitationMatch:
             relation = "later"
         else:
             relation = "earlier"
-        text = _prepare_text("\n".join(p.text for p in version.paragraphs))
+        text = _prepare_text("\n".join(p.text for p in version.own_paragraphs))
         found = VersionMatch(
             position=index + 1,
             starts_on=starts,
@@ -543,14 +641,29 @@ def match_versions(quote: str, block: Block, on: date) -> CitationMatch:
     # A version that matches nothing is never a useful "other wording", even if it scores a
     # little above a current version that matches nothing either (similarity noise).
     candidates = [v for v in others if v.match.level != "none"]
+    editorial = False
+    if not any(
+        v.match.level in ("exact", "close") for v in [*others, *([current] if current else [])]
+    ):
+        # Nothing in the articles' own words fits, so see whether the quote was lifted from the
+        # notes the BOE adds under the text ("Se modifica el apartado 8 por ..."). Worth a second
+        # pass only here: when a version already matches, the notes cannot change the answer.
+        editorial = any(
+            _match_prepared(
+                segments, _prepare_text("\n".join(p.text for p in v.editorial_paragraphs))
+            ).level
+            in ("exact", "close")
+            for v in versions
+            if v.editorial_paragraphs
+        )
     if not candidates:
-        return CitationMatch(current=current, best_other=None)
+        return CitationMatch(current=current, best_other=None, editorial=editorial)
     # ``max`` keeps the first of equal keys and the position is part of the key, so among equal
     # level and similarity the latest version wins: it is the most recent wording that says it.
     best = max(candidates, key=lambda v: (_RANK[v.match.level], v.match.similarity, v.position))
     if current is None or _clearly_better(best.match, current.match):
-        return CitationMatch(current=current, best_other=best)
-    return CitationMatch(current=current, best_other=None)
+        return CitationMatch(current=current, best_other=best, editorial=editorial)
+    return CitationMatch(current=current, best_other=None, editorial=editorial)
 
 
 def _clearly_better(other: QuoteMatch, current: QuoteMatch) -> bool:
@@ -578,10 +691,12 @@ def citation_status(
     """The single status that the facts of one citation add up to.
 
     Precedence, first that applies: the law is not found or ambiguous, the article is not found
-    or ambiguous; then, with a quote, a better other version (exact or close), no match at all,
-    an exact match that is not in force, an exact match in force, anything else
-    (``text_differs``); without a quote, whether the article is in force. Raises ``ValueError``
-    when the law was found but no article outcome is given.
+    or ambiguous; then, with a quote, no version in effect on the date (``not_in_force``), a quote
+    found only in an editorial note, another version that matches exactly, no match at all, an
+    exact match that is not in force, an exact match in force, anything else (``text_differs``,
+    which includes another version that only matches closely); without a quote, whether the
+    article is in force. Raises ``ValueError`` when the law was found but no article outcome is
+    given.
     """
     if law_outcome == "not_found":
         return "law_not_found"
@@ -596,13 +711,25 @@ def citation_status(
 
     not_in_force = state != "in_force" or law_repealed
     if not quote_given:
-        return "not_in_force" if not_in_force else "matches"
+        # Without words to compare nothing can "match": the most that is known is that the
+        # article exists and is in force.
+        return "not_in_force" if not_in_force else "in_force"
 
+    if match is not None and match.current is None:
+        # Before the article existed or took effect there is no text to quote from; a version
+        # that starts later is reported as ``other_version``, but the citation is not in force.
+        return "not_in_force"
+    if match is not None and match.editorial:
+        return "quote_not_found"
     other = None if match is None else match.best_other
-    if other is not None and other.match.level in ("exact", "close"):
+    # A close wording of another version is only a near miss: claiming "this is the older text"
+    # needs the same words, so a close other version falls through to ``text_differs`` below.
+    if other is not None and other.match.level == "exact":
         return "matches_later_version" if other.relation == "later" else "matches_older_version"
     current = None if match is None or match.current is None else match.current.match.level
     if current is None or current == "none":
+        if other is not None and other.match.level == "close":
+            return "text_differs"
         return "quote_not_found"
     # Only an exact quote can be "not in force": a misquote of a repealed article is first of all
     # a misquote, and the state is reported separately.

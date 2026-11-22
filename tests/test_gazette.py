@@ -160,11 +160,12 @@ async def test_a_day_is_summarised_by_section_and_department() -> None:
     assert result.note is None
 
 
-async def test_provenance_is_stamped_and_carries_no_update_date() -> None:
+async def test_provenance_is_stamped_and_dated_by_the_issue_read() -> None:
     result = await one_day(sample_day(), date(2026, 11, 20))
 
     assert result.provenance.generated_at == NOW
-    assert result.provenance.data_updated_at is None
+    # C5: summaries have no stamp of their own, so the data's date is the day of the issue.
+    assert result.provenance.data_updated_at == datetime(2026, 11, 20, tzinfo=UTC)
     assert result.provenance.attribution.startswith("Basado en datos")
 
 
@@ -521,7 +522,7 @@ async def test_the_default_range_is_the_seven_days_ending_today_newest_first() -
         "url": "https://www.boe.es/txt/B-21",
         "date": TODAY,
     }
-    assert result.provenance.data_updated_at is None
+    assert result.provenance.data_updated_at == datetime(2026, 11, 21, tzinfo=UTC)
 
 
 async def test_days_without_an_issue_are_scanned_but_have_no_matches() -> None:
@@ -539,7 +540,6 @@ async def test_one_of_words_section_or_department_is_required() -> None:
     for blank in (
         {"words": None},
         {"words": "   "},
-        {"words": "¿?"},
         {"words": None, "section": " "},
     ):
         with pytest.raises(ValueError, match="at least one"):
@@ -722,3 +722,70 @@ async def test_progress_is_reported_once_per_day_with_increasing_values() -> Non
 
     assert [(done, total) for done, total, _ in reports] == [(1, 3), (2, 3), (3, 3)]
     assert reports[0][2] == "Read 2026-11-21 (1 of 3 days)"
+
+
+# --- review fixes: C1 to C5 ----------------------------------------------------------------------
+
+
+async def test_a_scan_that_ends_on_an_unpublished_today_says_so() -> None:
+    fake = FakeSummaries({ago(1): summary(ago(1), item("A1", "Ley de algo"))})
+
+    result = await scan(fake, from_date=ago(2), to_date=TODAY)
+
+    assert result.complete is True
+    assert (
+        result.note == "Today's issue was not available when scanned; it may not be published yet."
+    )
+    assert result.provenance.data_updated_at == datetime(
+        ago(1).year, ago(1).month, ago(1).day, tzinfo=UTC
+    )
+
+
+async def test_a_scan_of_past_days_only_has_no_today_note() -> None:
+    fake = FakeSummaries({})
+
+    result = await scan(fake, from_date=ago(5), to_date=ago(3))
+
+    assert result.note is None
+    assert result.provenance.data_updated_at is None
+
+
+async def test_the_department_filter_ignores_leading_zeros_and_follows_recoded_codes() -> None:
+    day = date(2000, 6, 14)
+    madrid_old = ("8130", "COMUNIDAD DE MADRID")
+    fake = FakeSummaries({day: summary(day, item("M1", department=madrid_old), item("A1"))})
+
+    for code in ("8130", "8131", "08130", " 8131 "):
+        result = await one_day(fake, day, department_code=code)
+        assert [i.identifier for i in result.items] == ["M1"], code
+    assert (await one_day(fake, day, department_code="7723")).matched == 1
+
+
+async def test_words_without_letters_or_digits_are_a_bad_argument() -> None:
+    fake = sample_day()
+
+    for bad in ("???", "¿?", "-"):
+        with pytest.raises(ValueError, match="letters or digits"):
+            await one_day(fake, date(2026, 11, 20), words=bad)
+        with pytest.raises(ValueError, match="letters or digits"):
+            await scan(fake, words=bad)
+
+
+async def test_a_scan_range_before_the_first_summary_is_refused() -> None:
+    with pytest.raises(ValueError, match=r"The BOE daily summaries start on 1960-09-01\."):
+        await scan(FakeSummaries({}), from_date=date(1950, 1, 1), to_date=date(1950, 1, 10))
+    with pytest.raises(ValueError, match="start on 1960-09-01"):
+        await scan(FakeSummaries({}), from_date=date(1960, 8, 1), to_date=date(1960, 8, 31))
+
+
+async def test_a_section_that_matches_nothing_lists_the_sections_present() -> None:
+    result = await one_day(sample_day(), date(2026, 11, 20), section="III")
+
+    assert result.matched == 0
+    assert result.note == "No item of section 'III' that day; sections present: 1, 2A, 5A."
+
+
+async def test_a_section_that_exists_adds_no_note() -> None:
+    result = await one_day(sample_day(), date(2026, 11, 20), section="2a")
+
+    assert result.note is None

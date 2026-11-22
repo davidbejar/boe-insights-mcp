@@ -42,6 +42,7 @@ __all__ = [
     "TopicSeries",
     "bucket_for",
     "bucket_range",
+    "canonical_department_code",
     "compare_topics",
     "count_by",
     "count_over_time",
@@ -64,10 +65,14 @@ MAX_BUCKETS = 600
 _MIN_COMPLETE_BUCKETS = 4
 # Label of the aggregated row of ``series_by``.
 _OTHER_LABEL = "other"
-# Two autonomous communities changed their department code when their statute or name changed, so
-# one institution appears under two codes in the catalogue (api-notes, third probe, "Departments
-# that changed code"). Maps the old code to the newer one, which is the code and label reported.
+# Three autonomous communities changed their department code when their statute or name changed,
+# so one institution appears under two codes (api-notes, third probe, "Departments that changed
+# code"; the daily summaries of 1990 and 2000 give Madrid as 8130 where the departments table has
+# 8131, fourth probe, "Daily summaries"). Maps the old code to the newer one, which is the code
+# and label reported. This is the one place the pairs are listed: the trend tools and the gazette
+# filter both read it.
 _RECODED_DEPARTMENTS = {
+    "8130": "8131",  # Comunidad de Madrid in the summaries of 1990 and 2000, 8131 in the table
     "8161": "8162",  # Comunidad Valenciana until 2006, Comunitat Valenciana since
     "8120": "8121",  # Islas Baleares until 1998, Illes Balears since
 }
@@ -261,6 +266,16 @@ def _raw_coded(law: LawSummary, dimension: Dimension) -> CodedValue | None:
     return law.scope
 
 
+def canonical_department_code(code: str) -> str:
+    """The code a department is known by, for comparing codes from different sources.
+
+    Leading zeros do not count and a recoded department (``_RECODED_DEPARTMENTS``) is given its
+    newer code, so "08130", "8130" and "8131" are the same institution.
+    """
+    stripped = code.strip().lstrip("0") or "0"
+    return _RECODED_DEPARTMENTS.get(stripped, stripped)
+
+
 def _canonical_code(dimension: Dimension, code: str) -> str:
     """The code a value is grouped and filtered under (recoded departments share one)."""
     return _RECODED_DEPARTMENTS.get(code, code) if dimension == "department" else code
@@ -306,33 +321,42 @@ def _words(text: str) -> list[str]:
     return words
 
 
-_VOWELS = frozenset("aeiou")
+def _forms(word: str) -> frozenset[str]:
+    """The forms under which a folded word can meet its singular or its plural.
 
-
-def _singular(word: str) -> str:
-    """Reduce a folded word to a form shared by its singular and its plural.
-
-    Removes one plural ending: a final "es" when the word is longer than 4 letters and the
-    letter before it is a consonant ("leyes" -> "ley", "ciudades" -> "ciudad"), otherwise a
-    final "s" when the word is longer than 3 letters ("viviendas" -> "vivienda"). Short words
-    are left alone so that "mes" and "mesa", or "ley" and "legal", never meet. Applied to both
-    the query and the title, so the reverse direction ("viviendas" finds "vivienda") works too.
+    The word itself; without a final "s" (longer than 3 letters: "viviendas" -> "vivienda",
+    "bases" -> "base"); without a final "es" (longer than 4: "leyes" -> "ley", "intereses" ->
+    "interes"); with a final "ces" turned into "z" (longer than 4: "jueces" -> "juez"). Two words
+    match when their sets share a form, which works in both directions ("ley" finds "leyes" and
+    "leyes" finds "ley"). Short words only lose what the length rules allow, so "mes" and "mesa",
+    "ley" and "legal" or "casa" and "caso" never meet.
     """
-    # The letter before "es" must be a consonant so that "es" reads as a plural ending rather
-    # than the tail of a stem after a vowel ("pie" -> "pies" only loses its "s"). Accents are
-    # already folded away, so the five plain vowels are the whole set; a digit is not a
-    # consonant. The rule is a heuristic: the plural of a word in -e after a consonant ("base",
-    # "bases") loses its whole "es" and no longer meets its singular.
-    if len(word) > 4 and word.endswith("es") and word[-3].isalpha() and word[-3] not in _VOWELS:
-        return word[:-2]
+    # A set and not one reduced form: the plural of a word in -e ("base", "bases") loses only its
+    # "s", while the plural of a word in a consonant ("ley", "leyes") loses "es"; no single rule
+    # reduces both to the singular. Accents are already folded away, so "país" and "países" are
+    # "pais" and "paises". The rules are a heuristic: a few unrelated words still share a form
+    # ("aragón" and "aragonés").
+    forms = {word}
     if len(word) > 3 and word.endswith("s"):
-        return word[:-1]
-    return word
+        forms.add(word[:-1])
+    if len(word) > 4 and word.endswith("es"):
+        forms.add(word[:-2])
+    if len(word) > 4 and word.endswith("ces"):
+        forms.add(word[:-3] + "z")
+    return frozenset(forms)
 
 
-def _stems(text: str) -> set[str]:
-    """The reduced forms of the folded words of a text (see ``_singular``)."""
-    return {_singular(word) for word in _words(text)}
+def _wanted_forms(text: str) -> list[frozenset[str]]:
+    """The form sets of the folded words of a query, one per word."""
+    return [_forms(word) for word in _words(text)]
+
+
+def _has_all(wanted: Sequence[frozenset[str]], title: str) -> bool:
+    """Whether every wanted word meets a word of ``title`` (they share a form)."""
+    available: set[str] = set()
+    for word in _words(title):
+        available |= _forms(word)
+    return all(not forms.isdisjoint(available) for forms in wanted)
 
 
 def title_matcher(words: str | None) -> Callable[[str], bool] | None:
@@ -343,10 +367,10 @@ def title_matcher(words: str | None) -> Callable[[str], bool] | None:
     Returns ``None`` when ``words`` is ``None`` or holds no word at all, which means "no
     constraint", so callers can tell an absent filter from one that matches nothing.
     """
-    wanted = _stems(words) if words is not None else set()
+    wanted = _wanted_forms(words) if words is not None else []
     if not wanted:
         return None
-    return lambda title: wanted <= _stems(title)
+    return lambda title: _has_all(wanted, title)
 
 
 def filter_laws(
@@ -368,7 +392,7 @@ def filter_laws(
     occur as whole words, ignoring case, accents (but not ``ñ``) and punctuation; singular and
     plural forms match each other.
     """
-    wanted_words = _stems(title_words) if title_words is not None else set()
+    wanted_words = _wanted_forms(title_words) if title_words is not None else []
     # A department filter names the institution, whichever of its codes the caller knows.
     wanted_departments = (
         {_canonical_code("department", code) for code in department_codes}
@@ -385,7 +409,7 @@ def filter_laws(
             continue
         if identifiers is not None and law.identifier not in identifiers:
             continue
-        if wanted_words and not wanted_words <= _stems(law.title):
+        if wanted_words and not _has_all(wanted_words, law.title):
             continue
         if start is not None or end is not None:
             day = _law_date(law, date_field)

@@ -107,17 +107,17 @@ def pairs(chain: Chain) -> list[tuple[str, str]]:
 # --- relation_kind ------------------------------------------------------------------------------
 
 KIND_CODES: dict[str, list[str]] = {
-    "modifies": ["270", "271", "272", "220", "221", "245", "247"],
-    "repeals": ["210", "211", "212", "213", "214", "215", "216", "217", "230", "235"],
+    "modifies": ["270", "271", "272", "245", "247", "401", "404", "406"],
+    "repeals": ["210", "211", "212", "213", "214", "215", "216", "217", "220", "221", "230", "235"],
     "adds": ["407", "408"],
     "suspends": ["231"],
     "corrects": ["201", "202", "203", "204"],
-    "judicial": ["520", "530", "540", "552", "693", "694"],
+    "judicial": ["470", "520", "530", "540", "552", "693", "694"],
     "cites": [
         "300", "301", "302", "303", "330", "331",
-        "400", "401", "402", "403", "404", "405", "406",
+        "400", "402", "403", "405",
         "420", "421", "422", "423", "424", "425", "426", "427",
-        "430", "440", "470", "480", "490",
+        "430", "440", "480", "490",
     ],
 }  # fmt: skip
 
@@ -152,7 +152,11 @@ def test_relation_kind_key_codes_are_not_confused() -> None:
     assert relation_kind("440") != "modifies"
     assert relation_kind("201") == "corrects"
     assert relation_kind("552") == "judicial"
-    assert relation_kind("470") == "cites"
+    # 470 is a Constitutional Court ruling on the norm, not a citation.
+    assert relation_kind("470") == "judicial"
+    assert relation_kind("470") != "cites"
+    assert relation_kind("220") == relation_kind("221") == "repeals"
+    assert relation_kind("401") == relation_kind("404") == relation_kind("406") == "modifies"
 
 
 def test_amending_kinds_constant() -> None:
@@ -1157,7 +1161,7 @@ def _in_collection(law_id: str) -> bool:
 
 
 def test_real_rdl_amends_depth_one(real: dict[str, LawAnalysis]) -> None:
-    """RDL 8/2020 amends eight laws (5 modify, 1 repeals, 2 suspend); 401 and 330 are not."""
+    """RDL 8/2020 acts on nine laws (5 modify, 1 repeals, 2 suspend, 1 extend); 330 does not."""
     chain = explore(RDL, {RDL: real[RDL]}, direction="amends", max_depth=1)
     assert [e.amended for e in chain.edges] == [
         "BOE-A-2020-3580",
@@ -1168,16 +1172,18 @@ def test_real_rdl_amends_depth_one(real: dict[str, LawAnalysis]) -> None:
         LEY14,
         ORDEN,
         "BOE-A-2009-10329",
+        "BOE-A-2017-11505",  # 401 PRORROGA: extends the validity of art. 9.2 (B1)
     ]
     assert {e.amending for e in chain.edges} == {RDL}
-    assert [e.kind for e in chain.edges] == ["modifies"] * 5 + ["repeals"] + ["suspends"] * 2
-    assert [e.code for e in chain.edges] == ["270"] * 5 + ["235", "231", "231"]
-    assert level_counts(chain) == (1, 8)
+    assert [e.kind for e in chain.edges] == (
+        ["modifies"] * 5 + ["repeals"] + ["suspends"] * 2 + ["modifies"]
+    )
+    assert [e.code for e in chain.edges] == ["270"] * 5 + ["235", "231", "231", "401"]
+    assert level_counts(chain) == (1, 9)
     assert all(n.reason == "depth_limit" for n in chain.nodes[1:])
     assert chain.to_fetch == ()
     assert chain.truncated is False
-    assert "BOE-A-2017-11505" not in ids(chain)
-    assert "BOE-A-2020-3692" not in ids(chain)
+    assert "BOE-A-2020-3692" not in ids(chain)  # 330 CITA
 
 
 def test_real_rdl_amends_edge_to_ley11(real: dict[str, LawAnalysis]) -> None:
@@ -1193,14 +1199,14 @@ def test_real_rdl_amends_edge_to_ley11(real: dict[str, LawAnalysis]) -> None:
 
 
 def test_real_rdl_amends_with_all_kinds(real: dict[str, LawAnalysis]) -> None:
-    """With every kind all ten ``anteriores`` rows are edges, and 401/330 are citations."""
+    """With every kind all ten ``anteriores`` rows are edges, and 330 is a citation."""
     chain = explore(RDL, {RDL: real[RDL]}, direction="amends", max_depth=1, kinds=ALL_KINDS)
     assert len(chain.edges) == 10
     by_target = {e.amended: e for e in chain.edges}
-    assert by_target["BOE-A-2017-11505"].kind == "cites"
+    assert by_target["BOE-A-2017-11505"].kind == "modifies"
     assert by_target["BOE-A-2020-3692"].kind == "cites"
     only = explore(RDL, {RDL: real[RDL]}, direction="amends", max_depth=1, kinds={"cites"})
-    assert [e.amended for e in only.edges] == ["BOE-A-2017-11505", "BOE-A-2020-3692"]
+    assert [e.amended for e in only.edges] == ["BOE-A-2020-3692"]
 
 
 def test_real_ley11_amended_by_depth_one(real: dict[str, LawAnalysis]) -> None:
@@ -1274,6 +1280,7 @@ def test_real_depth_two_amends_with_five_known_analyses(real: dict[str, LawAnaly
         "BOE-A-2018-9268",
         "BOE-A-1993-25359",
         "BOE-A-2009-10329",
+        "BOE-A-2017-11505",
     )
     for law_id in (LEY11, LEY19, LEY14, ORDEN):
         assert node(chain, law_id).expanded is True
@@ -1285,15 +1292,15 @@ def test_real_depth_two_amends_with_five_known_analyses(real: dict[str, LawAnaly
     # The 440 of Ley 11/2002 is a citation: not followed.
     assert "BOE-A-1997-7878" not in ids(chain)
     # Depth-2 nodes are exactly the new targets, all at the depth limit.
-    amending_codes = {"270", "210", "235", "231", "407"}
+    amending_codes = {"270", "210", "235", "231", "407", "401"}
     expected: set[str] = set()
     for law_id in (LEY11, LEY19, LEY14, ORDEN):
         expected.update(r.law_id for r in real[law_id].earlier if r.relation.code in amending_codes)
-    expected -= set(ids(chain)[:9])
+    expected -= set(ids(chain)[:10])
     level_two = {n.law_id for n in chain.nodes if n.depth == 2}
     assert level_two == expected
     assert all(node(chain, i).reason == "depth_limit" for i in level_two)
-    assert level_counts(chain)[:2] == (1, 8)
+    assert level_counts(chain)[:2] == (1, 9)
     assert sum(level_counts(chain)) == len(chain.nodes)
 
 

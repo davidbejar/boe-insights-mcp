@@ -16,10 +16,10 @@ from __future__ import annotations
 import time
 from collections import Counter
 from collections.abc import Callable, Iterable
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any, Protocol
 
-from boe_insights_mcp.analytics import title_matcher
+from boe_insights_mcp.analytics import canonical_department_code, title_matcher
 from boe_insights_mcp.catalogue import ProgressCallback
 from boe_insights_mcp.client import FIRST_SUMMARY_DAY
 from boe_insights_mcp.clock import madrid_today, utc_now
@@ -98,12 +98,21 @@ class _Filter:
     """The three item filters of both tools; every one that is given must match (AND)."""
 
     def __init__(self, words: str | None, section: str | None, department_code: str | None) -> None:
-        """Normalise the raw arguments: blank values and words without letters mean "absent"."""
+        """Normalise the raw arguments: blank values mean "absent".
+
+        Raises ``ValueError`` for ``words`` that are not blank but hold no letter or digit: such
+        a filter would silently match everything.
+        """
         self._words = title_matcher(words)
+        if self._words is None and (words or "").strip():
+            raise ValueError("words must contain letters or digits")
         section = _blank_to_none(section)
         # Section codes are letters and digits whose case carries no meaning ("2a" is "2A").
         self._section = section.upper() if section else None
-        self._department = _blank_to_none(department_code)
+        department = _blank_to_none(department_code)
+        # Compared by canonical code: the summaries of some eras carry codes the departments table
+        # writes differently (leading zeros, the recoded Madrid code of api-notes 8).
+        self._department = canonical_department_code(department) if department else None
 
     @property
     def is_empty(self) -> bool:
@@ -114,7 +123,10 @@ class _Filter:
         """Whether ``item`` satisfies every given filter."""
         if self._section is not None and item.section_code.upper() != self._section:
             return False
-        if self._department is not None and item.department_code != self._department:
+        if self._department is not None and (
+            item.department_code is None
+            or canonical_department_code(item.department_code) != self._department
+        ):
             return False
         return self._words is None or self._words(item.title)
 
@@ -169,13 +181,22 @@ def _day_count(count: int) -> str:
     return f"{count} day" if count == 1 else f"{count} days"
 
 
-def _provenance(moment: datetime, *, notice: str = GAZETTE_NOTICE) -> Provenance:
-    """The provenance block: stamped at assembly time, with no update date (summaries have none).
+def _provenance(
+    moment: datetime, newest_issue: date | None = None, *, notice: str = GAZETTE_NOTICE
+) -> Provenance:
+    """The provenance block, stamped at assembly time.
 
-    The notice is the gazette's by default: a summary lists what was published, not consolidated
-    texts, so the consolidated-text notice of ``Provenance`` would be wrong for it.
+    Summaries carry no update stamp of their own, so the data's date is that of the newest issue
+    read (midnight UTC), or ``None`` when no issue was read. The notice is the gazette's by
+    default: a summary lists what was published, not consolidated texts, so the
+    consolidated-text notice of ``Provenance`` would be wrong for it.
     """
-    return Provenance(generated_at=moment, data_updated_at=None, notice=notice)
+    updated = (
+        datetime(newest_issue.year, newest_issue.month, newest_issue.day, tzinfo=UTC)
+        if newest_issue is not None
+        else None
+    )
+    return Provenance(generated_at=moment, data_updated_at=updated, notice=notice)
 
 
 # --- get_daily_summary -------------------------------------------------------------------------
@@ -265,6 +286,16 @@ async def daily_summary(
     matching = [item for item in found.items if wanted.matches(item)]
     end, has_more, next_offset = _page(len(matching), offset, limit)
     page = matching[offset:end]
+    if (asked := _blank_to_none(section)) is not None and not any(
+        item.section_code.upper() == asked.upper() for item in found.items
+    ):
+        # A wrong section code (the model writes "III" or "I") otherwise looks like an empty day.
+        present = ", ".join(dict.fromkeys(item.section_code for item in found.items))
+        note = " ".join(
+            filter(
+                None, [note, f"No item of section '{asked}' that day; sections present: {present}."]
+            )
+        )
     return DailySummaryResult(
         date=shown,
         published=True,
@@ -280,7 +311,7 @@ async def daily_summary(
         has_more=has_more,
         next_offset=next_offset,
         note=note,
-        provenance=_provenance(moment),
+        provenance=_provenance(moment, shown),
     )
 
 
@@ -296,7 +327,9 @@ def _resolve_range(from_date: date | None, to_date: date | None, today: date) ->
     start = from_date if from_date is not None else end - timedelta(days=DEFAULT_SCAN_DAYS - 1)
     if from_date is not None and from_date > today:
         raise ValueError("from_date is in the future: there are no BOE issues after today")
-    # Nothing exists before the first summary, so an earlier start is moved up to it.
+    if end < FIRST_SUMMARY_DAY:
+        raise ValueError(f"The BOE daily summaries start on {FIRST_SUMMARY_DAY.isoformat()}.")
+    # A start before the first summary is moved up to it.
     start = max(start, FIRST_SUMMARY_DAY)
     if start > end:
         raise ValueError("from_date must not be after to_date")
@@ -305,9 +338,13 @@ def _resolve_range(from_date: date | None, to_date: date | None, today: date) ->
     return start, end
 
 
-def _scan_note(scanned: int, total: int, pending: int, failed: int, unavailable: int) -> str | None:
+def _scan_note(
+    scanned: int, total: int, pending: int, failed: int, unavailable: int, today_missing: bool
+) -> str | None:
     """What to tell the caller about an incomplete scan or skipped days; ``None`` when nothing."""
     parts: list[str] = []
+    if today_missing:
+        parts.append("Today's issue was not available when scanned; it may not be published yet.")
     if pending:
         parts.append(
             f"Scanned {scanned} of {total} days. Call again with the same arguments to continue "
@@ -360,6 +397,8 @@ async def scan_gazette(
     matches: list[ScannedEntry] = []
     by_day: list[DayMatches] = []
     scanned = with_issue = failed = unavailable = 0
+    today_missing = False
+    newest_issue: date | None = None
     for step in range(total_days):
         day = end - timedelta(days=step)
         cached = await client.has_cached_summary(day)
@@ -382,8 +421,14 @@ async def scan_gazette(
                 failed += 1
         else:
             scanned += 1
+            if found is None and day == current:
+                # Today's 404 is not remembered and says "not yet published" as often as "no
+                # issue" (api-notes 8), so a scan ending today must not read as complete.
+                today_missing = True
             if found is not None:
                 with_issue += 1
+                if newest_issue is None:
+                    newest_issue = day  # days run newest first
                 day_matches = [
                     ScannedEntry(
                         date=day, **_compact_fields(item, several_issues=len(found.issues) > 1)
@@ -417,6 +462,6 @@ async def scan_gazette(
         has_more=has_more,
         next_offset=next_offset,
         by_day=by_day,
-        note=_scan_note(scanned, total_days, pending, failed, unavailable),
-        provenance=_provenance(moment),
+        note=_scan_note(scanned, total_days, pending, failed, unavailable, today_missing),
+        provenance=_provenance(moment, newest_issue),
     )

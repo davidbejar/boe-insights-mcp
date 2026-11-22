@@ -147,12 +147,13 @@ def article48(mocks: Mocks, on_index: Callable[[], None] | None = None) -> None:
 
 
 def request(
-    article: str = "artículo 48",
+    article: str | None = "artículo 48",
     quote: str | None = None,
     law: str = LAW,
     as_of: date | None = None,
+    block_id: str | None = None,
 ) -> CitationRequest:
-    return CitationRequest(law=law, article=article, quote=quote, as_of=as_of)
+    return CitationRequest(law=law, article=article, quote=quote, as_of=as_of, block_id=block_id)
 
 
 async def verify(
@@ -193,7 +194,7 @@ async def test_a_citation_without_a_quote_only_checks_the_article(
 
     check = result.results[0]
     assert (check.status, check.state, check.quote_match, check.other_version) == (
-        "matches",
+        "in_force",  # A5: no quote, so nothing can "match"
         "in_force",
         None,
         None,
@@ -227,6 +228,8 @@ async def test_the_wording_of_an_earlier_version_is_reported_as_such(
         "ends_on": date(2020, 12, 31),
         "level": "exact",
         "similarity": 1.0,
+        "matched_text": "de las partes en el plazo de 15 días",
+        "differences": "",
     }
 
 
@@ -373,7 +376,7 @@ async def test_a_reference_with_several_laws_is_ambiguous_and_lists_them(
 
     check = result.results[0]
     assert check.status == "law_ambiguous"
-    assert len(check.candidates) == 10
+    assert len(check.candidates) == 5  # A10: candidates are capped at 5
     assert check.model_dump()["candidates"][0]["identifier"].startswith("BOE-")
 
 
@@ -396,7 +399,7 @@ async def test_a_name_resolves_to_the_law_before_the_article_is_looked_up(
     result = await verify(client, request("artículo 1", law="LO 3/2018"))
 
     check = result.results[0]
-    assert (check.status, check.law_id) == ("matches", "BOE-A-2018-16673")
+    assert (check.status, check.law_id) == ("in_force", "BOE-A-2018-16673")
     assert check.law_title is not None and "Protección de Datos" in check.law_title
     assert check.law == "LO 3/2018"
 
@@ -459,7 +462,7 @@ async def test_a_date_before_the_repeal_finds_the_law_in_force(
     result = await verify(client, request("artículo 1", law=LEY_30, as_of=date(2010, 1, 1)))
 
     check = result.results[0]
-    assert (check.status, check.state) == ("matches", "in_force")
+    assert (check.status, check.state) == ("in_force", "in_force")
     assert check.note is not None and "repealed later" in check.note
 
 
@@ -474,8 +477,8 @@ async def test_the_part_of_the_wording_that_was_ignored_is_noted(
     result = await verify(client, request("artículo 48.3"))
 
     check = result.results[0]
-    assert check.status == "matches"
-    assert check.note is not None and ".3" in check.note
+    assert check.status == "in_force"
+    assert check.note == "Checked against the whole article; '.3' was not used to narrow the text."
 
 
 # --- several citations, one request per fact ---------------------------------------------------
@@ -498,7 +501,7 @@ async def test_citations_are_answered_in_order_and_a_shared_law_costs_no_extra_r
         "matches",
         "matches_older_version",
         "article_not_found",
-        "matches",
+        "in_force",
     ]
     assert [c.article for c in result.results] == [
         "artículo 48",
@@ -553,7 +556,7 @@ async def test_the_remaining_citations_come_back_unchecked_with_a_note(
     )
 
     first, second, third = result.results
-    assert first.status == "matches"
+    assert first.status == "in_force"
     for skipped in (second, third):
         assert skipped.status is None
         assert (
@@ -580,8 +583,12 @@ async def test_a_failing_citation_is_reported_unchecked_and_the_others_go_on(
     broken, fine = result.results
     assert broken.status is None
     assert broken.note is not None
-    assert broken.note.startswith("Not checked: BOE request failed (unavailable, retryable)")
-    assert fine.status == "matches"
+    # The note is the curated message of the tool errors, never the API's own text.
+    assert broken.note == (
+        "Not checked: BOE API unavailable (unavailable, retryable): Wait a few seconds and try "
+        "again. Call again with this citation."
+    )
+    assert fine.status == "in_force"
     assert (result.checked, result.not_checked) == (1, 1)
 
 
@@ -594,7 +601,7 @@ async def test_a_failing_citation_is_reported_unchecked_and_the_others_go_on(
         ([], "between 1 and 10"),
         ([request()] * 11, "between 1 and 10"),
         ([request(law="  ")], "law must not be empty"),
-        ([request(article="  ")], "article must not be empty"),
+        ([request(article="  ")], "give article or block_id"),
         ([request(article="x" * 201)], "at most 200"),
         ([request(quote="«»…")], "quote must contain words"),
     ],
@@ -605,3 +612,148 @@ async def test_bad_arguments_are_refused_before_any_request(
     with pytest.raises(ValueError, match=message):
         await verify(client, *requests)
     assert mocks.router.calls.call_count == 0
+
+
+# --- statuses that need a closer look at the facts ---------------------------------------------
+
+EDITORIAL_BLOCK = (
+    "<response><status><code>200</code><text>ok</text></status><data>"
+    '<bloque id="a48" tipo="precepto" titulo="Artículo 48">'
+    '<version id_norma="BOE-A-2015-10566" fecha_publicacion="20151002" fecha_vigencia="20161002">'
+    '<p class="articulo">Artículo 48. Convenios.</p>'
+    '<p class="parrafo">Los convenios no podrán superar los gastos previstos, salvo pacto en '
+    "contrario de las partes firmantes.</p>"
+    '<p class="parrafo">Los firmantes publicarán el convenio en el plazo de 5 días hábiles.</p>'
+    '<p class="nota_pie">Se modifica el apartado 8 por la disposición final segunda del Real '
+    "Decreto-ley 36/2020, de 30 de diciembre.</p>"
+    "</version></bloque></data></response>"
+).encode()
+
+
+def editorial_article(mocks: Mocks) -> None:
+    """A one-version article with a footnote of the BOE under its text."""
+    mocks.law(
+        LAW,
+        index_body(("a48", "Artículo 48", "20210101")),
+        {"a48": EDITORIAL_BLOCK},
+    )
+
+
+async def test_the_words_of_an_editorial_note_are_not_the_articles_text(
+    client: BoeClient, mocks: Mocks
+) -> None:
+    editorial_article(mocks)
+
+    result = await verify(
+        client,
+        request(quote="Se modifica el apartado 8 por la disposición final segunda del Real"),
+    )
+
+    check = result.results[0]
+    assert check.status == "quote_not_found"
+    assert check.note == (
+        "The words match an editorial note of the BOE about this article, not the article's text."
+    )
+
+
+async def test_a_dropped_negation_is_flagged_and_an_omission_is_shown(
+    client: BoeClient, mocks: Mocks
+) -> None:
+    editorial_article(mocks)
+
+    result = await verify(
+        client,
+        request(
+            quote="Los convenios podrán superar los gastos previstos, salvo pacto en contrario"
+        ),
+        request(quote="Los convenios (...) superar los gastos previstos"),
+    )
+
+    changed, omitted = result.results
+    assert changed.status == "text_differs"
+    assert changed.quote_match is not None
+    assert changed.quote_match.flags == ["negation"]
+    assert omitted.status == "matches"
+    assert omitted.quote_match is not None
+    assert omitted.quote_match.omitted == ["no podrán"]
+    assert omitted.quote_match.flags == ["omitted_negation"]
+
+
+async def test_a_date_before_the_article_took_effect_is_not_in_force(
+    client: BoeClient, mocks: Mocks
+) -> None:
+    article48(mocks)
+
+    result = await verify(
+        client,
+        request(
+            quote="en el plazo de 5 días hábiles desde su formalización", as_of=date(2010, 1, 1)
+        ),
+        request(as_of=date(2010, 1, 1)),
+    )
+
+    with_quote, without = result.results
+    assert (with_quote.status, with_quote.state) == ("not_in_force", "did_not_exist")
+    # The later wording that does match is still reported.
+    assert with_quote.other_version is not None
+    assert (with_quote.other_version.relation, with_quote.other_version.level) == ("later", "exact")
+    assert without.status == "not_in_force"
+
+
+async def test_a_close_wording_of_another_version_is_only_text_differs(
+    client: BoeClient, mocks: Mocks
+) -> None:
+    article48(mocks)
+
+    result = await verify(
+        client,
+        # One word off the 2016 wording, which is 0.06 closer to it than to the current text.
+        request(quote=OLD.replace("perfecciona", "formaliza")),
+    )
+
+    check = result.results[0]
+    assert check.status == "text_differs"
+    assert check.other_version is not None
+    assert check.other_version.level == "close"
+    assert check.other_version.differences != ""
+    assert check.other_version.matched_text != ""
+
+
+async def test_a_block_id_replaces_the_article_wording(client: BoeClient, mocks: Mocks) -> None:
+    article48(mocks)
+
+    result = await verify(client, request(article=None, block_id="a48"))
+
+    check = result.results[0]
+    assert (check.status, check.block_id) == ("in_force", "a48")
+
+
+async def test_an_article_that_is_not_found_gives_candidates_and_a_hint(
+    client: BoeClient, mocks: Mocks
+) -> None:
+    article48(mocks)
+
+    result = await verify(client, request("artículo 999"))
+
+    check = result.results[0]
+    assert check.status == "article_not_found"
+    assert [c.model_dump()["block_id"] for c in check.candidates] == ["a48"]
+    assert check.note is not None and "block_id" in check.note
+
+
+async def test_matching_is_not_started_when_the_time_budget_is_spent(
+    client: BoeClient, mocks: Mocks
+) -> None:
+    clock = Clock()
+
+    def spend() -> None:
+        clock.now += 41.0  # the lookup alone uses the whole budget
+
+    article48(mocks, on_index=spend)
+
+    result = await verify(client, request(quote="en el plazo de 5 días"), clock=clock)
+
+    check = result.results[0]
+    assert check.status is None
+    assert check.note == "Not checked: time limit reached. Call again with the remaining citations."
+    assert (result.checked, result.not_checked) == (0, 1)

@@ -841,10 +841,17 @@ class CitationRequest(BaseModel):
         min_length=1,
         description="Name, number or BOE identifier of the law, e.g. 'Ley 40/2015'.",
     )
-    article: str = Field(
+    article: str | None = Field(
+        default=None,
         min_length=1,
         description="The article or provision, e.g. 'artículo 48' or 'disposición adicional "
-        "tercera'.",
+        "tercera'. Omit when block_id is given.",
+    )
+    block_id: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Exact block of the law, from the candidates of an ambiguous article; used "
+        "instead of article.",
     )
     quote: str | None = Field(
         default=None,
@@ -860,8 +867,10 @@ class QuoteMatchInfo(_Output):
     """How closely the quote matches the text of one version."""
 
     level: MatchLevel = Field(
-        description="'exact' (same words), 'close' (similarity 0.85 or more), 'partial' (0.5 "
-        "or more) or 'none'. Case, punctuation and quotation marks are ignored; accents are not."
+        description="'exact': the quoted words appear in the text. 'close': a few words differ; "
+        "one word can change the meaning, see differences. 'partial': shares words with the text "
+        "but much differs; the quote may come from elsewhere. 'none': not found. Case, "
+        "punctuation and quotation marks are ignored; accents are not."
     )
     similarity: float = Field(description="0.0 to 1.0, share of the words that match.")
     matched_text: str = Field(
@@ -872,6 +881,27 @@ class QuoteMatchInfo(_Output):
         description="Quote against passage: [-words only in the quote-] {+words only in the "
         "text+}; empty when exact or none."
     )
+    flags: list[str] = Field(
+        default_factory=list,
+        description="'negation' or 'number' when a differing word is a negation (no, sin, "
+        "salvo...) or a number; 'omitted_negation' or 'omitted_number' when so is an omitted "
+        "passage.",
+    )
+    omitted: list[str] = Field(
+        default_factory=list,
+        description="Text of the article skipped at each omission mark; read it before relying "
+        "on the quote.",
+    )
+
+    # Why a serializer: both lists are empty for most matches, and the model reads every one.
+    @model_serializer(mode="wrap")
+    def _omit_empty_lists(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Serialise as usual, then drop ``flags`` and ``omitted`` when they are empty."""
+        data: dict[str, object] = handler(self)
+        for key in ("flags", "omitted"):
+            if not data.get(key):
+                data.pop(key, None)
+        return data
 
 
 class OtherVersionInfo(_Output):
@@ -886,6 +916,8 @@ class OtherVersionInfo(_Output):
     )
     level: MatchLevel
     similarity: float
+    matched_text: str = Field(description="The passage of that version, as written (at most 600).")
+    differences: str = Field(description="Quote against that version; empty when exact.")
 
 
 def _without_none(data: dict[str, object], keep: tuple[str, ...] = ()) -> dict[str, object]:
@@ -897,14 +929,15 @@ class CitationCheck(_Output):
     """The facts found for one citation."""
 
     law: str = Field(description="The law as given.")
-    article: str = Field(description="The article as given.")
+    article: str | None = Field(default=None, description="The article as given.")
     status: CitationStatus | None = Field(
-        description="'matches': found, in force, and the quote (if any) is exact. "
-        "'matches_older_version' / 'matches_later_version': the quote matches another version of "
-        "the article better than the one in effect on as_of (see other_version). 'text_differs': "
-        "the quote is close or partial. 'quote_not_found'. 'not_in_force': the article, or the "
-        "whole law, is not in force on as_of. 'article_not_found', 'article_ambiguous', "
-        "'law_not_found', 'law_ambiguous' (see candidates). Null when not checked (see note)."
+        description="'matches': found, in force, and the quote is exact. 'in_force': found and "
+        "in force, no quote given. 'matches_older_version' / 'matches_later_version': the quote "
+        "is exact in another version, not in the one in effect on as_of (see other_version). "
+        "'text_differs': the quote is close or partial. 'quote_not_found'. 'not_in_force': the "
+        "article, or the whole law, is not in force on as_of. 'article_not_found', "
+        "'article_ambiguous', 'law_not_found', 'law_ambiguous' (see candidates). Null when not "
+        "checked (see note)."
     )
     law_id: str | None = Field(default=None, description="BOE identifier of the law found.")
     law_title: str | None = None
@@ -928,11 +961,12 @@ class CitationCheck(_Output):
     )
     other_version: OtherVersionInfo | None = Field(
         default=None,
-        description="Only when status is matches_older_version or matches_later_version.",
+        description="The version that matches the quote better than the one in effect, if any.",
     )
     candidates: list[LawBrief | ArticleCandidate] = Field(
         default_factory=list,
-        description="Laws (law_ambiguous) or articles (article_ambiguous) that may be meant.",
+        description="At most 5 laws (law_ambiguous) or articles (article_ambiguous, "
+        "article_not_found) that may be meant; pass an article's block_id.",
     )
     note: str | None = Field(
         default=None,
@@ -970,24 +1004,36 @@ class ChainNodeInfo(_Output):
 
     law_id: str
     depth: int = Field(description="Distance from the starting law (0).")
-    title: str | None = Field(default=None, description="From the collection, when it has the law.")
+    title: str | None = Field(
+        default=None, description="From the collection, when it has the law; cut at 100 characters."
+    )
     rank: str | None = None
     published_on: date | None = None
     in_collection: bool = Field(
-        description="False for norms outside the consolidated collection (corrections, court "
-        "proceedings, regional decrees...); their own amendments cannot be followed."
+        default=True,
+        description="Omitted when true. False for norms outside the consolidated collection "
+        "(corrections, court proceedings, regional decrees...); their own amendments cannot be "
+        "followed.",
     )
-    expanded: bool = Field(description="True when its amendments were followed.")
+    expanded: bool = Field(
+        default=True, description="Omitted when true. False when its amendments were not followed."
+    )
     reason: Literal["depth_limit", "not_fetched", "unavailable"] | None = Field(
         default=None,
         description="Why it was not expanded: depth_limit, not_fetched (call again) or "
         "unavailable.",
     )
 
+    # Why a serializer: nearly every node is in the collection and expanded, and the model reads
+    # all of them, so the two flags are given only when they differ from that common case.
     @model_serializer(mode="wrap")
     def _omit_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
-        """Serialise as usual, then drop the optional fields that are ``None``."""
-        return _without_none(handler(self))
+        """Serialise as usual, then drop the optional fields that are ``None`` or true."""
+        data = _without_none(handler(self))
+        for key in ("in_collection", "expanded"):
+            if data.get(key) is True:
+                data.pop(key)
+        return data
 
 
 class ChainEdgeInfo(_Output):
@@ -995,9 +1041,17 @@ class ChainEdgeInfo(_Output):
 
     amending: str = Field(description="Identifier of the norm that acts.")
     amended: str = Field(description="Identifier of the norm acted on.")
-    relation: str = Field(description="As the BOE words it, e.g. 'MODIFICA' or 'SE MODIFICA'.")
     kind: RelationKind
-    detail: str = Field(description="Reference text from the BOE (Spanish), cut at 200 characters.")
+    detail: str | None = Field(
+        default=None,
+        description="Reference text from the BOE (Spanish), cut at 200 characters; it carries "
+        "the BOE's wording of the relation. Given as the details argument says.",
+    )
+
+    @model_serializer(mode="wrap")
+    def _omit_empty(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        """Serialise as usual, then drop ``detail`` when it was not asked for."""
+        return _without_none(handler(self))
 
 
 class AmendmentChainResult(_Output):
@@ -1006,8 +1060,9 @@ class AmendmentChainResult(_Output):
     law_id: str
     direction: Direction
     depth: int
-    nodes: list[ChainNodeInfo] = Field(description="By level, starting law first; at most 150.")
-    edges: list[ChainEdgeInfo] = Field(description="At most 400, in order of discovery.")
+    nodes: list[ChainNodeInfo] = Field(description="By level, starting law first; at most 100.")
+    edges: list[ChainEdgeInfo] = Field(description="At most 250, in order of discovery.")
+    nodes_total: int = Field(description="All laws found; more than len(nodes) when cut.")
     edges_total: int = Field(description="All edges found; more than len(edges) when cut.")
     levels: list[int] = Field(description="Number of laws at each level, starting law first.")
     examined: int = Field(description="Laws whose amendments were read, cached or not.")
@@ -1015,5 +1070,10 @@ class AmendmentChainResult(_Output):
     failed: int = Field(description="Laws skipped after a temporary BOE error; they are pending.")
     complete: bool = Field(description="True when nothing is pending.")
     truncated: bool = Field(description="True when the 150-law limit cut the chain.")
+    court_rulings_excluded: int = Field(
+        default=0,
+        description="Court rulings on the starting law left out because include is "
+        "'amendments'; see note. Use include='all' to see them.",
+    )
     note: str | None = Field(default=None, description="What to do when not complete.")
     provenance: Provenance

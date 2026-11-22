@@ -31,10 +31,12 @@ from boe_insights_mcp.citation import (
 )
 from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.clock import madrid_today, utc_now
-from boe_insights_mcp.errors import BoeError
+from boe_insights_mcp.errors import BoeError, describe_error
 from boe_insights_mcp.schemas import (
+    ArticleCandidate,
     CitationCheck,
     CitationRequest,
+    LawBrief,
     OtherVersionInfo,
     Provenance,
     QuoteMatchInfo,
@@ -49,18 +51,21 @@ MAX_CITATIONS = 10
 CITATION_TIME_LIMIT = 40.0
 _TIME_MARGIN = 5.0
 _MAX_MATCHED_CHARS = 600
+_MAX_OMITTED_CHARS = 300
+# Candidates of any kind are few and short: they only have to let the model choose one.
+_MAX_CANDIDATES = 5
+_MAX_CANDIDATE_TITLE = 200
 _NOT_CHECKED_TIME = "Not checked: time limit reached. Call again with the remaining citations."
-_AMBIGUOUS_ARTICLE = (
-    "Several blocks of the law have this designation; they are listed in candidates."
+_EDITORIAL_NOTE = (
+    "The words match an editorial note of the BOE about this article, not the article's text."
 )
-_ARTICLE_NOT_FOUND = "No block of the law matches that wording."
 
 
-def _cap(text: str) -> str:
-    """Cut ``text`` to ``_MAX_MATCHED_CHARS`` characters, the last one being "…" when cut."""
-    if len(text) <= _MAX_MATCHED_CHARS:
+def _cap(text: str, limit: int = _MAX_MATCHED_CHARS) -> str:
+    """Cut ``text`` to ``limit`` characters, the last one being "…" when cut."""
+    if len(text) <= limit:
         return text
-    return text[: _MAX_MATCHED_CHARS - 1] + "…"
+    return text[: limit - 1] + "…"
 
 
 def _quote_info(match: QuoteMatch | None) -> QuoteMatchInfo:
@@ -72,6 +77,8 @@ def _quote_info(match: QuoteMatch | None) -> QuoteMatchInfo:
         similarity=round(match.similarity, 2),
         matched_text=_cap(match.matched_text),
         differences=match.differences,
+        flags=list(match.flags),
+        omitted=[_cap(text, _MAX_OMITTED_CHARS) for text in match.omitted],
     )
 
 
@@ -86,7 +93,27 @@ def _other_version(found: CitationMatch) -> OtherVersionInfo | None:
         ends_on=other.ends_on,
         level=other.match.level,
         similarity=round(other.match.similarity, 2),
+        matched_text=_cap(other.match.matched_text),
+        differences=other.match.differences,
     )
+
+
+def _article_candidates(
+    candidates: Sequence[ArticleCandidate],
+) -> list[LawBrief | ArticleCandidate]:
+    """At most ``_MAX_CANDIDATES`` article candidates with their titles cut."""
+    return [
+        ArticleCandidate(block_id=c.block_id, title=_cap(c.title, _MAX_CANDIDATE_TITLE))
+        for c in candidates[:_MAX_CANDIDATES]
+    ]
+
+
+def _law_candidates(candidates: Sequence[LawBrief]) -> list[LawBrief | ArticleCandidate]:
+    """At most ``_MAX_CANDIDATES`` law candidates with their titles cut."""
+    return [
+        c.model_copy(update={"title": _cap(c.title, _MAX_CANDIDATE_TITLE)})
+        for c in candidates[:_MAX_CANDIDATES]
+    ]
 
 
 def _validate(citations: Sequence[CitationRequest]) -> None:
@@ -101,9 +128,11 @@ def _validate(citations: Sequence[CitationRequest]) -> None:
     for number, citation in enumerate(citations, start=1):
         if not citation.law.strip():
             raise ValueError(f"citation {number}: law must not be empty")
-        if not citation.article.strip():
-            raise ValueError(f"citation {number}: article must not be empty")
-        if len(citation.article) > articles.MAX_ARTICLE_CHARS:
+        if citation.block_id is None and not (citation.article or "").strip():
+            raise ValueError(f"citation {number}: give article or block_id")
+        if citation.block_id is not None and not citation.block_id.strip():
+            raise ValueError(f"citation {number}: block_id must not be empty")
+        if citation.article is not None and len(citation.article) > articles.MAX_ARTICLE_CHARS:
             raise ValueError(
                 f"citation {number}: article must be at most {articles.MAX_ARTICLE_CHARS} "
                 "characters: pass only the article or provision designation"
@@ -113,10 +142,15 @@ def _validate(citations: Sequence[CitationRequest]) -> None:
 
 
 async def _check(
-    client: BoeClient, citation: CitationRequest, moment: datetime, today: date
+    client: BoeClient,
+    citation: CitationRequest,
+    moment: datetime,
+    today: date,
+    out_of_time: Callable[[], bool],
 ) -> tuple[CitationCheck, datetime | None]:
     """Check one citation; also return the BOE's update stamp of the article, when it was read.
 
+    ``out_of_time`` says whether the call's time budget is spent; matching is not started then.
     Raises ``BoeError`` for a failed request; the caller turns that into an unchecked citation.
     """
     resolved = await legislation.resolve_reference(client, citation.law, now=moment)
@@ -131,15 +165,22 @@ async def _check(
                 law=citation.law,
                 article=citation.article,
                 status=status,
-                candidates=list(resolved.matches),
+                candidates=_law_candidates(resolved.matches),
                 note=resolved.hint,
             ),
             None,
         )
     law = resolved.matches[0]
     on = citation.as_of if citation.as_of is not None else today
+    # A block id replaces the wording, as in ``read_article``: it is how an ambiguous article is
+    # told apart.
     loaded = await articles.load_article(
-        client, law.identifier, citation.article, None, moment, today
+        client,
+        law.identifier,
+        None if citation.block_id is not None else citation.article,
+        citation.block_id,
+        moment,
+        today,
     )
     location = loaded.location
     if loaded.block is None:
@@ -152,8 +193,8 @@ async def _check(
                 law_id=law.identifier,
                 law_title=law.title,
                 as_of=on,
-                candidates=list(location.candidates) if ambiguous else [],
-                note=_AMBIGUOUS_ARTICLE if ambiguous else _ARTICLE_NOT_FOUND,
+                candidates=_article_candidates(location.candidates),
+                note=location.hint,
             ),
             location.provenance.data_updated_at,
         )
@@ -171,6 +212,12 @@ async def _check(
     if quote is not None:
         # The comparison is CPU work proportional to the article's versions (the Código Civil has
         # articles with dozens), so it runs in a worker thread like the diffs in ``articles``.
+        # The thread cannot be cancelled, so the budget is checked before it starts.
+        if out_of_time():
+            return (
+                _not_checked(citation, _NOT_CHECKED_TIME),
+                location.provenance.data_updated_at,
+            )
         found = await asyncio.to_thread(match_versions, quote, block, on)
     status = citation_status(
         law_outcome="found",
@@ -180,10 +227,17 @@ async def _check(
         quote_given=quote is not None,
         match=found,
     )
-    notes = [*loaded.notes]
+    notes: list[str] = []
+    if loaded.ignored:
+        notes.append(
+            f"Checked against the whole article; '{loaded.ignored}' was not used to narrow "
+            "the text."
+        )
+    if status == "quote_not_found" and found is not None and found.editorial:
+        notes.append(_EDITORIAL_NOTE)
     if (sentence := articles.law_repeal_note(repeal, on, state)) is not None:
         notes.append(sentence)
-    other = _other_version(found) if found is not None and status.startswith("matches_") else None
+    other = _other_version(found) if found is not None else None
     return (
         CitationCheck(
             law=citation.law,
@@ -240,15 +294,17 @@ async def verify_citations(
             results.append(_not_checked(citation, _NOT_CHECKED_TIME))
             continue
         try:
-            check, stamp = await _check(client, citation, moment, current)
+            check, stamp = await _check(
+                client, citation, moment, current, lambda: clock() - started >= time_limit
+            )
         except BoeError as error:
             # One citation failing must not sink the others (the BOE could be briefly down for
-            # one law). The English message is safe to show: the API's own text is not in it.
-            retry = "retryable" if error.retryable else "not retryable"
+            # one law). ``str(error)`` can carry the API's own (Spanish) text, so the note uses
+            # the curated message the tool errors use.
             results.append(
                 _not_checked(
                     citation,
-                    f"Not checked: BOE request failed ({error.code}, {retry}): {error}. "
+                    f"Not checked: {describe_error(error, 'verify_citation')} "
                     "Call again with this citation.",
                 )
             )
