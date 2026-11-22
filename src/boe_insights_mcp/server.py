@@ -1139,33 +1139,41 @@ async def delete_saved_search(
     )
 
 
-# (function, display title, annotations). Registered by ``create_server``. The first 18 tools are
-# read-only, idempotent and "open world" because they read an external service.
-_TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str, ToolAnnotations], ...] = (
-    (search_legislation, "Search Spanish legislation", _READ_ONLY),
-    (resolve_reference, "Resolve a law reference", _READ_ONLY),
-    (get_law_overview, "Get a law overview", _READ_ONLY),
-    (find_codes, "Find BOE codes", _READ_ONLY),
-    (get_amendment_history, "List the amendments of a law", _READ_ONLY),
-    (read_article, "Read an article", _READ_ONLY),
-    (compare_article_versions, "Compare article versions", _READ_ONLY),
-    (get_article_history, "Get an article's history", _READ_ONLY),
-    (get_law_structure, "Get a law's table of contents", _READ_ONLY),
-    (legislation_over_time, "Count laws over time", _READ_ONLY),
-    (top_departments, "Rank departments by laws", _READ_ONLY),
-    (compare_topics, "Compare topics over time", _READ_ONLY),
-    (explain_spike, "Explain a spike in legislation", _READ_ONLY),
-    (most_amended_laws, "Find the most amended laws", _READ_ONLY),
-    (get_daily_summary, "Get a day's BOE summary", _READ_ONLY),
-    (scan_gazette, "Scan the BOE over several days", _READ_ONLY),
-    (verify_citation, "Verify citations of laws", _READ_ONLY),
-    (explore_amendment_chain, "Explore an amendment chain", _READ_ONLY),
-    (save_search, "Save a search", _SAVES),
-    (list_saved_searches, "List saved searches", _LISTS),
-    (check_saved_searches, "Check saved searches for news", _SAVES),
-    (edit_saved_search, "Edit a saved search", _CHANGES),
-    (delete_saved_search, "Delete a saved search", _CHANGES),
+# (function, display title). Registered by ``create_server`` in this order.
+_TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
+    (search_legislation, "Search Spanish legislation"),
+    (resolve_reference, "Resolve a law reference"),
+    (get_law_overview, "Get a law overview"),
+    (find_codes, "Find BOE codes"),
+    (get_amendment_history, "List the amendments of a law"),
+    (read_article, "Read an article"),
+    (compare_article_versions, "Compare article versions"),
+    (get_article_history, "Get an article's history"),
+    (get_law_structure, "Get a law's table of contents"),
+    (legislation_over_time, "Count laws over time"),
+    (top_departments, "Rank departments by laws"),
+    (compare_topics, "Compare topics over time"),
+    (explain_spike, "Explain a spike in legislation"),
+    (most_amended_laws, "Find the most amended laws"),
+    (get_daily_summary, "Get a day's BOE summary"),
+    (scan_gazette, "Scan the BOE over several days"),
+    (verify_citation, "Verify citations of laws"),
+    (explore_amendment_chain, "Explore an amendment chain"),
+    (save_search, "Save a search"),
+    (list_saved_searches, "List saved searches"),
+    (check_saved_searches, "Check saved searches for news"),
+    (edit_saved_search, "Edit a saved search"),
+    (delete_saved_search, "Delete a saved search"),
 )
+
+# Every tool is ``_READ_ONLY`` unless it is listed here: only the saved-search tools differ.
+_ANNOTATIONS: dict[Callable[..., Awaitable[Any]], ToolAnnotations] = {
+    save_search: _SAVES,
+    list_saved_searches: _LISTS,
+    check_saved_searches: _SAVES,
+    edit_saved_search: _CHANGES,
+    delete_saved_search: _CHANGES,
+}
 
 
 def create_server(
@@ -1187,8 +1195,8 @@ def create_server(
         lifespan=_lifespan(client, settings, store),
         mask_error_details=True,
     )
-    for function, title, hints in _TOOLS:
-        server.tool(function, title=title, annotations=hints)
+    for function, title in _TOOLS:
+        server.tool(function, title=title, annotations=_ANNOTATIONS.get(function, _READ_ONLY))
     resources.register(server)
     prompts.register(server)
     return server
