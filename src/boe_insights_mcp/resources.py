@@ -1,0 +1,195 @@
+"""MCP resources: a law, an article, a day of the gazette and the code tables, ready to attach.
+
+In apps that support MCP resources a person can attach one of these to the conversation. Many
+apps do not let the model open resources, so a resource never offers anything a tool does not:
+each one returns exactly what the matching tool returns (``legislation.get_law_overview``,
+``articles.read_article``, ``gazette.daily_summary``) or, for the code tables, the whole table
+that ``find_codes`` searches. The JSON is the result model's own serialisation, so provenance,
+the BOE attribution and the informational notice travel with it, as the BOE reuse conditions
+require.
+
+``server.create_server`` calls :func:`register`; the use cases do all the work and this module
+only maps URIs onto them and turns expected failures into ``ResourceError`` messages.
+"""
+
+from __future__ import annotations
+
+import re
+from collections.abc import Awaitable
+from datetime import date
+from typing import Any, TypeVar
+
+from fastmcp import Context, FastMCP
+from fastmcp.exceptions import ResourceError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+from boe_insights_mcp import articles, gazette, legislation
+from boe_insights_mcp.client import AuxiliaryTable, BoeClient
+from boe_insights_mcp.clock import utc_now
+from boe_insights_mcp.errors import BoeError, describe_error
+from boe_insights_mcp.legislation import CodeKind
+from boe_insights_mcp.schemas import Provenance
+
+__all__ = ["CodeEntry", "CodeTable", "register"]
+
+_T = TypeVar("_T")
+_JSON = "application/json"
+_ISO_DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
+# The BOE auxiliary table behind each kind: the same mapping ``find_codes`` searches.
+_TABLES: dict[str, AuxiliaryTable] = {
+    "department": "departamentos",
+    "subject": "materias",
+    "rank": "rangos",
+}
+
+
+class CodeEntry(BaseModel):
+    """One row of a BOE code table."""
+
+    model_config = ConfigDict(frozen=True)
+
+    code: str
+    text: str
+
+
+class CodeTable(BaseModel):
+    """A whole BOE code table (departments, subjects or ranks), sorted by text."""
+
+    model_config = ConfigDict(frozen=True)
+
+    kind: CodeKind
+    total: int = Field(description="Number of entries in codes.")
+    codes: list[CodeEntry]
+    provenance: Provenance
+
+
+async def _guard(call: Awaitable[_T], tool: str) -> _T:
+    """Await a use case of ``tool``, translating its expected errors into ``ResourceError``."""
+    # Same policy as ``server._guard`` but raising ``ResourceError``: the server masks every other
+    # exception, and only a ``ResourceError`` message reaches the person. A pydantic
+    # ``ValidationError`` is a ``ValueError`` too but means a bug in our own models and may carry
+    # input values, so it is re-raised first to be masked. (Candidate for sharing with
+    # ``server._guard`` by parameterising the error class.)
+    try:
+        return await call
+    except BoeError as error:
+        raise ResourceError(describe_error(error, tool)) from error
+    except ValidationError:
+        raise
+    except ValueError as error:
+        raise _invalid(str(error)) from error
+
+
+def _invalid(message: str) -> ResourceError:
+    """The curated error for a bad argument."""
+    return ResourceError(f"Invalid argument (invalid_argument, not retryable): {message}")
+
+
+def _client(ctx: Context) -> BoeClient:
+    """Return the shared client that the server lifespan stored in the request context."""
+    return ctx.lifespan_context["client"]
+
+
+def _parse_day(day: str) -> date:
+    """Parse an ISO ``YYYY-MM-DD`` day, raising a curated ``ResourceError`` otherwise."""
+    # Taken as a string, not ``date``: a pydantic failure on a typed parameter is masked to a
+    # generic message, and this way the person is told what format is expected. The pattern is
+    # checked first because ``date.fromisoformat`` also accepts basic forms such as 20261120.
+    if _ISO_DAY.fullmatch(day):
+        try:
+            return date.fromisoformat(day)
+        except ValueError:
+            pass
+    raise _invalid("day must be an ISO date (YYYY-MM-DD), e.g. 2026-11-20")
+
+
+def _as_json(result: BaseModel) -> str:
+    """Serialise a result model like the tools do (same field omission rules)."""
+    return result.model_dump_json()
+
+
+async def _law(law_id: str, ctx: Context) -> str:
+    """Overview of a law, as ``get_law_overview`` returns it."""
+    return _as_json(
+        await _guard(legislation.get_law_overview(_client(ctx), law_id), "get_law_overview")
+    )
+
+
+async def _article(law_id: str, block_id: str, ctx: Context) -> str:
+    """One article block as in force today, as ``read_article`` returns it."""
+    return _as_json(
+        await _guard(articles.read_article(_client(ctx), law_id, block_id=block_id), "read_article")
+    )
+
+
+async def _gazette_day(day: str, ctx: Context) -> str:
+    """One day's gazette summary with as many items as one page may hold."""
+    return _as_json(
+        await _guard(
+            gazette.daily_summary(_client(ctx), day=_parse_day(day), limit=gazette.MAX_LIMIT),
+            "get_daily_summary",
+        )
+    )
+
+
+async def _build_table(client: BoeClient, kind: str) -> CodeTable:
+    """Fetch the table for ``kind`` and sort it by text (case-insensitive, then by code)."""
+    if kind not in _TABLES:
+        raise ValueError(f"kind must be one of {', '.join(_TABLES)}")
+    table = await client.get_auxiliary_table(_TABLES[kind])
+    # Texts may carry trailing spaces (api-notes, "Auxiliary tables"): strip them for display.
+    entries = sorted(
+        (CodeEntry(code=code, text=text.strip()) for code, text in table.items()),
+        key=lambda entry: (entry.text.casefold(), entry.code),
+    )
+    return CodeTable(
+        kind=kind,  # type: ignore[arg-type]
+        total=len(entries),
+        codes=entries,
+        provenance=Provenance(generated_at=utc_now()),
+    )
+
+
+async def _codes(kind: str, ctx: Context) -> str:
+    """A whole code table: the data behind the filters of ``search_legislation``."""
+    return _as_json(await _guard(_build_table(_client(ctx), kind), "find_codes"))
+
+
+def register(server: FastMCP) -> None:
+    """Register the four resource templates on ``server``."""
+    # Registered by call rather than with decorators on the module-level functions so that the
+    # texts below, which the model and the person see, sit in one place.
+    specs: list[tuple[Any, str, str, str, str]] = [
+        (
+            _law,
+            "boe://law/{law_id}",
+            "law",
+            "Law overview",
+            "Overview of a consolidated law: status, dates, department and amendment counts.",
+        ),
+        (
+            _article,
+            "boe://law/{law_id}/article/{block_id}",
+            "article",
+            "Article of a law",
+            "Current text of one article of a consolidated law, by its block id.",
+        ),
+        (
+            _gazette_day,
+            "boe://gazette/{day}",
+            "gazette_day",
+            "Gazette of a day",
+            "What the BOE published on one day (ISO date), grouped by section and department.",
+        ),
+        (
+            _codes,
+            "boe://codes/{kind}",
+            "codes",
+            "Code table",
+            "Every code and name of one BOE table; kind is department, subject or rank.",
+        ),
+    ]
+    for function, uri, name, title, description in specs:
+        server.resource(uri, name=name, title=title, description=description, mime_type=_JSON)(
+            function
+        )
