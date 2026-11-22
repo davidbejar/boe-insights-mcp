@@ -427,10 +427,8 @@ def _edited(value: str | None, stored: str | None, *, upper: bool = False) -> st
     """The new value of a filter: unchanged for ``None``, cleared for a blank, else the text."""
     if value is None:
         return stored
-    value = value.strip()
-    if not value:
-        return None
-    return value.upper() if upper else value
+    text = strip_or_none(value)
+    return text.upper() if upper and text else text
 
 
 async def delete_saved_search(
