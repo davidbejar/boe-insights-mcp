@@ -102,7 +102,7 @@ class SavedSearch:
     seen_items: Mapping[date, frozenset[str]] = field(default_factory=dict)
     """Gazette: identifiers already delivered, per day, for days after ``checked_through``."""
     last_checked_at: datetime | None = None
-    """When a check last moved the bookmark; ``None`` if never checked."""
+    """When this search was last checked; ``None`` if never."""
 
 
 class SearchStoreError(Exception):

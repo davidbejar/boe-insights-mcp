@@ -860,7 +860,7 @@ class SavedSearchInfo(_Output):
         description="Title of the law, cut at 200 characters.",
     )
     created_at: datetime
-    last_checked_at: datetime | None = Field(description="Null when never checked.")
+    last_checked_at: datetime | None = Field(description="When this search was last checked.")
     checked_through: _Day | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
@@ -945,7 +945,7 @@ class SearchCheck(_Output):
     matched: int | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
-        description="Gazette: matching items in the days read.",
+        description="New matches found in the days read.",
     )
     items: list[ScannedEntry] | None = Field(
         default=None,

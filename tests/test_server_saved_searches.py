@@ -196,6 +196,17 @@ async def test_the_status_of_a_check_says_what_each_value_asks_for(mcp: Client[A
     )
 
 
+async def test_matched_and_last_checked_at_descriptions(mcp: Client[Any]) -> None:
+    tools: dict[str, Tool] = {tool.name: tool for tool in await mcp.list_tools()}
+    check = tools["check_saved_searches"].output_schema or {}
+    matched = check["properties"]["results"]["items"]["properties"]["matched"]
+    assert matched["description"] == "New matches found in the days read."
+    listing = tools["list_saved_searches"].output_schema or {}
+    # The nullable field's schema nests the description under anyOf or at the top, by version.
+    text = str(listing)
+    assert "When this search was last checked." in text
+
+
 async def test_no_tool_takes_an_owner(mcp: Client[Any]) -> None:
     # The owner is whoever the request authenticates, never something the model can write.
     for tool in await mcp.list_tools():
