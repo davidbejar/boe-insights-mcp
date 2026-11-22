@@ -40,6 +40,9 @@ __all__ = [
 
 SearchKind = Literal["gazette", "law"]
 
+SEARCHES_FILE_NAME = "saved_searches.sqlite3"
+"""The file a store keeps in its data directory."""
+
 _SCHEMA_VERSION = 2
 # Seconds a statement waits for a lock held by another process on the same file.
 _BUSY_TIMEOUT = 5.0
@@ -128,6 +131,11 @@ class SavedSearchStore:
     path, every directory the store creates is private (0o700) and the file is private (0o600).
     Nothing is opened until the first operation.
     """
+
+    @classmethod
+    def in_directory(cls, directory: Path | None) -> SavedSearchStore:
+        """A store in ``directory`` under the standard file name; ``None`` keeps it in memory."""
+        return cls(None if directory is None else directory / SEARCHES_FILE_NAME)
 
     def __init__(self, path: Path | None, *, max_per_owner: int = 20) -> None:
         """Remember where the store lives; the file is opened by the first operation."""

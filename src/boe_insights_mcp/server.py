@@ -176,7 +176,9 @@ def _lifespan(
         searches = (
             store
             if store is not None
-            else SavedSearchStore(config.saved_searches_path if config is not None else None)
+            else SavedSearchStore.in_directory(
+                config.saved_searches_dir if config is not None else None
+            )
         )
         try:
             if config is None:

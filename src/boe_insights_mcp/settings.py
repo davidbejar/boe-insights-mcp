@@ -28,14 +28,9 @@ _BACKENDS: tuple[CacheBackend, ...] = ("disk", "memory")
 _APP_NAME = "boe-insights-mcp"
 
 
-def default_data_dir(env: Mapping[str, str] | None = None) -> Path:
-    """Return ``$BOE_INSIGHTS_DATA_DIR`` if set, else the platform's per-user data directory.
-
-    ``env`` is the mapping to read the variable from (the process environment by default), like
-    ``cache.default_cache_dir``. The directory is not created.
-    """
-    override = (os.environ if env is None else env).get("BOE_INSIGHTS_DATA_DIR")
-    return Path(override) if override else Path(user_data_dir(_APP_NAME))
+def platform_data_dir() -> Path:
+    """Return the platform's per-user data directory for this application (not created)."""
+    return Path(user_data_dir(_APP_NAME))
 
 
 def _explicit_data_dir(env: Mapping[str, str] | None = None) -> Path | None:
@@ -53,12 +48,9 @@ class Settings:
     cache_dir: Path = field(default_factory=default_cache_dir)
     """``BOE_INSIGHTS_CACHE_DIR``: where the disk cache lives; the platform cache dir if unset."""
     data_dir: Path | None = field(default_factory=_explicit_data_dir)
-    """``BOE_INSIGHTS_DATA_DIR`` when given, else ``None`` (the platform data dir, see
-    ``data_directory``).
+    """``BOE_INSIGHTS_DATA_DIR`` when given, else ``None``; see ``saved_searches_dir``.
 
     Separate from ``cache_dir`` on purpose: the cache is safe to delete, saved searches are not.
-    Being ``None`` when nothing was given is what lets ``data_dir_set`` be derived: a flag next
-    to the path could disagree with it.
     """
     min_interval: float = 1.0
     """``BOE_INSIGHTS_MIN_INTERVAL``: minimum seconds between requests to boe.es."""
@@ -66,24 +58,13 @@ class Settings:
     """``BOE_INSIGHTS_MAX_CONCURRENCY``: maximum simultaneous requests to boe.es."""
 
     @property
-    def data_dir_set(self) -> bool:
-        """Whether a data directory was given; with the memory cache and none, searches stay in
-        memory too."""
-        return self.data_dir is not None
-
-    @property
-    def data_directory(self) -> Path:
-        """The directory saved searches live in: the given one, else the platform's."""
-        # The environment was already read when ``data_dir`` was derived; an empty mapping here
-        # gives the platform directory without reading it a second time.
-        return self.data_dir if self.data_dir is not None else default_data_dir({})
-
-    @property
-    def saved_searches_path(self) -> Path | None:
-        """Where the saved-searches file lives; ``None`` means keep them in memory."""
-        if self.cache_backend == "memory" and not self.data_dir_set:
-            return None
-        return self.data_directory / "saved_searches.sqlite3"
+    def saved_searches_dir(self) -> Path | None:
+        """The directory the saved searches live in; ``None`` means keep them in memory."""
+        if self.data_dir is not None:
+            return self.data_dir
+        # The memory cache is for throwaway runs: without a directory asked for, it does not
+        # leave a file in the person's data directory either.
+        return None if self.cache_backend == "memory" else platform_data_dir()
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> Settings:
