@@ -141,7 +141,7 @@ class SavedSearchClient(Protocol):
         """The summary of one day, or ``None`` when there was no issue."""
         ...
 
-    async def has_cached_summary(self, day: date) -> bool:
+    async def has_cached_summary(self, day: date, *, today: date) -> bool:
         """Whether the day's summary (or remembered absence) is cached (no request)."""
         ...
 
@@ -883,7 +883,7 @@ async def _read_days(
     """
     reading = _Reading()
     for day in days:
-        cached = await client.has_cached_summary(day)
+        cached = await client.has_cached_summary(day, today=today)
         if not cached and tally.out_of_time():
             break
         try:

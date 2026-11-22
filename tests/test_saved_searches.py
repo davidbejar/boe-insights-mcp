@@ -163,7 +163,7 @@ class FakeBoe:
         self.cached_analyses.add(law_id)
         return outcome
 
-    async def has_cached_summary(self, day: date) -> bool:
+    async def has_cached_summary(self, day: date, *, today: date) -> bool:
         return day in self.cached_days
 
     async def get_daily_summary(self, day: date, *, today: date) -> DailySummary | None:

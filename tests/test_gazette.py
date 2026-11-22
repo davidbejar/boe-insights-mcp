@@ -75,7 +75,7 @@ class FakeSummaries:
     def clock(self) -> float:
         return self.now
 
-    async def has_cached_summary(self, day: date) -> bool:
+    async def has_cached_summary(self, day: date, *, today: date) -> bool:
         return day in self.cached
 
     async def get_daily_summary(self, day: date, *, today: date) -> DailySummary | None:

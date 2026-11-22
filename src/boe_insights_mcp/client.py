@@ -542,7 +542,7 @@ class BoeClient:
         # Why ``today`` is a parameter: the client never reads the clock (the use cases own it,
         # which is how tests fix time), and the cache lifetime below depends on the answer.
         path = f"boe/sumario/{day:%Y%m%d}"
-        key = self._cache_key(path, None, _XML, None)
+        key = self._summary_key(day, today)
         cached = await self._cache.get(key)
         if cached == _NO_SUMMARY:
             self._cache_hits += 1
@@ -550,6 +550,9 @@ class BoeClient:
         # Why the two lifetimes: a day before today is final, so both the summary and the
         # remembered 404 can live a month. Today's issue is still being completed and may appear
         # after our first look, so its summary lives an hour and its 404 is not remembered at all.
+        # Why a provisional key for today: a copy read at 23:30 would otherwise still be cached at
+        # 00:15, when the day is past, and be taken as the final one, losing whatever the BOE
+        # added in between (api-notes, summaries). A past day never sees a provisional entry.
         final = day < today
         try:
             return await self._resolve(
@@ -574,14 +577,22 @@ class BoeClient:
                 )
             return None
 
-    async def has_cached_summary(self, day: date) -> bool:
-        """Whether the summary of ``day`` (or its remembered absence) is cached; sends no request.
+    async def has_cached_summary(self, day: date, *, today: date) -> bool:
+        """Whether ``get_daily_summary(day, today=today)`` would be served from the cache.
 
-        ``gazette.scan_gazette`` uses it to read already-cached days without spending its time
-        budget. Only presence is checked, like ``has_cached_analysis``.
+        Sends no request. ``gazette.scan_gazette`` uses it to read already-cached days without
+        spending its time budget. Only presence is checked, like ``has_cached_analysis``; a
+        provisional copy of a day that is now past does not count.
         """
+        return await self._cache.get(self._summary_key(day, today)) is not None
+
+    def _summary_key(self, day: date, today: date) -> str:
+        """The cache key of a day's summary: a distinct, provisional one while the day is today."""
         path = f"boe/sumario/{day:%Y%m%d}"
-        return await self._cache.get(self._cache_key(path, None, _XML, None)) is not None
+        if day < today:
+            return self._cache_key(path, None, _XML, None)
+        # Key-only pseudo parameter, like ``revision``: the request itself is unchanged.
+        return make_key(f"{self._base_url}{path}", {"provisional": "today"}, _XML)
 
     async def get_initial_note(self, law_id: str) -> Block | None:
         """Return the law's initial note (block ``no``), or ``None`` when it has none.

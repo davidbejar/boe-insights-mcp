@@ -79,7 +79,7 @@ class SummaryClient(Protocol):
         """The summary of one day, or ``None`` when there was no issue."""
         ...
 
-    async def has_cached_summary(self, day: date) -> bool:
+    async def has_cached_summary(self, day: date, *, today: date) -> bool:
         """Whether the day's summary (or remembered absence) is cached (no request)."""
         ...
 
@@ -408,7 +408,7 @@ async def scan_gazette(
     newest_issue: date | None = None
     for step in range(total_days):
         day = end - timedelta(days=step)
-        cached = await client.has_cached_summary(day)
+        cached = await client.has_cached_summary(day, today=current)
         # A cached day costs nothing, so it never counts against the budget; the first uncached
         # day after the deadline ends the loop and every older day waits for the next call.
         if not cached and clock() >= deadline:
