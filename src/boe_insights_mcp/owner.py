@@ -4,7 +4,8 @@ Saved searches are the first data the server keeps for a person, so every row ca
 The owner is derived from the authenticated request and is never a tool argument: a model (or
 anyone steering it) must not be able to name another owner. Without authentication, which is
 the stdio case, everything belongs to ``LOCAL_OWNER``. ``saved_searches`` and ``searchstore``
-receive the owner as a plain string; ``server`` is the one caller of ``current_owner``.
+receive the owner as a plain string; ``guard.guarded_for_owner`` is the one caller of
+``current_owner``.
 """
 
 from __future__ import annotations

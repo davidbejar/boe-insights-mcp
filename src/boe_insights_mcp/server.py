@@ -41,7 +41,6 @@ from boe_insights_mcp import (
     articles,
     gazette,
     legislation,
-    owner,
     prompts,
     resources,
     saved_searches,
@@ -53,7 +52,7 @@ from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
 from boe_insights_mcp.catalogue import CatalogueStore
 from boe_insights_mcp.chains import Direction
 from boe_insights_mcp.client import BoeClient
-from boe_insights_mcp.guard import guarded
+from boe_insights_mcp.guard import guarded, guarded_for_owner
 from boe_insights_mcp.legislation import (
     MAX_AMENDMENT_LIMIT,
     MAX_LIMIT,
@@ -141,16 +140,6 @@ async def _guard(call: Awaitable[_T], tool: str) -> _T:
     # The policy (and why the server masks everything else) lives in ``guard``, shared with the
     # resources, which raise ``ResourceError`` instead.
     return await guarded(call, tool, ToolError)
-
-
-async def _owned(use_case: Callable[[str], Awaitable[_T]]) -> _T:
-    """Run ``use_case`` for the owner of the current request.
-
-    The owner is looked up here, inside the awaited call, so that a request without a usable
-    identity fails inside ``_guard`` and reaches the model as a curated message, not as a masked
-    generic error.
-    """
-    return await use_case(owner.current_owner())
 
 
 def _build_cache(settings: Settings) -> Cache:
@@ -1039,28 +1028,28 @@ async def save_search(
     """
     # The owner comes from the authenticated request and is never an argument: a model (or
     # anyone steering it) must not be able to name another person's searches.
-    return await _guard(
-        _owned(
-            lambda who: saved_searches.save_search(
-                _searches(ctx),
-                _client(ctx),
-                who,
-                name=name,
-                words=words,
-                section=section,
-                department_code=department_code,
-                law_id=law_id,
-            )
+    return await guarded_for_owner(
+        lambda who: saved_searches.save_search(
+            _searches(ctx),
+            _client(ctx),
+            who,
+            name=name,
+            words=words,
+            section=section,
+            department_code=department_code,
+            law_id=law_id,
         ),
         "save_search",
+        ToolError,
     )
 
 
 async def list_saved_searches(ctx: Context) -> SavedSearchList:
     """The saved searches, with their filters and when each was last checked."""
-    return await _guard(
-        _owned(lambda who: saved_searches.list_saved_searches(_searches(ctx), who)),
+    return await guarded_for_owner(
+        lambda who: saved_searches.list_saved_searches(_searches(ctx), who),
         "list_saved_searches",
+        ToolError,
     )
 
 
@@ -1090,19 +1079,18 @@ async def check_saved_searches(
     complete is false. since re-reads gazette searches up to 90 days back without marking
     anything.
     """
-    return await _guard(
-        _owned(
-            lambda who: saved_searches.check_saved_searches(
-                _searches(ctx),
-                _client(ctx),
-                who,
-                name=name,
-                since=since,
-                limit=limit,
-                progress=ctx.report_progress,
-            )
+    return await guarded_for_owner(
+        lambda who: saved_searches.check_saved_searches(
+            _searches(ctx),
+            _client(ctx),
+            who,
+            name=name,
+            since=since,
+            limit=limit,
+            progress=ctx.report_progress,
         ),
         "check_saved_searches",
+        ToolError,
     )
 
 
@@ -1124,19 +1112,18 @@ async def edit_saved_search(
     ] = None,
 ) -> SaveSearchResult:
     """Rename a saved search or change its gazette filters. Its last-checked point is kept."""
-    return await _guard(
-        _owned(
-            lambda who: saved_searches.edit_saved_search(
-                _searches(ctx),
-                who,
-                name,
-                new_name=new_name,
-                words=words,
-                section=section,
-                department_code=department_code,
-            )
+    return await guarded_for_owner(
+        lambda who: saved_searches.edit_saved_search(
+            _searches(ctx),
+            who,
+            name,
+            new_name=new_name,
+            words=words,
+            section=section,
+            department_code=department_code,
         ),
         "edit_saved_search",
+        ToolError,
     )
 
 
@@ -1145,9 +1132,10 @@ async def delete_saved_search(
     name: Annotated[str, Field(description="Name of the saved search (see list_saved_searches).")],
 ) -> DeleteSearchResult:
     """Delete a saved search. This cannot be undone."""
-    return await _guard(
-        _owned(lambda who: saved_searches.delete_saved_search(_searches(ctx), who, name)),
+    return await guarded_for_owner(
+        lambda who: saved_searches.delete_saved_search(_searches(ctx), who, name),
         "delete_saved_search",
+        ToolError,
     )
 
 
