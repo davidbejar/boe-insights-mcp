@@ -20,6 +20,20 @@ JSON_HEADERS = {"Content-Type": "application/json;charset=UTF-8"}
 XML_HEADERS = {"Content-Type": "application/xml;charset=UTF-8"}
 
 
+@pytest.fixture(autouse=True)
+def private_user_directories(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Point the saved-search data directory at a temporary one for every test.
+
+    A test that starts a server without injecting a client would otherwise create the saved-search
+    database in the real user data directory. Tests that care about these
+    variables set them again themselves.
+    """
+    root = tmp_path_factory.mktemp("user-dirs")
+    monkeypatch.setenv("BOE_INSIGHTS_DATA_DIR", str(root / "data"))
+
+
 @pytest.fixture
 def load_fixture() -> Callable[[str], bytes]:
     """Return a function reading the raw bytes of a recorded BOE API response."""

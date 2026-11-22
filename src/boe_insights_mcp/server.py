@@ -8,13 +8,16 @@ or :mod:`boe_insights_mcp.articles` and turns client errors into messages the mo
 ``get_amendment_history``, ``read_article``, ``compare_article_versions``,
 ``get_article_history``, ``get_law_structure``, and the trend tools ``legislation_over_time``,
 ``top_departments``, ``compare_topics``, ``explain_spike`` and ``most_amended_laws``, the
-gazette tools ``get_daily_summary`` and ``scan_gazette``, ``verify_citation`` and
-``explore_amendment_chain``); ``main`` runs it over stdio.
+gazette tools ``get_daily_summary`` and ``scan_gazette``, ``verify_citation``,
+``explore_amendment_chain`` and the five saved-search tools ``save_search``,
+``list_saved_searches``, ``check_saved_searches``, ``edit_saved_search`` and
+``delete_saved_search``); it also registers the resources and prompts of ``resources`` and
+``prompts``. ``main`` runs it over stdio.
 Layering: tool functions here -> use cases in ``legislation``, ``articles``, ``trends``,
-``gazette``, ``citations`` and ``amendment_chains`` -> ``client`` (and ``catalogue`` for the
-trend tools and the chain explorer).
-This is also where the cache, rate limiter, client and catalogue store are created, in the
-lifespan. The tool
+``gazette``, ``citations``, ``amendment_chains`` and ``saved_searches`` -> ``client`` (and
+``catalogue`` for the trend tools and the chain explorer, ``searchstore`` for saved searches).
+This is also where the cache, rate limiter, client, catalogue store and saved-search store are
+created, in the lifespan. The tool
 docstrings, ``Field`` descriptions and ``_INSTRUCTIONS`` are sent to the language model, so they
 are model-facing text; explanations for human readers live in ``#`` comments.
 """
@@ -31,13 +34,16 @@ from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from fastmcp.server.lifespan import lifespan
 from mcp.types import ToolAnnotations
-from pydantic import Field, ValidationError
+from pydantic import Field
 
 from boe_insights_mcp import (
     amendment_chains,
     articles,
     gazette,
     legislation,
+    prompts,
+    resources,
+    saved_searches,
     trends,
 )
 from boe_insights_mcp import citations as citation_checks
@@ -46,7 +52,7 @@ from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
 from boe_insights_mcp.catalogue import CatalogueStore
 from boe_insights_mcp.chains import Direction
 from boe_insights_mcp.client import BoeClient
-from boe_insights_mcp.errors import BoeError, describe_error
+from boe_insights_mcp.guard import guarded, guarded_for_owner
 from boe_insights_mcp.legislation import (
     MAX_AMENDMENT_LIMIT,
     MAX_LIMIT,
@@ -60,10 +66,12 @@ from boe_insights_mcp.schemas import (
     AmendmentChainResult,
     AmendmentHistoryResult,
     ArticleHistoryResult,
+    CheckSearchesResult,
     CitationRequest,
     CompareArticleVersionsResult,
     CompareTopicsResult,
     DailySummaryResult,
+    DeleteSearchResult,
     ExplainSpikeResult,
     FindCodesResult,
     LawOverview,
@@ -72,12 +80,15 @@ from boe_insights_mcp.schemas import (
     MostAmendedLawsResult,
     ReadArticleResult,
     ResolveReferenceResult,
+    SavedSearchList,
+    SaveSearchResult,
     ScanGazetteResult,
     SearchLegislationResult,
     TopDepartmentsResult,
     TopicSpec,
     VerifyCitationResult,
 )
+from boe_insights_mcp.searchstore import SavedSearchStore
 from boe_insights_mcp.settings import Settings
 from boe_insights_mcp.trends import DateBasis, GroupBy, TrendFilters
 
@@ -99,39 +110,36 @@ _INSTRUCTIONS = (
     "table of contents with each article's block_id. legislation_over_time, top_departments, "
     "compare_topics, explain_spike, most_amended_laws and explore_amendment_chain download the "
     "collection on first use (about 30 seconds). Repeat most_amended_laws, "
-    "explore_amendment_chain and scan_gazette while complete is false. The status of a law is "
-    "derived from BOE flags, so treat it as an indication. When quoting results, pass on the "
-    "attribution 'Basado en datos de la Agencia Estatal Boletín Oficial del Estado' "
+    "explore_amendment_chain and scan_gazette while complete is false. "
+    "Saved searches (save_search, list_saved_searches, edit_saved_search, delete_saved_search) "
+    "live on the server and nothing is sent automatically: when the user asks what is new, call "
+    "check_saved_searches and repeat it while complete is false. Resources and prompts only "
+    "mirror these tools. The status of a law is derived from BOE flags, so treat it as an "
+    "indication. When quoting results, pass on the attribution "
+    "'Basado en datos de la Agencia Estatal Boletín Oficial del Estado' "
     "(https://www.boe.es) and say that consolidated texts are informational and have no "
     "official legal value."
 )
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
+# The saved-search tools are the first that write (to the server's own store, not to the BOE).
+# ``save_search`` and ``check_saved_searches`` add or move state and read the BOE, so they are not
+# idempotent and are open-world; edit and delete overwrite or remove, so they are destructive,
+# and repeating them is harmless (idempotent); none of those two touches an external service.
+_SAVES = ToolAnnotations(
+    read_only_hint=False, destructive_hint=False, idempotent_hint=False, open_world_hint=True
+)
+_LISTS = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)
+_CHANGES = ToolAnnotations(
+    read_only_hint=False, destructive_hint=True, idempotent_hint=True, open_world_hint=False
+)
 
 
 async def _guard(call: Awaitable[_T], tool: str) -> _T:
-    """Await a use case of ``tool``, translating its expected errors into ``ToolError``.
-
-    Only deliberate argument errors (``ValueError`` raised by the use cases) are shown to the
-    model. A pydantic ``ValidationError`` is a ``ValueError`` too, but here it means a bug in
-    our own models and carries input values, so it propagates to be masked.
-    """
-    # The server is created with ``mask_error_details=True``: FastMCP shows the model only the
-    # message of a ``ToolError`` and replaces any other exception with a generic one, so
-    # internals (paths, input values, stack details) never leave the process. ``_guard`` is where
-    # the exceptions we *want* the model to see are turned into ``ToolError``:
-    #   BoeError    -> a curated message with code, retryability and next step;
-    #   ValueError  -> bad arguments detected by the use cases or the client;
-    # and everything else, including ``ValidationError``, propagates to be masked.
-    try:
-        return await call
-    except BoeError as error:
-        raise ToolError(describe_error(error, tool)) from error
-    except ValidationError:
-        # Must come before ``except ValueError``, which it would otherwise be caught by.
-        raise
-    except ValueError as error:
-        raise ToolError(f"Invalid argument (invalid_argument, not retryable): {error}") from error
+    """Await a use case of ``tool``, translating its expected errors into ``ToolError``."""
+    # The policy (and why the server masks everything else) lives in ``guard``, shared with the
+    # resources, which raise ``ResourceError`` instead.
+    return await guarded(call, tool, ToolError)
 
 
 def _build_cache(settings: Settings) -> Cache:
@@ -141,11 +149,13 @@ def _build_cache(settings: Settings) -> Cache:
     return DiskCache(settings.cache_dir)
 
 
-def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
-    """Build the server lifespan, which makes the client available to the tools.
+def _lifespan(
+    client: BoeClient | None, settings: Settings | None, store: SavedSearchStore | None
+) -> Any:
+    """Build the server lifespan, which makes the client and the saved-search store available.
 
-    An injected client is used as it is and never closed. Otherwise the cache, limiter and
-    client are created when the server starts and closed when it stops.
+    An injected client or store is used as it is and never closed. Otherwise the cache, limiter,
+    client and store are created when the server starts and closed when it stops.
     """
     # Why a lifespan: the client owns long-lived state (an HTTP connection pool, the disk cache,
     # the rate limiter's timing) that every tool call must share. Creating it per call would
@@ -155,23 +165,45 @@ def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
 
     @lifespan
     async def client_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
-        """Provide ``{"client": ..., "catalogue": ...}`` to the tools while the server runs."""
-        if client is not None:
-            # Injected (tests): the caller owns it, so it is not closed here.
-            yield {"client": client, "catalogue": CatalogueStore(client)}
-            return
-        config = settings if settings is not None else Settings.from_env()
-        cache = _build_cache(config)
-        limiter = RateLimiter(config.min_interval, config.max_concurrency)
-        # The BoeClient context closes its HTTP client; the cache is not part of it, so the
-        # ``finally`` closes it even if the server stops with an error.
+        """Provide ``{"client", "catalogue", "searches"}`` to the tools while the server runs."""
+        # An injected client (tests) needs no settings, so the environment is not read.
+        config = (
+            (settings if settings is not None else Settings.from_env()) if client is None else None
+        )
+        # The saved searches are not in the cache: the cache may be deleted at any time, they may
+        # not. With an injected client and no store (tests) they live in memory, so a test can
+        # never write to the user's data directory.
+        searches = (
+            store
+            if store is not None
+            else SavedSearchStore.in_directory(
+                config.saved_searches_dir if config is not None else None
+            )
+        )
         try:
-            async with BoeClient(cache=cache, limiter=limiter) as own_client:
-                # The catalogue store is created beside the client for the same reason: its
-                # in-memory snapshot (about 12 500 laws) must be shared by every tool call.
-                yield {"client": own_client, "catalogue": CatalogueStore(own_client)}
+            if config is None:
+                # Injected (tests): the caller owns the client, so it is not closed here.
+                assert client is not None
+                yield {"client": client, "catalogue": CatalogueStore(client), "searches": searches}
+                return
+            cache = _build_cache(config)
+            limiter = RateLimiter(config.min_interval, config.max_concurrency)
+            # The BoeClient context closes its HTTP client; the cache is not part of it, so the
+            # ``finally`` closes it even if the server stops with an error.
+            try:
+                async with BoeClient(cache=cache, limiter=limiter) as own_client:
+                    # The catalogue store is created beside the client for the same reason: its
+                    # in-memory snapshot (about 12 500 laws) must be shared by every tool call.
+                    yield {
+                        "client": own_client,
+                        "catalogue": CatalogueStore(own_client),
+                        "searches": searches,
+                    }
+            finally:
+                await cache.close()
         finally:
-            await cache.close()
+            if store is None:
+                await searches.close()
 
     return client_lifespan
 
@@ -179,6 +211,11 @@ def _lifespan(client: BoeClient | None, settings: Settings | None) -> Any:
 def _client(ctx: Context) -> BoeClient:
     """Return the shared client that the lifespan stored in the request context."""
     return ctx.lifespan_context["client"]
+
+
+def _searches(ctx: Context) -> SavedSearchStore:
+    """Return the saved-search store that the lifespan stored in the request context."""
+    return ctx.lifespan_context["searches"]
 
 
 def _catalogue(ctx: Context) -> CatalogueStore:
@@ -959,8 +996,152 @@ async def explore_amendment_chain(
     )
 
 
-# (function, display title). Registered by ``create_server``; every tool is read-only and
-# idempotent, and "open world" because it reads an external service.
+async def save_search(
+    ctx: Context,
+    name: Annotated[
+        str | None,
+        Field(description="Name for the search; default: one built from its filters."),
+    ] = None,
+    words: Annotated[
+        str | None,
+        Field(
+            description="Words that must all appear in the title (whole words; singular and "
+            "plural forms both match)."
+        ),
+    ] = None,
+    section: Annotated[
+        str | None, Field(description="Only this section code, e.g. '1', '2A', '3', '5B'.")
+    ] = None,
+    department_code: Annotated[
+        str | None,
+        Field(description="Only this department code. Look codes up with find_codes."),
+    ] = None,
+    law_id: Annotated[
+        str | None,
+        Field(
+            description="BOE identifier of a consolidated law to follow, e.g. BOE-A-2015-10566 "
+            "(use resolve_reference)."
+        ),
+    ] = None,
+) -> SaveSearchResult:
+    """Save a search to re-check later: gazette items by title words, section or department, or
+    one law to follow for amendments and court rulings. Nothing is sent automatically; call
+    check_saved_searches to see what is new. A name is proposed when none is given.
+    """
+    # The owner comes from the authenticated request and is never an argument: a model (or
+    # anyone steering it) must not be able to name another person's searches.
+    return await guarded_for_owner(
+        lambda who: saved_searches.save_search(
+            _searches(ctx),
+            _client(ctx),
+            who,
+            name=name,
+            words=words,
+            section=section,
+            department_code=department_code,
+            law_id=law_id,
+        ),
+        "save_search",
+        ToolError,
+    )
+
+
+async def list_saved_searches(ctx: Context) -> SavedSearchList:
+    """The saved searches, with their filters and when each was last checked."""
+    return await guarded_for_owner(
+        lambda who: saved_searches.list_saved_searches(_searches(ctx), who),
+        "list_saved_searches",
+        ToolError,
+    )
+
+
+async def check_saved_searches(
+    ctx: Context,
+    name: Annotated[
+        str | None, Field(description="Check only this saved search; default: all.")
+    ] = None,
+    since: Annotated[
+        date | None,
+        Field(
+            description="Re-read gazette searches from this date (at most 90 days back) without "
+            "marking anything as seen."
+        ),
+    ] = None,
+    limit: Annotated[
+        int,
+        Field(
+            ge=1,
+            le=saved_searches.MAX_ITEMS,
+            description="New items or changes shown per search per call; the rest stay new.",
+        ),
+    ] = saved_searches.DEFAULT_ITEMS,
+) -> CheckSearchesResult:
+    """What is new for the saved searches since each was last checked; what is shown is marked
+    as seen. Covers at most the last 31 days; shows up to 60 items per call, so call again while
+    complete is false. since re-reads gazette searches up to 90 days back without marking
+    anything.
+    """
+    return await guarded_for_owner(
+        lambda who: saved_searches.check_saved_searches(
+            _searches(ctx),
+            _client(ctx),
+            who,
+            name=name,
+            since=since,
+            limit=limit,
+            progress=ctx.report_progress,
+        ),
+        "check_saved_searches",
+        ToolError,
+    )
+
+
+async def edit_saved_search(
+    ctx: Context,
+    name: Annotated[str, Field(description="Name of the saved search (see list_saved_searches).")],
+    new_name: Annotated[str | None, Field(description="New name for the search.")] = None,
+    words: Annotated[
+        str | None,
+        Field(description="New value; an empty string removes this filter."),
+    ] = None,
+    section: Annotated[
+        str | None,
+        Field(description="New value; an empty string removes this filter."),
+    ] = None,
+    department_code: Annotated[
+        str | None,
+        Field(description="New value; an empty string removes this filter."),
+    ] = None,
+) -> SaveSearchResult:
+    """Rename a saved search or change its gazette filters. Its last-checked point is kept."""
+    return await guarded_for_owner(
+        lambda who: saved_searches.edit_saved_search(
+            _searches(ctx),
+            who,
+            name,
+            new_name=new_name,
+            words=words,
+            section=section,
+            department_code=department_code,
+        ),
+        "edit_saved_search",
+        ToolError,
+    )
+
+
+async def delete_saved_search(
+    ctx: Context,
+    name: Annotated[str, Field(description="Name of the saved search (see list_saved_searches).")],
+) -> DeleteSearchResult:
+    """Delete a saved search. This cannot be undone."""
+    return await guarded_for_owner(
+        lambda who: saved_searches.delete_saved_search(_searches(ctx), who, name),
+        "delete_saved_search",
+        ToolError,
+    )
+
+
+# (function, display title). Registered by ``create_server`` in this order.
 _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (search_legislation, "Search Spanish legislation"),
     (resolve_reference, "Resolve a law reference"),
@@ -980,25 +1161,46 @@ _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (scan_gazette, "Scan the BOE over several days"),
     (verify_citation, "Verify citations of laws"),
     (explore_amendment_chain, "Explore an amendment chain"),
+    (save_search, "Save a search"),
+    (list_saved_searches, "List saved searches"),
+    (check_saved_searches, "Check saved searches for news"),
+    (edit_saved_search, "Edit a saved search"),
+    (delete_saved_search, "Delete a saved search"),
 )
 
+# Every tool is ``_READ_ONLY`` unless it is listed here: only the saved-search tools differ.
+_ANNOTATIONS: dict[Callable[..., Awaitable[Any]], ToolAnnotations] = {
+    save_search: _SAVES,
+    list_saved_searches: _LISTS,
+    check_saved_searches: _SAVES,
+    edit_saved_search: _CHANGES,
+    delete_saved_search: _CHANGES,
+}
 
-def create_server(*, client: BoeClient | None = None, settings: Settings | None = None) -> FastMCP:
+
+def create_server(
+    *,
+    client: BoeClient | None = None,
+    settings: Settings | None = None,
+    store: SavedSearchStore | None = None,
+) -> FastMCP:
     """Build the MCP server without touching the network or the disk.
 
     With no ``client``, the cache, rate limiter and client are created from ``settings`` (or
-    the environment) when the server starts. An injected ``client`` is used as it is and left
-    open.
+    the environment) when the server starts. An injected ``client`` or ``store`` is used as it
+    is and left open; with an injected client and no store, saved searches live in memory.
     """
     # ``mask_error_details=True``: see ``_guard``.
     server = FastMCP(
         "boe-insights",
         instructions=_INSTRUCTIONS,
-        lifespan=_lifespan(client, settings),
+        lifespan=_lifespan(client, settings, store),
         mask_error_details=True,
     )
     for function, title in _TOOLS:
-        server.tool(function, title=title, annotations=_READ_ONLY)
+        server.tool(function, title=title, annotations=_ANNOTATIONS.get(function, _READ_ONLY))
+    resources.register(server)
+    prompts.register(server)
     return server
 
 

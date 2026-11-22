@@ -40,6 +40,7 @@ __all__ = [
     "ArticleState",
     "ChainEdgeInfo",
     "ChainNodeInfo",
+    "CheckSearchesResult",
     "CitationCheck",
     "CitationRequest",
     "CodeMatch",
@@ -48,6 +49,7 @@ __all__ = [
     "Coverage",
     "DailySummaryResult",
     "DayMatches",
+    "DeleteSearchResult",
     "DepartmentCount",
     "ExplainSpikeResult",
     "FindCodesResult",
@@ -71,8 +73,13 @@ __all__ = [
     "ReferenceBrief",
     "RelationCount",
     "ResolveReferenceResult",
+    "SaveSearchResult",
+    "SavedSearchInfo",
+    "SavedSearchList",
     "ScanGazetteResult",
     "ScannedEntry",
+    "SearchChange",
+    "SearchCheck",
     "SearchLegislationResult",
     "SpikeContribution",
     "StructureItem",
@@ -824,6 +831,160 @@ class ScanGazetteResult(_Output):
     has_more: bool
     next_offset: int | None = Field(description="Offset for the next page; null when none.")
     by_day: list[DayMatches] = Field(description="Days with matches, newest first.")
+    note: str | None = Field(default=None, description="What to do when not complete.")
+    provenance: Provenance
+
+
+# --- saved searches ----------------------------------------------------------------------------
+
+SearchStatus = Literal["checked", "partial", "failed"]
+
+
+class SavedSearchInfo(_Output):
+    """A saved search: its filters and when it was last checked."""
+
+    name: str
+    kind: Literal["gazette", "law"] = Field(
+        description="'gazette': items by title words, section or department. 'law': amendments "
+        "and court rulings on one law."
+    )
+    # ``exclude_if`` leaves out the fields a kind does not have, so a search shows only its own
+    # filters; ``last_checked_at`` stays because null there means "never checked".
+    words: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    section: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    department_code: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    law_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    law_title: str | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Title of the law, cut at 200 characters.",
+    )
+    created_at: datetime
+    last_checked_at: datetime | None = Field(description="When this search was last checked.")
+    checked_through: _Day | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Gazette: the last day read; the next check starts after it.",
+    )
+
+
+class SavedSearchList(_Output):
+    """The saved searches of the user."""
+
+    searches: list[SavedSearchInfo] = Field(description="Oldest first.")
+    total: int
+    limit: int = Field(description="Most searches allowed.")
+    note: str | None = None
+    provenance: Provenance
+
+
+class SaveSearchResult(_Output):
+    """A saved search after it was created or edited."""
+
+    search: SavedSearchInfo
+    name_was_proposed: bool = Field(description="True when the server chose the name.")
+    total: int = Field(description="Saved searches now.")
+    note: str | None = None
+    provenance: Provenance
+
+
+class DeleteSearchResult(_Output):
+    """A saved search that was deleted."""
+
+    deleted: str = Field(description="Name of the deleted search.")
+    remaining: int = Field(description="Saved searches left.")
+    provenance: Provenance
+
+
+class SearchChange(_Output):
+    """An amendment or court ruling on a followed law that was not reported before."""
+
+    law_id: str = Field(description="Identifier of the norm that acts.")
+    kind: RelationKind
+    relation: str = Field(description="The BOE's relation text (Spanish).")
+    text: str = Field(description="Reference text from the BOE (Spanish), cut at 200 characters.")
+
+
+class SearchCheck(_Output):
+    """What is new for one saved search."""
+
+    name: str
+    kind: Literal["gazette", "law"]
+    status: SearchStatus = Field(
+        description="checked: nothing more to fetch now (see note for days still to retry). "
+        "partial: more is ready, call again. failed: could not be read; see note."
+    )
+    # The fields below belong to one kind each; ``exclude_if`` leaves out those that do not
+    # apply (or, for the dates, that nothing was read for).
+    from_date: _Day | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Gazette: first day read this time.",
+    )
+    to_date: _Day | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Gazette: last day read this time.",
+    )
+    days_pending: int | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Gazette: days of the range not read yet.",
+    )
+    days_failed: int | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Gazette: days given up after a week of failed reads.",
+    )
+    days_retrying: int | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Gazette: days that could not be read and will be tried again at the "
+        "next check.",
+    )
+    matched: int | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="New matches found in the days read.",
+    )
+    items: list[ScannedEntry] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Gazette: new matches, oldest day first.",
+    )
+    has_more: bool | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Gazette: new matches remain that were not shown.",
+    )
+    law_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    law_title: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    changes: list[SearchChange] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Law: new amendments, repeals, additions, suspensions, corrections and "
+        "court rulings.",
+    )
+    changes_total: int | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Law: all new changes, which may exceed len(changes).",
+    )
+    other_new: dict[str, int] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Law: new references that are not changes, counted only: citations, other.",
+    )
+    note: str | None = Field(default=None, exclude_if=lambda value: value is None)
+
+
+class CheckSearchesResult(_Output):
+    """What is new for the saved searches, one entry per search."""
+
+    checked: int = Field(description="Searches fully checked.")
+    total: int = Field(description="Searches considered.")
+    complete: bool = Field(description="True when no search needs another call.")
+    results: list[SearchCheck]
     note: str | None = Field(default=None, description="What to do when not complete.")
     provenance: Provenance
 

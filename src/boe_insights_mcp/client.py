@@ -78,6 +78,7 @@ __all__ = [
     "AuxiliaryTable",
     "BoeClient",
     "ClientStats",
+    "absence_is_settled",
 ]
 
 BASE_URL = "https://www.boe.es/datosabiertos/api/"
@@ -118,6 +119,13 @@ SUMMARY_TODAY_TTL = 3600.0
 SUMMARY_RECENT_ABSENCE_TTL = 24 * 3600.0
 # Days after which a remembered "no issue" is trusted for ``SUMMARY_PAST_TTL``.
 SUMMARY_ABSENCE_SETTLED_DAYS = 7
+
+
+def absence_is_settled(day: date, today: date) -> bool:
+    """Whether ``day`` is old enough for a "no issue" (or a failed read) to be treated as final."""
+    return (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
+
+
 # The first day the BOE summary endpoint answers; every earlier date is a 404 (api-notes, fourth
 # probe, "Daily summaries").
 FIRST_SUMMARY_DAY = date(1960, 9, 1)
@@ -542,7 +550,7 @@ class BoeClient:
         # Why ``today`` is a parameter: the client never reads the clock (the use cases own it,
         # which is how tests fix time), and the cache lifetime below depends on the answer.
         path = f"boe/sumario/{day:%Y%m%d}"
-        key = self._cache_key(path, None, _XML, None)
+        key = self._summary_key(day, today)
         cached = await self._cache.get(key)
         if cached == _NO_SUMMARY:
             self._cache_hits += 1
@@ -550,6 +558,9 @@ class BoeClient:
         # Why the two lifetimes: a day before today is final, so both the summary and the
         # remembered 404 can live a month. Today's issue is still being completed and may appear
         # after our first look, so its summary lives an hour and its 404 is not remembered at all.
+        # Why a provisional key for today: a copy read at 23:30 would otherwise still be cached at
+        # 00:15, when the day is past, and be taken as the final one, losing whatever the BOE
+        # added in between (api-notes, summaries). A past day never sees a provisional entry.
         final = day < today
         try:
             return await self._resolve(
@@ -566,22 +577,31 @@ class BoeClient:
             # fourth probe). Only a past day's absence is remembered, for a day when the day is
             # recent and for a month once it is settled.
             if final:
-                settled = (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
                 await self._cache.set(
                     key,
                     _NO_SUMMARY,
-                    SUMMARY_PAST_TTL if settled else SUMMARY_RECENT_ABSENCE_TTL,
+                    SUMMARY_PAST_TTL
+                    if absence_is_settled(day, today)
+                    else SUMMARY_RECENT_ABSENCE_TTL,
                 )
             return None
 
-    async def has_cached_summary(self, day: date) -> bool:
-        """Whether the summary of ``day`` (or its remembered absence) is cached; sends no request.
+    async def has_cached_summary(self, day: date, *, today: date) -> bool:
+        """Whether ``get_daily_summary(day, today=today)`` would be served from the cache.
 
-        ``gazette.scan_gazette`` uses it to read already-cached days without spending its time
-        budget. Only presence is checked, like ``has_cached_analysis``.
+        Sends no request. ``gazette.scan_gazette`` uses it to read already-cached days without
+        spending its time budget. Only presence is checked, like ``has_cached_analysis``; a
+        provisional copy of a day that is now past does not count.
         """
+        return await self._cache.get(self._summary_key(day, today)) is not None
+
+    def _summary_key(self, day: date, today: date) -> str:
+        """The cache key of a day's summary: a distinct, provisional one while the day is today."""
         path = f"boe/sumario/{day:%Y%m%d}"
-        return await self._cache.get(self._cache_key(path, None, _XML, None)) is not None
+        if day < today:
+            return self._cache_key(path, None, _XML, None)
+        # Key-only pseudo parameter, like ``revision``: the request itself is unchanged.
+        return make_key(f"{self._base_url}{path}", {"provisional": "today"}, _XML)
 
     async def get_initial_note(self, law_id: str) -> Block | None:
         """Return the law's initial note (block ``no``), or ``None`` when it has none.

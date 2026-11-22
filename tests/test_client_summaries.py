@@ -248,11 +248,60 @@ async def test_has_cached_summary_sees_bodies_and_remembered_absences_without_a_
     router.get(f"{BASE_URL}boe/sumario/20261115").mock(
         return_value=xml_response(load_fixture("error_404_sumario_sunday_20261115.xml"), 404)
     )
-    assert not await client.has_cached_summary(DAY)
+    assert not await client.has_cached_summary(DAY, today=TODAY)
 
     await client.get_daily_summary(DAY, today=TODAY)
     await client.get_daily_summary(sunday, today=TODAY)
 
-    assert await client.has_cached_summary(DAY)
-    assert await client.has_cached_summary(sunday)
+    assert await client.has_cached_summary(DAY, today=TODAY)
+    assert await client.has_cached_summary(sunday, today=TODAY)
     assert router.calls.call_count == 2
+
+
+async def test_a_summary_read_as_today_is_not_served_once_the_day_is_past(
+    router: respx.MockRouter, client: BoeClient, xml_response: Xml, body: bytes
+) -> None:
+    # Read at 23:30 as today, then at 00:15 when that day is a past day: the body must be
+    # fetched again, because the issue may have grown in between.
+    newer = body.replace(b"BOE-S-2026-289", b"BOE-S-2026-299")
+    assert newer != body
+    route = router.get(URL).mock(side_effect=[xml_response(body, 200), xml_response(newer, 200)])
+    as_today = await client.get_daily_summary(DAY, today=DAY)
+    assert as_today is not None
+    assert as_today.issues[0].identifier == "BOE-S-2026-289"
+    assert await client.has_cached_summary(DAY, today=DAY)
+    assert not await client.has_cached_summary(DAY, today=TODAY)
+
+    as_past = await client.get_daily_summary(DAY, today=TODAY)
+
+    assert route.call_count == 2
+    assert as_past is not None
+    assert as_past.issues[0].identifier == "BOE-S-2026-299"
+    assert await client.has_cached_summary(DAY, today=TODAY)
+
+
+async def test_the_final_entry_keeps_its_lifetime_and_the_provisional_one_is_short(
+    router: respx.MockRouter,
+    client: BoeClient,
+    cache: RecordingCache,
+    xml_response: Xml,
+    body: bytes,
+) -> None:
+    router.get(URL).mock(return_value=xml_response(body, 200))
+
+    await client.get_daily_summary(DAY, today=DAY)
+    await client.get_daily_summary(DAY, today=TODAY)
+
+    assert [ttl for _, ttl in cache.sets] == [SUMMARY_TODAY_TTL, SUMMARY_PAST_TTL]
+    assert cache.sets[0][0] != cache.sets[1][0]
+
+
+async def test_a_final_read_is_served_again_when_asked_as_a_past_day(
+    router: respx.MockRouter, client: BoeClient, xml_response: Xml, body: bytes
+) -> None:
+    route = router.get(URL).mock(return_value=xml_response(body, 200))
+
+    await client.get_daily_summary(DAY, today=TODAY)
+    await client.get_daily_summary(DAY, today=TODAY)
+
+    assert route.call_count == 1

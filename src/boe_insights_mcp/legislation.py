@@ -57,6 +57,7 @@ from boe_insights_mcp.structure import parse_publication_note
 from boe_insights_mcp.versions import repeal_date, repeal_note, repeal_version_date
 
 __all__ = [
+    "CODE_TABLES",
     "AmendmentFilter",
     "CodeKind",
     "RankFilter",
@@ -89,7 +90,7 @@ ScopeFilter = Literal["state", "regional", "any"]
 CodeKind = Literal["department", "subject", "rank"]
 AmendmentFilter = Literal["all", "repeals", "modifies", "adds", "corrections", "other"]
 
-_CODE_TABLES: dict[CodeKind, AuxiliaryTable] = {
+CODE_TABLES: dict[CodeKind, AuxiliaryTable] = {
     "department": "departamentos",
     "subject": "materias",
     "rank": "rangos",
@@ -446,14 +447,14 @@ async def find_codes(
     closest matches. Raises ``ValueError`` for an unknown ``kind``, a blank ``text`` or a
     ``limit`` outside ``1..MAX_LIMIT``.
     """
-    if kind not in _CODE_TABLES:
-        raise ValueError(f"kind must be one of {', '.join(_CODE_TABLES)}")
+    if kind not in CODE_TABLES:
+        raise ValueError(f"kind must be one of {', '.join(CODE_TABLES)}")
     words = fold(text).split()
     if not words:
         raise ValueError("text must not be empty")
     if not 1 <= limit <= MAX_LIMIT:
         raise ValueError(f"limit must be between 1 and {MAX_LIMIT}")
-    table = await client.get_auxiliary_table(_CODE_TABLES[kind])
+    table = await client.get_auxiliary_table(CODE_TABLES[kind])
     # Sort key: name length first (a shorter name is usually a closer match); folded name and code
     # then make the order deterministic.
     found: list[tuple[int, str, str, str]] = []

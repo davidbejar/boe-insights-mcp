@@ -50,6 +50,13 @@ TREND_TOOL_NAMES = {
 STRUCTURE_TOOL_NAMES = {"get_law_structure"}
 GAZETTE_TOOL_NAMES = {"get_daily_summary", "scan_gazette"}
 VERIFY_TOOL_NAMES = {"verify_citation", "explore_amendment_chain"}
+SAVED_SEARCH_TOOL_NAMES = {
+    "save_search",
+    "list_saved_searches",
+    "check_saved_searches",
+    "edit_saved_search",
+    "delete_saved_search",
+}
 TOOL_NAMES = (
     OLD_TOOL_NAMES
     | NEW_TOOL_NAMES
@@ -57,7 +64,17 @@ TOOL_NAMES = (
     | STRUCTURE_TOOL_NAMES
     | GAZETTE_TOOL_NAMES
     | VERIFY_TOOL_NAMES
+    | SAVED_SEARCH_TOOL_NAMES
 )
+# (read_only, destructive, idempotent, open_world) of the tools that are not the usual read-only
+# BOE reader; ``None`` means the hint is not set.
+SAVED_SEARCH_ANNOTATIONS: dict[str, tuple[bool, bool | None, bool, bool]] = {
+    "save_search": (False, False, False, True),
+    "list_saved_searches": (True, None, True, False),
+    "check_saved_searches": (False, False, False, True),
+    "edit_saved_search": (False, True, True, False),
+    "delete_saved_search": (False, True, True, False),
+}
 MAX_DESCRIPTION_WORDS = 120
 
 Loader = Callable[[str], bytes]
@@ -135,7 +152,10 @@ async def test_server_name_and_instructions_guide_the_model(boe_client: BoeClien
 async def test_tool_description_is_concise(tools: dict[str, Tool], name: str) -> None:
     description = tools[name].description or ""
 
-    assert 20 <= len(description.split()) <= MAX_DESCRIPTION_WORDS
+    # The mutating saved-search tools have deliberately terse descriptions ("Delete a saved
+    # search. This cannot be undone."), so the lower bound is lower for them.
+    minimum = 5 if name in SAVED_SEARCH_TOOL_NAMES else 20
+    assert minimum <= len(description.split()) <= MAX_DESCRIPTION_WORDS
 
 
 async def test_descriptions_point_to_the_right_neighbouring_tool(tools: dict[str, Tool]) -> None:
@@ -233,13 +253,18 @@ async def test_overview_description_does_not_promise_certainty(tools: dict[str, 
     assert "partially_repealed" in description
 
 
-@pytest.mark.parametrize("name", sorted(TOOL_NAMES))
+@pytest.mark.parametrize("name", sorted(TOOL_NAMES - {"list_saved_searches"}))
 async def test_every_parameter_is_described(tools: dict[str, Tool], name: str) -> None:
     properties: dict[str, dict[str, Any]] = tools[name].input_schema["properties"]
 
     assert properties
     assert "ctx" not in properties
     assert [key for key, schema in properties.items() if not schema.get("description")] == []
+
+
+async def test_list_saved_searches_takes_no_arguments(tools: dict[str, Tool]) -> None:
+    # The owner is never an argument, so there is nothing for the model to fill in.
+    assert tools["list_saved_searches"].input_schema.get("properties", {}) == {}
 
 
 async def test_required_parameters(tools: dict[str, Tool]) -> None:
@@ -263,7 +288,7 @@ async def test_search_limit_is_bounded_in_the_schema(tools: dict[str, Tool]) -> 
     assert (limit["minimum"], limit["maximum"]) == (1, 50)
 
 
-@pytest.mark.parametrize("name", sorted(TOOL_NAMES))
+@pytest.mark.parametrize("name", sorted(TOOL_NAMES - SAVED_SEARCH_TOOL_NAMES))
 async def test_tools_are_annotated_read_only_idempotent_and_open_world(
     tools: dict[str, Tool], name: str
 ) -> None:
@@ -273,6 +298,22 @@ async def test_tools_are_annotated_read_only_idempotent_and_open_world(
     assert annotations.read_only_hint is True
     assert annotations.idempotent_hint is True
     assert annotations.open_world_hint is True
+    assert tools[name].title
+
+
+@pytest.mark.parametrize("name", sorted(SAVED_SEARCH_TOOL_NAMES))
+async def test_saved_search_tools_carry_their_own_annotations(
+    tools: dict[str, Tool], name: str
+) -> None:
+    annotations = tools[name].annotations
+
+    assert annotations is not None
+    assert (
+        annotations.read_only_hint,
+        annotations.destructive_hint,
+        annotations.idempotent_hint,
+        annotations.open_world_hint,
+    ) == SAVED_SEARCH_ANNOTATIONS[name]
     assert tools[name].title
 
 

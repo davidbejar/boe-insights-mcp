@@ -78,10 +78,10 @@ async def test_the_instructions_mention_the_gazette_tools(boe_client: BoeClient)
         instructions
     )
     assert "resolve_reference turns a name" in instructions
-    # Every tool is named once the server has 18 of them, and the text stays short.
-    assert len(names) == 18
+    # Every tool is named once the server has 23 of them, and the text stays short.
+    assert len(names) == 23
     assert all(name in instructions for name in names)
-    assert len(instructions) <= 1659
+    assert len(instructions) <= 1760
 
 
 async def test_the_tools_carry_the_agreed_descriptions_and_schemas(mcp: Client[Any]) -> None:

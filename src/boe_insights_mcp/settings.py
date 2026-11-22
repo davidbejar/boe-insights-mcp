@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
+from platformdirs import user_data_dir
+
 from boe_insights_mcp.cache import default_cache_dir
 
 __all__ = ["CacheBackend", "Settings"]
@@ -22,6 +24,19 @@ __all__ = ["CacheBackend", "Settings"]
 CacheBackend = Literal["disk", "memory"]
 
 _BACKENDS: tuple[CacheBackend, ...] = ("disk", "memory")
+
+_APP_NAME = "boe-insights-mcp"
+
+
+def platform_data_dir() -> Path:
+    """Return the platform's per-user data directory for this application (not created)."""
+    return Path(user_data_dir(_APP_NAME))
+
+
+def _explicit_data_dir(env: Mapping[str, str] | None = None) -> Path | None:
+    """The directory ``BOE_INSIGHTS_DATA_DIR`` names, or ``None`` when it is unset or empty."""
+    value = (os.environ if env is None else env).get("BOE_INSIGHTS_DATA_DIR")
+    return Path(value) if value else None
 
 
 @dataclass(frozen=True)
@@ -32,10 +47,24 @@ class Settings:
     """``BOE_INSIGHTS_CACHE``: ``disk`` (persistent) or ``memory`` (per process)."""
     cache_dir: Path = field(default_factory=default_cache_dir)
     """``BOE_INSIGHTS_CACHE_DIR``: where the disk cache lives; the platform cache dir if unset."""
+    data_dir: Path | None = field(default_factory=_explicit_data_dir)
+    """``BOE_INSIGHTS_DATA_DIR`` when given, else ``None``; see ``saved_searches_dir``.
+
+    Separate from ``cache_dir`` on purpose: the cache is safe to delete, saved searches are not.
+    """
     min_interval: float = 1.0
     """``BOE_INSIGHTS_MIN_INTERVAL``: minimum seconds between requests to boe.es."""
     max_concurrency: int = 2
     """``BOE_INSIGHTS_MAX_CONCURRENCY``: maximum simultaneous requests to boe.es."""
+
+    @property
+    def saved_searches_dir(self) -> Path | None:
+        """The directory the saved searches live in; ``None`` means keep them in memory."""
+        if self.data_dir is not None:
+            return self.data_dir
+        # The memory cache is for throwaway runs: without a directory asked for, it does not
+        # leave a file in the person's data directory either.
+        return None if self.cache_backend == "memory" else platform_data_dir()
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> Settings:
@@ -48,6 +77,7 @@ class Settings:
         return cls(
             cache_backend=_backend(env.get("BOE_INSIGHTS_CACHE"), defaults.cache_backend),
             cache_dir=Path(cache_dir) if cache_dir else default_cache_dir(env),
+            data_dir=_explicit_data_dir(env),
             min_interval=_min_interval(env.get("BOE_INSIGHTS_MIN_INTERVAL"), defaults.min_interval),
             max_concurrency=_max_concurrency(
                 env.get("BOE_INSIGHTS_MAX_CONCURRENCY"), defaults.max_concurrency
