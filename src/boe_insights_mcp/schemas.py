@@ -911,8 +911,8 @@ class SearchCheck(_Output):
     name: str
     kind: Literal["gazette", "law"]
     status: SearchStatus = Field(
-        description="checked: up to date. partial: more remains, call again. failed: could not "
-        "be read; see note."
+        description="checked: nothing more to fetch now (see note for days still to retry). "
+        "partial: more is ready, call again. failed: could not be read; see note."
     )
     # The fields below belong to one kind each; ``exclude_if`` leaves out those that do not
     # apply (or, for the dates, that nothing was read for).
@@ -934,7 +934,13 @@ class SearchCheck(_Output):
     days_failed: int | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
-        description="Gazette: days skipped after an error that retrying cannot fix.",
+        description="Gazette: days given up after a week of failed reads.",
+    )
+    days_retrying: int | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Gazette: days that could not be read and will be tried again at the "
+        "next check.",
     )
     matched: int | None = Field(
         default=None,

@@ -460,26 +460,34 @@ class _Reading:
     """Days that had an issue."""
     empty: set[date] = field(default_factory=set)
     """Days that answered "no issue" (today included: it may just not be out yet)."""
-    failed: set[date] = field(default_factory=set)
-    """Days skipped after an error that retrying cannot fix."""
+    unreadable: set[date] = field(default_factory=set)
+    """Days whose read raised a ``BoeError``, of any kind."""
 
     def read(self, day: date) -> bool:
-        """Whether the BOE answered for ``day`` (an issue, no issue, or a permanent error)."""
-        return day in self.summaries or day in self.empty or day in self.failed
+        """Whether ``day`` was attempted: it has an issue, no issue, or was unreadable."""
+        return day in self.summaries or day in self.empty or day in self.unreadable
+
+    def given_up(self, day: date, today: date) -> bool:
+        """Whether ``day`` was unreadable and is old enough to stop retrying it."""
+        return day in self.unreadable and (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
 
     def settled(self, day: date, today: date) -> bool:
         """Whether what was read for ``day`` can be trusted to be final.
 
         Today never is: its issue may still grow (docs/api-notes.md records a day with two
-        issues). A past day that had an issue is, and so is one skipped for a permanent error.
-        A past "no issue" is final only when it is a Sunday or old enough that the client
-        itself remembers it (``SUMMARY_ABSENCE_SETTLED_DAYS``): a recent weekday's 404 can be
-        a late publication or a transient error, and trusting it would lose that issue.
+        issues). A past day that had an issue is final. A past "no issue" is final only when it is
+        a Sunday or old enough that the client itself remembers it
+        (``SUMMARY_ABSENCE_SETTLED_DAYS``): a recent weekday's 404 can be a late publication or
+        a transient error, and trusting it would lose that issue. An unreadable day is final
+        only once given up: a 403 or an HTML maintenance page during a short outage looks
+        permanent but is not, so every error is retried for a week.
         """
         if day >= today:
             return False
-        if day in self.summaries or day in self.failed:
+        if day in self.summaries:
             return True
+        if day in self.unreadable:
+            return self.given_up(day, today)
         return day.weekday() == _SUNDAY or (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
 
 
@@ -727,8 +735,9 @@ async def _read_law(
         return _Unread("failed", "The BOE no longer has this law.")
     except BoeError as error:
         # Never the API's own words: they are not ours to relay and mean nothing to the user.
+        # Not ``partial`` even when retryable: calling again at once cannot help.
         if error.retryable:
-            return _Unread("partial", "Could not be read; try again.")
+            return _Unread("failed", "Could not be read; try again later.")
         return _Unread("failed", "Could not be read.")
     finally:
         await tally.step()
@@ -874,12 +883,13 @@ def _range(search: SavedSearch, since: date | None, today: date) -> _Range:
 async def _read_days(
     client: SavedSearchClient, days: list[date], today: date, tally: _Tally
 ) -> _Reading:
-    """Read ``days`` (oldest first) once, stopping where reading cannot go on.
+    """Read ``days`` (oldest first) once, stopping only when the time budget is spent.
 
     Oldest first, unlike ``scan_gazette`` (newest first): a bookmark can only move over an
     unbroken run of finished days, so the days nearest the bookmark must be read before any
-    later one, and stopping early (budget, a temporary error) leaves nothing unread in the
-    middle.
+    later one, and stopping early (budget) leaves nothing unread in the middle. A day that
+    cannot be read does not stop the reading: it is marked unreadable and the days after it are
+    still read, so one stubborn day never blocks the news of the others.
     """
     reading = _Reading()
     for day in days:
@@ -888,11 +898,10 @@ async def _read_days(
             break
         try:
             found = await client.get_daily_summary(day, today=today)
-        except BoeError as error:
-            if error.retryable:
-                break
-            # A day that fails for good would fail again, so the bookmark passes it (counted).
-            reading.failed.add(day)
+        except BoeError:
+            # Whatever the error, the day is retried by the next check until it is a week old
+            # (see ``_Reading.settled``): an error that looks permanent can be a short outage.
+            reading.unreadable.add(day)
         else:
             if found is not None:
                 reading.summaries[day] = found
@@ -976,7 +985,19 @@ def _gazette_outcome(
     status: SearchStatus = (
         "checked" if all_read and (undelivered == 0 or since is not None) else "partial"
     )
-    skipped_days = [day for day in run if day in reading.failed]
+    # The bookmark moves over the unbroken run of finished days from the start. A call that
+    # stores nothing (``since``, or nothing reached) moves no day, so reports none as given up.
+    stores = since is None and not not_reached and any(day not in reading.unreadable for day in run)
+    through = search.checked_through
+    for day in run:
+        if not (
+            reading.settled(day, today) and len(delivered.get(day, ())) == len(fresh.get(day, ()))
+        ):
+            break
+        through = day
+    passed = [day for day in run if through is not None and day <= through]
+    skipped_days = [day for day in passed if day in reading.unreadable] if stores else []
+    retrying = [day for day in run if day in reading.unreadable and day not in skipped_days]
 
     notes: list[str] = []
     if span.skipped:
@@ -995,10 +1016,17 @@ def _gazette_outcome(
             )
         else:
             notes.append(f"Showing {len(entries)} of {matched} new items; call again for the rest.")
+    if since is not None and retrying:
+        notes.append(f"{_days_phrase(retrying)} could not be read; ask again later.")
+    elif retrying:
+        notes.append(
+            f"{_days_phrase(retrying)} could not be read and will be tried again at the next check."
+        )
     if skipped_days:
         notes.append(
-            f"{len(skipped_days)} day{'s' if len(skipped_days) != 1 else ''} could not be read "
-            f"and {'were' if len(skipped_days) != 1 else 'was'} skipped."
+            f"{_days_phrase(skipped_days)} could not be read after a week of trying and "
+            f"{'were' if len(skipped_days) != 1 else 'was'} skipped: "
+            f"{', '.join(day.isoformat() for day in skipped_days)}."
         )
     check = SearchCheck(
         name=search.name,
@@ -1008,26 +1036,25 @@ def _gazette_outcome(
         to_date=run[-1] if run else None,
         days_pending=len(days) - len(run),
         days_failed=len(skipped_days),
+        days_retrying=len(retrying),
         matched=matched,
         items=entries,
         has_more=undelivered > 0,
         note=" ".join(notes) or None,
     )
-    if since is not None or not_reached or not run:
-        # ``since`` stores nothing; a search that was not reached or read nothing has no news
-        # for the store either.
+    if not stores:
+        # ``since`` stores nothing; a search that was not reached, or whose days were all
+        # unreadable, has no news for the store either (and is not stamped as checked).
         return _Outcome(check, used=len(entries))
 
-    through = search.checked_through
-    for day in run:
-        if not (
-            reading.settled(day, today) and len(delivered.get(day, ())) == len(fresh.get(day, ()))
-        ):
-            break
-        through = day
     remembered = dict(search.seen_items)
     for day, taken in delivered.items():
         remembered[day] = remembered.get(day, frozenset()) | {item.identifier for item in taken}
     # Days up to the bookmark are finished: their identifiers are no longer needed.
     kept = {day: ids for day, ids in remembered.items() if through is None or day > through}
     return _Outcome(check, _Progress(through, search.seen, kept, moment), used=len(entries))
+
+
+def _days_phrase(days: list[date]) -> str:
+    """ "1 day" or "<n> days"."""
+    return f"{len(days)} day{'' if len(days) == 1 else 's'}"

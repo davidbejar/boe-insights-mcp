@@ -368,44 +368,137 @@ async def test_an_old_weekday_without_an_issue_is_settled_after_seven_days(
     assert (await stored(store)).checked_through == expected
 
 
-async def test_a_permanent_failure_of_a_past_day_is_skipped_and_counted(
+@pytest.mark.parametrize(
+    "error",
+    [BoeResponseError("unreadable"), BoeUnavailableError("down", status=503)],
+    ids=["not retryable", "retryable"],
+)
+async def test_an_unreadable_recent_day_is_retried_and_reading_goes_on(
+    store: SavedSearchStore, error: Exception
+) -> None:
+    # Any BoeError makes the day unreadable: a 403 or an HTML maintenance page during a short
+    # outage is not "failed for good". Later days are read and delivered; the bookmark waits.
+    await seed_gazette(store, checked_through=date(2026, 11, 17))
+    wed = date(2026, 11, 18)
+    fake = FakeBoe(days={wed: error, THU: issue(THU, item("H1")), FRI: issue(FRI)})
+
+    result = await check_on(store, fake, FRI)
+
+    gazette = result.results[0]
+    assert gazette.status == "checked"
+    assert result.complete is True
+    assert gazette.days_failed == 0
+    assert gazette.days_retrying == 1
+    assert gazette.note == "1 day could not be read and will be tried again at the next check."
+    assert ids(gazette) == ["H1"]
+    row = await stored(store)
+    assert row.checked_through == date(2026, 11, 17)
+    assert row.seen_items == {THU: frozenset({"H1"})}
+
+
+async def test_an_unreadable_day_that_recovers_is_delivered_once_with_nothing_repeated(
     store: SavedSearchStore,
 ) -> None:
     await seed_gazette(store, checked_through=date(2026, 11, 17))
     wed = date(2026, 11, 18)
     fake = FakeBoe(
-        days={wed: BoeResponseError("unreadable"), THU: issue(THU, item("H1")), FRI: issue(FRI)}
+        days={
+            wed: BoeUnavailableError("down", status=503),
+            THU: issue(THU, item("H1")),
+            FRI: issue(FRI),
+        }
     )
+    first = await check_on(store, fake, FRI)
+
+    fake.days[wed] = issue(wed, item("W1"))
+    second = await check_on(store, fake, FRI)
+    third = await check_on(store, fake, FRI)
+
+    assert ids(first.results[0]) == ["H1"]
+    assert ids(second.results[0]) == ["W1"]
+    assert second.results[0].days_retrying in (None, 0)
+    assert second.results[0].note is None
+    assert ids(third.results[0]) == []
+    assert (await stored(store)).checked_through == THU
+
+
+@pytest.mark.parametrize(("ago_days", "given_up"), [(7, False), (8, True)])
+async def test_a_day_unreadable_for_more_than_a_week_is_given_up_and_reported(
+    store: SavedSearchStore, ago_days: int, given_up: bool
+) -> None:
+    gap = FRI - timedelta(days=ago_days)
+    await seed_gazette(store, checked_through=gap - timedelta(days=1))
+    days: dict[date, Any] = {gap: BoeUnavailableError("down", status=503)}
+    days |= {
+        gap + timedelta(days=n): issue(gap + timedelta(days=n)) for n in range(1, ago_days + 1)
+    }
+    fake = FakeBoe(days=days)
 
     result = await check_on(store, fake, FRI)
 
     gazette = result.results[0]
-    assert gazette.days_failed == 1
     assert gazette.status == "checked"
-    assert ids(gazette) == ["H1"]
+    assert result.complete is True
+    if given_up:
+        assert gazette.days_failed == 1
+        assert not gazette.days_retrying
+        assert gazette.note == (
+            f"1 day could not be read after a week of trying and was skipped: {gap.isoformat()}."
+        )
+        assert (await stored(store)).checked_through == THU
+    else:
+        assert not gazette.days_failed
+        assert gazette.days_retrying == 1
+        assert (await stored(store)).checked_through == gap - timedelta(days=1)
+
+
+async def test_several_days_given_up_are_listed_in_the_plural(store: SavedSearchStore) -> None:
+    first, second = FRI - timedelta(days=10), FRI - timedelta(days=9)
+    await seed_gazette(store, checked_through=first - timedelta(days=1))
+    days: dict[date, Any] = {
+        first: BoeResponseError("unreadable"),
+        second: BoeUnavailableError("down", status=503),
+    }
+    days |= {first + timedelta(days=n): issue(first + timedelta(days=n)) for n in range(2, 11)}
+    fake = FakeBoe(days=days)
+
+    result = await check_on(store, fake, FRI)
+
+    assert result.results[0].days_failed == 2
+    assert result.results[0].note == (
+        "2 days could not be read after a week of trying and were skipped: "
+        f"{first.isoformat()}, {second.isoformat()}."
+    )
+
+
+async def test_today_unreadable_is_retried_and_never_given_up(store: SavedSearchStore) -> None:
+    await seed_gazette(store, checked_through=THU)
+    fake = FakeBoe(days={FRI: BoeUnavailableError("down", status=503)})
+
+    result = await check_on(store, fake, FRI)
+
+    gazette = result.results[0]
+    assert gazette.status == "checked"
+    assert gazette.days_retrying == 1
+    assert not gazette.days_failed
     assert (await stored(store)).checked_through == THU
 
 
-async def test_a_retryable_failure_stops_the_reading_and_the_next_call_resumes(
+async def test_a_day_that_keeps_failing_does_not_block_delivery_over_many_checks(
     store: SavedSearchStore,
 ) -> None:
     await seed_gazette(store, checked_through=date(2026, 11, 17))
     wed = date(2026, 11, 18)
-    fake = FakeBoe(days={wed: issue(wed, item("W1")), THU: BoeUnavailableError("down", status=503)})
+    fake = FakeBoe(days={wed: BoeUnavailableError("down", status=503), THU: issue(THU, item("H1"))})
+    delivered: list[str] = []
 
-    first = await check_on(store, fake, FRI)
+    for day, item_id in [(FRI, "F1"), (SAT, "S1"), (MON, "M1")]:
+        fake.days[day] = issue(day, item(item_id))
+        result = await check_on(store, fake, day)
+        assert result.complete is True
+        delivered += ids(result.results[0])
 
-    assert ids(first.results[0]) == ["W1"]
-    assert first.results[0].status == "partial"
-    assert first.results[0].days_pending == 2  # Thursday and Friday (today)
-    assert (await stored(store)).checked_through == wed
-
-    fake.days[THU] = issue(THU, item("H1"))
-    fake.days[FRI] = issue(FRI, item("F1"))
-    second = await check_on(store, fake, FRI)
-
-    assert ids(second.results[0]) == ["H1", "F1"]
-    assert second.complete is True
+    assert delivered == ["H1", "F1", "S1", "M1"]
 
 
 async def test_the_time_budget_stops_the_reading_and_nothing_is_lost(

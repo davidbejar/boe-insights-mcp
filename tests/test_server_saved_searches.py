@@ -191,8 +191,8 @@ async def test_the_status_of_a_check_says_what_each_value_asks_for(mcp: Client[A
     status = schema["properties"]["results"]["items"]["properties"]["status"]
 
     assert status["description"] == (
-        "checked: up to date. partial: more remains, call again. failed: could not be read; "
-        "see note."
+        "checked: nothing more to fetch now (see note for days still to retry). "
+        "partial: more is ready, call again. failed: could not be read; see note."
     )
 
 

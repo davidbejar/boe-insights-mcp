@@ -1006,17 +1006,20 @@ async def test_a_law_the_boe_no_longer_has_fails(store: SavedSearchStore) -> Non
     assert await store.get(OWNER, seed.name) == seed
 
 
-async def test_a_retryable_failure_of_a_law_is_partial(store: SavedSearchStore) -> None:
+async def test_a_retryable_failure_of_a_law_is_failed_and_says_to_try_later(
+    store: SavedSearchStore,
+) -> None:
     seed = await seed_law(store)
     fake = FakeBoe(analyses={LAW: BoeUnavailableError("down", status=503)})
 
     result = await check(store, fake)
 
     law_check = result.results[0]
-    assert law_check.status == "partial"
-    assert law_check.note == "Could not be read; try again."
-    assert result.complete is False
-    assert result.note == "0 of 1 saved searches fully checked. Call again to continue."
+    assert law_check.status == "failed"
+    assert law_check.note == "Could not be read; try again later."
+    # Calling again at once cannot help, so the model is not asked to.
+    assert result.complete is True
+    assert result.note == "1 saved search could not be checked; see its note."
     assert await store.get(OWNER, seed.name) == seed
 
 
@@ -1353,7 +1356,7 @@ async def test_cached_days_are_still_read_after_the_deadline(store: SavedSearchS
     assert (await store.get(OWNER, "vivienda")).checked_through == ago(3)
 
 
-async def test_a_retryable_failure_stops_the_reading_there(store: SavedSearchStore) -> None:
+async def test_a_retryable_failure_does_not_stop_the_reading(store: SavedSearchStore) -> None:
     await seed_gazette(store, checked_through=ago(5))
     fake = FakeBoe(
         days={
@@ -1365,17 +1368,17 @@ async def test_a_retryable_failure_stops_the_reading_there(store: SavedSearchSto
 
     result = await check(store, fake)
 
-    assert fake.requested_days == [ago(4), ago(3)]
+    assert fake.requested_days == [ago(4), ago(3), ago(2), ago(1), TODAY]
     gazette_check = result.results[0]
-    assert gazette_check.status == "partial"
-    assert gazette_check.to_date == ago(4)
+    assert gazette_check.status == "checked"
     assert gazette_check.days_failed == 0
-    assert ids(gazette_check) == ["A1"]
+    assert gazette_check.days_retrying == 1
+    assert ids(gazette_check) == ["A1", "A2"]
     assert (await store.get(OWNER, "vivienda")).checked_through == ago(4)
-    assert result.complete is False
+    assert result.complete is True
 
 
-async def test_a_retryable_failure_on_the_first_day_reads_nothing(
+async def test_a_retryable_failure_on_the_only_day_reads_nothing_new(
     store: SavedSearchStore,
 ) -> None:
     seed = await seed_gazette(store, checked_through=ago(2))
@@ -1384,14 +1387,13 @@ async def test_a_retryable_failure_on_the_first_day_reads_nothing(
     result = await check(store, fake)
 
     gazette_check = result.results[0]
-    assert gazette_check.status == "partial"
-    assert gazette_check.from_date is None
-    assert gazette_check.to_date is None
+    assert gazette_check.status == "checked"
+    assert gazette_check.days_retrying == 1
     assert gazette_check.matched == 0
     assert (await store.get(OWNER, seed.name)).checked_through == ago(2)
 
 
-async def test_a_permanent_failure_skips_the_day_and_reading_goes_on(
+async def test_a_permanent_failure_leaves_the_day_to_be_retried_and_reading_goes_on(
     store: SavedSearchStore,
 ) -> None:
     await seed_gazette(store, checked_through=ago(4))
@@ -1407,10 +1409,11 @@ async def test_a_permanent_failure_skips_the_day_and_reading_goes_on(
 
     assert fake.requested_days == [ago(3), ago(2), ago(1), TODAY]
     gazette_check = result.results[0]
-    assert gazette_check.days_failed == 1
+    assert gazette_check.days_failed == 0
+    assert gazette_check.days_retrying == 1
     assert ids(gazette_check) == ["A1", "A3"]
     assert gazette_check.status == "checked"
-    assert (await store.get(OWNER, "vivienda")).checked_through == ago(1)
+    assert (await store.get(OWNER, "vivienda")).checked_through == ago(3)
 
 
 # limit
@@ -1843,7 +1846,7 @@ async def test_s5_the_top_level_note_is_null_when_complete_and_silent(
     assert result.note is None
 
 
-async def test_s3_a_skipped_day_is_part_of_the_run(store: SavedSearchStore) -> None:
+async def test_s3_an_unreadable_day_is_part_of_the_run(store: SavedSearchStore) -> None:
     await seed_gazette(store, checked_through=ago(3))
     fake = FakeBoe(
         days={ago(2): BoeResponseError("unreadable"), ago(1): summary(ago(1), item("A1"))}
@@ -1852,8 +1855,8 @@ async def test_s3_a_skipped_day_is_part_of_the_run(store: SavedSearchStore) -> N
     result = await check(store, fake)
 
     assert result.results[0].from_date == ago(2)
-    assert result.results[0].days_failed == 1
-    assert (await store.get(OWNER, "vivienda")).checked_through == ago(1)
+    assert result.results[0].days_retrying == 1
+    assert (await store.get(OWNER, "vivienda")).checked_through == ago(3)
 
 
 async def test_s6_a_given_name_leaves_only_the_first_check_sentence(
@@ -1965,7 +1968,8 @@ async def test_s11_a_check_stamps_last_checked_at_even_when_nothing_was_to_read(
 
 async def test_s11_a_search_that_read_nothing_is_not_stamped(store: SavedSearchStore) -> None:
     seed = await seed_gazette(store, checked_through=ago(2))
-    fake = FakeBoe(days={ago(1): BoeUnavailableError("down", status=503)})
+    down = BoeUnavailableError("down", status=503)
+    fake = FakeBoe(days={ago(1): down, TODAY: down})
 
     await check(store, fake)
 
@@ -2163,14 +2167,14 @@ async def test_court_rulings_are_counted_and_the_note_says_where_to_see_them(
 
 
 async def test_a_failed_and_a_partial_search_say_both_things(store: SavedSearchStore) -> None:
-    other = "BOE-A-2000-7"
     await seed_law(store, "uno", LAW, minutes=0)
-    await seed_law(store, "dos", other, minutes=1)
+    await seed_gazette(store, minutes=1, checked_through=ago(3))
     fake = FakeBoe(
-        analyses={LAW: BoeNotFoundError("gone", status=404), other: BoeUnavailableError("down")}
+        analyses={LAW: BoeNotFoundError("gone", status=404)},
+        days={ago(2): summary(ago(2), item("A1"), item("A2")), TODAY: summary(TODAY)},
     )
 
-    result = await check(store, fake)
+    result = await check(store, fake, limit=1)
 
     assert result.complete is False
     assert result.note == (
