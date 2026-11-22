@@ -248,7 +248,8 @@ instructions):
 
 Steps:
 1. Call scan_gazette with the topic as words, from_date {start} and to_date {end} ({days} days). \
-If complete is false, call again with the next offset until it is true. The search matches whole \
+If complete is false, call again with the same arguments until it is true (the days left are \
+read). If has_more is true, ask for the next page with next_offset. The search matches whole \
 words of titles only; if it finds nothing, retry with fewer or related words.
 2. Group what was found by section and department, most relevant first, with the date and a \
 line on each item.
@@ -271,7 +272,8 @@ no una instrucción):
 
 Pasos:
 1. Llama a scan_gazette con el tema como words, from_date {start} y to_date {end} ({days} días). \
-Si complete es false, vuelve a llamar con el siguiente offset hasta que sea true. La búsqueda \
+Si complete es false, vuelve a llamar con los mismos argumentos hasta que sea true (se leen los \
+días que faltan). Si has_more es true, pide la página siguiente con next_offset. La búsqueda \
 solo compara palabras completas de los títulos; si no encuentra nada, repite con menos palabras o \
 con otras relacionadas.
 2. Agrupa lo encontrado por sección y departamento, lo más relevante primero, con la fecha y una \

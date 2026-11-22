@@ -34,7 +34,7 @@ from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from fastmcp.server.lifespan import lifespan
 from mcp.types import ToolAnnotations
-from pydantic import Field, ValidationError
+from pydantic import Field
 
 from boe_insights_mcp import (
     amendment_chains,
@@ -53,7 +53,7 @@ from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
 from boe_insights_mcp.catalogue import CatalogueStore
 from boe_insights_mcp.chains import Direction
 from boe_insights_mcp.client import BoeClient
-from boe_insights_mcp.errors import BoeError, describe_error
+from boe_insights_mcp.guard import guarded
 from boe_insights_mcp.legislation import (
     MAX_AMENDMENT_LIMIT,
     MAX_LIMIT,
@@ -137,28 +137,10 @@ _CHANGES = ToolAnnotations(
 
 
 async def _guard(call: Awaitable[_T], tool: str) -> _T:
-    """Await a use case of ``tool``, translating its expected errors into ``ToolError``.
-
-    Only deliberate argument errors (``ValueError`` raised by the use cases) are shown to the
-    model. A pydantic ``ValidationError`` is a ``ValueError`` too, but here it means a bug in
-    our own models and carries input values, so it propagates to be masked.
-    """
-    # The server is created with ``mask_error_details=True``: FastMCP shows the model only the
-    # message of a ``ToolError`` and replaces any other exception with a generic one, so
-    # internals (paths, input values, stack details) never leave the process. ``_guard`` is where
-    # the exceptions we *want* the model to see are turned into ``ToolError``:
-    #   BoeError    -> a curated message with code, retryability and next step;
-    #   ValueError  -> bad arguments detected by the use cases or the client;
-    # and everything else, including ``ValidationError``, propagates to be masked.
-    try:
-        return await call
-    except BoeError as error:
-        raise ToolError(describe_error(error, tool)) from error
-    except ValidationError:
-        # Must come before ``except ValueError``, which it would otherwise be caught by.
-        raise
-    except ValueError as error:
-        raise ToolError(f"Invalid argument (invalid_argument, not retryable): {error}") from error
+    """Await a use case of ``tool``, translating its expected errors into ``ToolError``."""
+    # The policy (and why the server masks everything else) lives in ``guard``, shared with the
+    # resources, which raise ``ResourceError`` instead.
+    return await guarded(call, tool, ToolError)
 
 
 def _build_cache(settings: Settings) -> Cache:

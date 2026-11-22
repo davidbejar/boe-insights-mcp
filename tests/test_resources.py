@@ -129,11 +129,16 @@ async def test_the_four_templates_are_listed_with_texts_and_mime_type(mcp: Clien
         assert len(template.description.split()) <= 40
 
 
-async def test_the_codes_description_names_the_three_kinds(mcp: Client[Any]) -> None:
+async def test_the_codes_description_names_the_two_kinds_and_points_to_find_codes(
+    mcp: Client[Any],
+) -> None:
     listed = {t.name: t for t in await mcp.list_resource_templates()}
 
     description = listed["codes"].description or ""
-    assert all(kind in description for kind in ("department", "subject", "rank"))
+    assert all(kind in description for kind in ("department", "rank"))
+    # The subject table (about 6,800 entries, 0.5 MB) is too large to attach to a conversation.
+    assert "find_codes" in description
+    assert "subject" in description
 
 
 # --- reading ---------------------------------------------------------------------------------
@@ -189,7 +194,6 @@ async def test_a_day_returns_what_daily_summary_returns(
     ("kind", "fixture", "route"),
     [
         ("department", "aux_departamentos_trimmed.json", "departamentos"),
-        ("subject", "aux_materias_trimmed.json", "materias"),
         ("rank", "aux_rangos.json", "rangos"),
     ],
 )
@@ -261,7 +265,7 @@ async def test_a_malformed_day_gives_a_clear_error_without_a_request(
     assert router.calls.call_count == 0
 
 
-async def test_an_unknown_kind_names_the_three_valid_kinds(
+async def test_an_unknown_kind_names_the_two_valid_kinds(
     mcp: Client[Any], router: respx.MockRouter
 ) -> None:
     with pytest.raises(MCPError) as caught:
@@ -269,7 +273,20 @@ async def test_an_unknown_kind_names_the_three_valid_kinds(
 
     message = str(caught.value)
     assert "Invalid argument (invalid_argument, not retryable)" in message
-    assert all(kind in message for kind in ("department", "subject", "rank"))
+    assert "department" in message and "rank" in message
+    assert "subject" not in message
+    assert router.calls.call_count == 0
+
+
+async def test_the_subject_table_is_not_offered_and_the_error_points_to_find_codes(
+    mcp: Client[Any], router: respx.MockRouter
+) -> None:
+    with pytest.raises(MCPError) as caught:
+        await mcp.read_resource("boe://codes/subject")
+
+    message = str(caught.value)
+    assert "Invalid argument (invalid_argument, not retryable)" in message
+    assert "use the find_codes tool for subjects" in message
     assert router.calls.call_count == 0
 
 

@@ -20,17 +20,17 @@ from __future__ import annotations
 import re
 from collections.abc import Awaitable
 from datetime import date
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
 
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ResourceError
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field
 
 from boe_insights_mcp import articles, gazette, legislation, owner, saved_searches
-from boe_insights_mcp.client import AuxiliaryTable, BoeClient
+from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.clock import utc_now
-from boe_insights_mcp.errors import BoeError, describe_error
-from boe_insights_mcp.legislation import CodeKind
+from boe_insights_mcp.guard import guarded, invalid_argument
+from boe_insights_mcp.legislation import CODE_TABLES
 from boe_insights_mcp.schemas import Provenance
 
 __all__ = ["CodeEntry", "CodeTable", "register"]
@@ -38,12 +38,10 @@ __all__ = ["CodeEntry", "CodeTable", "register"]
 _T = TypeVar("_T")
 _JSON = "application/json"
 _ISO_DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
-# The BOE auxiliary table behind each kind: the same mapping ``find_codes`` searches.
-_TABLES: dict[str, AuxiliaryTable] = {
-    "department": "departamentos",
-    "subject": "materias",
-    "rank": "rangos",
-}
+# The subject table has about 6,800 entries (about 0.5 MB): too large to attach to a conversation,
+# and ``find_codes`` is the way to search it. The other two tables are small enough to attach.
+ResourceCodeKind = Literal["department", "rank"]
+_KINDS: tuple[ResourceCodeKind, ...] = ("department", "rank")
 
 
 class CodeEntry(BaseModel):
@@ -56,11 +54,11 @@ class CodeEntry(BaseModel):
 
 
 class CodeTable(BaseModel):
-    """A whole BOE code table (departments, subjects or ranks), sorted by text."""
+    """A whole BOE code table (departments or ranks), sorted by text."""
 
     model_config = ConfigDict(frozen=True)
 
-    kind: CodeKind
+    kind: ResourceCodeKind
     total: int = Field(description="Number of entries in codes.")
     codes: list[CodeEntry]
     provenance: Provenance
@@ -68,24 +66,14 @@ class CodeTable(BaseModel):
 
 async def _guard(call: Awaitable[_T], tool: str) -> _T:
     """Await a use case of ``tool``, translating its expected errors into ``ResourceError``."""
-    # Same policy as ``server._guard`` but raising ``ResourceError``: the server masks every other
-    # exception, and only a ``ResourceError`` message reaches the person. A pydantic
-    # ``ValidationError`` is a ``ValueError`` too but means a bug in our own models and may carry
-    # input values, so it is re-raised first to be masked. (Candidate for sharing with
-    # ``server._guard`` by parameterising the error class.)
-    try:
-        return await call
-    except BoeError as error:
-        raise ResourceError(describe_error(error, tool)) from error
-    except ValidationError:
-        raise
-    except ValueError as error:
-        raise _invalid(str(error)) from error
+    # Same policy as ``server._guard`` (``guard.guarded``) but raising ``ResourceError``: the
+    # server masks every other exception, and only a ``ResourceError`` message reaches the person.
+    return await guarded(call, tool, ResourceError)
 
 
 def _invalid(message: str) -> ResourceError:
     """The curated error for a bad argument."""
-    return ResourceError(f"Invalid argument (invalid_argument, not retryable): {message}")
+    return ResourceError(invalid_argument(message))
 
 
 def _client(ctx: Context) -> BoeClient:
@@ -137,16 +125,20 @@ async def _gazette_day(day: str, ctx: Context) -> str:
 
 async def _build_table(client: BoeClient, kind: str) -> CodeTable:
     """Fetch the table for ``kind`` and sort it by text (case-insensitive, then by code)."""
-    if kind not in _TABLES:
-        raise ValueError(f"kind must be one of {', '.join(_TABLES)}")
-    table = await client.get_auxiliary_table(_TABLES[kind])
+    if kind == "subject":
+        raise ValueError(
+            "the subject table is too large to attach; use the find_codes tool for subjects"
+        )
+    if kind not in _KINDS:
+        raise ValueError(f"kind must be one of {', '.join(_KINDS)}")
+    table = await client.get_auxiliary_table(CODE_TABLES[kind])
     # Texts may carry trailing spaces (api-notes, "Auxiliary tables"): strip them for display.
     entries = sorted(
         (CodeEntry(code=code, text=text.strip()) for code, text in table.items()),
         key=lambda entry: (entry.text.casefold(), entry.code),
     )
     return CodeTable(
-        kind=kind,  # type: ignore[arg-type]
+        kind=kind,
         total=len(entries),
         codes=entries,
         provenance=Provenance(generated_at=utc_now()),
@@ -203,7 +195,8 @@ def register(server: FastMCP) -> None:
             "boe://codes/{kind}",
             "codes",
             "Code table",
-            "Every code and name of one BOE table; kind is department, subject or rank.",
+            "Every code and name of one BOE table; kind is department or rank. For subject codes "
+            "use the find_codes tool.",
         ),
     ]
     specs.append(

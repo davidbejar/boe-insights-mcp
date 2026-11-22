@@ -18,13 +18,11 @@ from fastmcp import Client, FastMCP
 from mcp import MCPError
 
 from boe_insights_mcp import prompts
+from boe_insights_mcp.cache import MemoryCache
+from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.clock import madrid_today, utc_now
+from boe_insights_mcp.ratelimit import RateLimiter
 from boe_insights_mcp.server import create_server
-
-# Tools named by the prompts that the server does not register yet. Remove "save_search" once
-# the saved-searches tools are integrated into ``create_server``; the test then demands that
-# every tool a prompt names really exists.
-_NOT_YET_REGISTERED = {"save_search"}
 
 ATTRIBUTION = "Basado en datos de la Agencia Estatal Boletín Oficial del Estado"
 
@@ -80,8 +78,10 @@ async def _text(client: Client[Any], name: str, arguments: dict[str, str] | None
 
 async def _real_tool_names() -> set[str]:
     """Names of the tools of the real server."""
-    async with Client(create_server()) as client:
-        return {tool.name for tool in await client.list_tools()}
+    # A client is injected so that the server starts no cache and opens no database on disk.
+    client = BoeClient(cache=MemoryCache(), limiter=RateLimiter(min_interval=0))
+    async with Client(create_server(client=client)) as mcp:
+        return {tool.name for tool in await mcp.list_tools()}
 
 
 def _mentioned_tools(text: str, known: set[str]) -> list[str]:
@@ -155,7 +155,7 @@ async def test_pairs_name_the_same_tools_in_the_same_order(
     en_args: dict[str, bool],
     es_args: dict[str, bool],
 ) -> None:
-    known = await _real_tool_names() | _NOT_YET_REGISTERED
+    known = await _real_tool_names()
     en_tools = _mentioned_tools(await _text(mcp, english), known)
     es_tools = _mentioned_tools(await _text(mcp, spanish), known)
     assert en_tools
@@ -164,7 +164,6 @@ async def test_pairs_name_the_same_tools_in_the_same_order(
 
 async def test_every_tool_named_in_the_texts_exists(mcp: Client[Any]) -> None:
     known = await _real_tool_names()
-    allowed = known | _NOT_YET_REGISTERED
     # Anything that looks like a tool call: snake_case words with an underscore, followed by
     # a non-letter, minus argument names (from_date, block_id, ...) which are not tools.
     argument_like = {
@@ -174,6 +173,7 @@ async def test_every_tool_named_in_the_texts_exists(mcp: Client[Any]) -> None:
         "block_id",
         "law_id",
         "next_offset",
+        "has_more",
         "department_code",
         "not_found",  # a status of resolve_reference, not a tool
     }
@@ -181,7 +181,7 @@ async def test_every_tool_named_in_the_texts_exists(mcp: Client[Any]) -> None:
         text = await _text(mcp, name)
         for word in set(re.findall(r"\b[a-z]+(?:_[a-z]+)+\b", text)):
             if word not in argument_like:
-                assert word in allowed, (name, word)
+                assert word in known, (name, word)
 
 
 @pytest.mark.parametrize("name", ALL_NAMES)
@@ -263,6 +263,26 @@ async def test_gazette_briefing_computes_the_window_from_days(mcp: Client[Any]) 
         text = await _text(mcp, name)
         assert start.isoformat() in text or (start - timedelta(days=1)).isoformat() in text
         assert today.isoformat() in text or (today - timedelta(days=1)).isoformat() in text
+
+
+@pytest.mark.parametrize(
+    ("name", "same", "wrong"),
+    [
+        ("gazette_briefing", "same arguments", "next offset"),
+        ("resumen_boe", "mismos argumentos", "siguiente offset"),
+    ],
+)
+async def test_an_incomplete_scan_is_repeated_with_the_same_arguments(
+    mcp: Client[Any], name: str, same: str, wrong: str
+) -> None:
+    # scan_gazette reads the days it has left when called again with the same arguments;
+    # next_offset is for paging through matches when has_more is true, not for an incomplete scan.
+    text = await _text(mcp, name)
+
+    assert same in text
+    assert wrong not in text
+    assert "next_offset" in text
+    assert "has_more" in text
 
 
 async def test_gazette_briefing_days_default_is_seven(mcp: Client[Any]) -> None:
