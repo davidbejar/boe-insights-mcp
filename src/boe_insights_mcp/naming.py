@@ -26,7 +26,7 @@ def slugify(text: str) -> str:
     Accents are removed, every run of other characters becomes one ``-``, and the ends are
     trimmed. May return an empty string when ``text`` has no letters or digits.
     """
-    decomposed = unicodedata.normalize("NFKD", text.casefold())
+    decomposed = unicodedata.normalize("NFD", text.casefold())
     ascii_text = "".join(char for char in decomposed if not unicodedata.combining(char))
     slug = _NOT_ALNUM.sub("-", ascii_text).strip("-")
     # Cutting can leave a dash at the end (the cut fell on a separator), so strip again.

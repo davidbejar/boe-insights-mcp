@@ -43,9 +43,12 @@ __all__ = [
     "MAX_LIMIT",
     "MAX_SCAN_DAYS",
     "SCAN_TIME_LIMIT",
+    "TODAY_MISSING_NOTE",
+    "GazetteFilter",
     "SummaryClient",
     "daily_summary",
     "scan_gazette",
+    "scanned_entry",
 ]
 
 DEFAULT_LIMIT = 25
@@ -63,6 +66,10 @@ DEFAULT_SCAN_DAYS = 7
 # that starts late can still take several seconds to answer.
 SCAN_TIME_LIMIT = 40.0
 _TIME_MARGIN = 5.0
+# The sentence a scan adds when today's summary was not there; ``saved_searches`` repeats it.
+TODAY_MISSING_NOTE = (
+    "No issue for today when scanned: none is published on most Sundays, or it is not out yet."
+)
 
 
 class SummaryClient(Protocol):
@@ -88,8 +95,12 @@ def _check_paging(offset: int, limit: int) -> None:
         raise ValueError(f"limit must be between 1 and {MAX_LIMIT}")
 
 
-class _Filter:
-    """The three item filters of both tools; every one that is given must match (AND)."""
+class GazetteFilter:
+    """The three item filters of both tools; every one that is given must match (AND).
+
+    Public because ``saved_searches`` stores the same three filters and must not duplicate
+    their matching rules.
+    """
 
     def __init__(self, words: str | None, section: str | None, department_code: str | None) -> None:
         """Normalise the raw arguments: blank values mean "absent".
@@ -156,6 +167,11 @@ def _compact_fields(item: GazetteItem, *, several_issues: bool) -> dict[str, Any
         # announcements that have no HTML version (api-notes, fourth probe).
         "url": item.html_url or item.pdf_url,
     }
+
+
+def scanned_entry(day: date, item: GazetteItem, *, several_issues: bool) -> ScannedEntry:
+    """The compact entry of an item together with its day (the shape ``scan_gazette`` returns)."""
+    return ScannedEntry(date=day, **_compact_fields(item, several_issues=several_issues))
 
 
 def _entry(item: GazetteItem, *, several_issues: bool) -> GazetteEntry:
@@ -273,7 +289,7 @@ async def daily_summary(
             note=note,
             provenance=_provenance(moment),
         )
-    wanted = _Filter(words, section, department_code)
+    wanted = GazetteFilter(words, section, department_code)
     matching = [item for item in found.items if wanted.matches(item)]
     end, has_more, next_offset = _page(len(matching), offset, limit)
     page = matching[offset:end]
@@ -335,10 +351,7 @@ def _scan_note(
     """What to tell the caller about an incomplete scan or skipped days; ``None`` when nothing."""
     parts: list[str] = []
     if today_missing:
-        parts.append(
-            "No issue for today when scanned: none is published on most Sundays, "
-            "or it is not out yet."
-        )
+        parts.append(TODAY_MISSING_NOTE)
     if pending:
         parts.append(
             f"Scanned {scanned} of {total} days. Call again with the same arguments to continue "
@@ -380,7 +393,7 @@ async def scan_gazette(
     # the client bounds the whole call, so time spent before the loop is time not available to it.
     deadline = clock() + time_limit - _TIME_MARGIN
     _check_paging(offset, limit)
-    wanted = _Filter(words, section, department_code)
+    wanted = GazetteFilter(words, section, department_code)
     if wanted.is_empty:
         raise ValueError("give at least one of words, section or department_code")
     moment = utc_now(now)
@@ -424,9 +437,7 @@ async def scan_gazette(
                 if newest_issue is None:
                     newest_issue = day  # days run newest first
                 day_matches = [
-                    ScannedEntry(
-                        date=day, **_compact_fields(item, several_issues=len(found.issues) > 1)
-                    )
+                    scanned_entry(day, item, several_issues=len(found.issues) > 1)
                     for item in found.items
                     if wanted.matches(item)
                 ]
