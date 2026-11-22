@@ -320,3 +320,42 @@ async def test_days_limits_are_accepted(
 async def test_missing_required_argument_is_rejected(mcp: Client[Any]) -> None:
     with pytest.raises(MCPError):
         await mcp.get_prompt("explain_law", {})
+
+
+@pytest.mark.parametrize(
+    ("name", "wording"),
+    [
+        ("gazette_briefing", "summaries of the official gazette"),
+        ("resumen_boe", "resúmenes del boletín oficial"),
+    ],
+)
+async def test_the_gazette_briefing_closes_with_the_gazette_wording(
+    mcp: Client[Any], name: str, wording: str
+) -> None:
+    text = await _text(mcp, name)
+
+    assert wording in text
+    assert ATTRIBUTION in text
+    # It is not about consolidated texts, so it must not call them informational.
+    assert "consolidated texts are informational" not in text
+    assert "textos consolidados" not in text.split("Responde en español")[-1]
+
+
+@pytest.mark.parametrize("name", ["explain_law", "article_changes"])
+async def test_english_prompts_name_the_status_field_of_an_ambiguous_reference(
+    mcp: Client[Any], name: str
+) -> None:
+    text = await _text(mcp, name)
+
+    assert "If the status is ambiguous" in text
+    assert "If the result is ambiguous" not in text
+
+
+@pytest.mark.parametrize("name", ["explicar_ley", "cambios_articulo"])
+async def test_spanish_prompts_name_the_status_field_of_an_ambiguous_reference(
+    mcp: Client[Any], name: str
+) -> None:
+    text = " ".join((await _text(mcp, name)).split())
+
+    assert "Si el estado (status) es ambiguous" in text
+    assert "Si el resultado es ambiguous" not in text

@@ -1067,23 +1067,28 @@ async def list_saved_searches(ctx: Context) -> SavedSearchList:
 async def check_saved_searches(
     ctx: Context,
     name: Annotated[
-        str | None, Field(description="Name of the saved search (see list_saved_searches).")
+        str | None, Field(description="Check only this saved search; default: all.")
     ] = None,
     since: Annotated[
         date | None,
         Field(
-            description="Re-read from this date (at most 90 days back) without marking anything "
-            "as seen."
+            description="Re-read gazette searches from this date (at most 90 days back) without "
+            "marking anything as seen."
         ),
     ] = None,
     limit: Annotated[
         int,
-        Field(ge=1, le=saved_searches.MAX_ITEMS, description="Items or changes shown per search."),
+        Field(
+            ge=1,
+            le=saved_searches.MAX_ITEMS,
+            description="New items or changes shown per search per call; the rest stay new.",
+        ),
     ] = saved_searches.DEFAULT_ITEMS,
 ) -> CheckSearchesResult:
-    """What is new for the saved searches since each was last checked, and mark it as seen.
-    Checks at most the last 31 days; pass since to re-read up to 90 days back without marking
-    anything. When complete is false, call again to continue.
+    """What is new for the saved searches since each was last checked; what is shown is marked
+    as seen. Covers at most the last 31 days; shows up to 60 items per call, so call again while
+    complete is false. since re-reads gazette searches up to 90 days back without marking
+    anything.
     """
     return await _guard(
         _owned(

@@ -318,3 +318,13 @@ async def test_a_malformed_law_id_is_an_invalid_argument_without_a_request(
 
     assert "Invalid argument (invalid_argument, not retryable)" in str(caught.value)
     assert router.calls.call_count == 0
+
+
+async def test_the_gazette_day_description_says_it_gives_the_first_hundred_items(
+    mcp: Client[Any],
+) -> None:
+    templates = {t.name: t for t in await mcp.list_resource_templates()}
+
+    description = templates["gazette_day"].description or ""
+
+    assert "first 100 items" in description

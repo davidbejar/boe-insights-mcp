@@ -977,7 +977,7 @@ class CheckSearchesResult(_Output):
 
     checked: int = Field(description="Searches fully checked.")
     total: int = Field(description="Searches considered.")
-    complete: bool = Field(description="True when every search was fully checked.")
+    complete: bool = Field(description="True when no search needs another call.")
     results: list[SearchCheck]
     note: str | None = Field(default=None, description="What to do when not complete.")
     provenance: Provenance

@@ -138,9 +138,10 @@ async def test_the_tools_carry_the_agreed_descriptions(mcp: Client[Any]) -> None
         "The saved searches, with their filters and when each was last checked."
     )
     assert words("check_saved_searches") == (
-        "What is new for the saved searches since each was last checked, and mark it as seen. "
-        "Checks at most the last 31 days; pass since to re-read up to 90 days back without "
-        "marking anything. When complete is false, call again to continue."
+        "What is new for the saved searches since each was last checked; what is shown is "
+        "marked as seen. Covers at most the last 31 days; shows up to 60 items per call, so "
+        "call again while complete is false. since re-reads gazette searches up to 90 days "
+        "back without marking anything."
     )
     assert words("edit_saved_search") == (
         "Rename a saved search or change its gazette filters. Its last-checked point is kept."
@@ -168,11 +169,12 @@ async def test_the_parameters_carry_the_agreed_descriptions(mcp: Client[Any]) ->
     assert save["section"] == "Only this section code, e.g. '1', '2A', '3', '5B'."
     assert save["department_code"] == "Only this department code. Look codes up with find_codes."
     check = described("check_saved_searches")
-    assert check["name"] == "Name of the saved search (see list_saved_searches)."
+    assert check["name"] == "Check only this saved search; default: all."
     assert check["since"] == (
-        "Re-read from this date (at most 90 days back) without marking anything as seen."
+        "Re-read gazette searches from this date (at most 90 days back) without marking "
+        "anything as seen."
     )
-    assert check["limit"] == "Items or changes shown per search."
+    assert check["limit"] == "New items or changes shown per search per call; the rest stay new."
     edit = described("edit_saved_search")
     for filter_name in ("words", "section", "department_code"):
         assert edit[filter_name] == "New value; an empty string removes this filter."
@@ -180,6 +182,18 @@ async def test_the_parameters_carry_the_agreed_descriptions(mcp: Client[Any]) ->
     assert described("delete_saved_search") == {
         "name": "Name of the saved search (see list_saved_searches)."
     }
+
+
+async def test_the_status_of_a_check_says_what_each_value_asks_for(mcp: Client[Any]) -> None:
+    tools: dict[str, Tool] = {tool.name: tool for tool in await mcp.list_tools()}
+    schema = tools["check_saved_searches"].output_schema or {}
+
+    status = schema["properties"]["results"]["items"]["properties"]["status"]
+
+    assert status["description"] == (
+        "checked: up to date. partial: more remains, call again. failed: could not be read; "
+        "see note."
+    )
 
 
 async def test_no_tool_takes_an_owner(mcp: Client[Any]) -> None:

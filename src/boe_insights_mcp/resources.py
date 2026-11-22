@@ -1,12 +1,12 @@
 """MCP resources: a law, an article, a day of the gazette, code tables and saved searches.
 
 In apps that support MCP resources a person can attach one of these to the conversation. Many
-apps do not let the model open resources, so a resource never offers anything a tool does not:
-each one returns exactly what the matching tool returns (``legislation.get_law_overview``,
-``articles.read_article``, ``gazette.daily_summary``) or, for the code tables, the whole table
-that ``find_codes`` searches. The JSON is the result model's own serialisation, so provenance,
-the BOE attribution and the informational notice travel with it, as the BOE reuse conditions
-require.
+apps do not let the model open resources, so a resource offers nothing a tool does not, with one
+exception: the department and rank tables are offered whole only as a resource (``find_codes``
+searches them but never lists them). Every other resource returns exactly what the matching tool
+returns (``legislation.get_law_overview``, ``articles.read_article``, ``gazette.daily_summary``).
+The JSON is the result model's own serialisation, so provenance, the BOE attribution and the
+informational notice travel with it, as the BOE reuse conditions require.
 
 The one static resource, ``boe://saved-searches``, is the owner's list of saved searches, read from
 the store the server lifespan provides.
@@ -192,7 +192,8 @@ def register(server: FastMCP) -> None:
             "boe://gazette/{day}",
             "gazette_day",
             "Gazette of a day",
-            "What the BOE published on one day (ISO date), grouped by section and department.",
+            "What the BOE published on one day (ISO date), grouped by section and department; "
+            "gives the first 100 items of the day.",
         ),
         (
             _codes,
