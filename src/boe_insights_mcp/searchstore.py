@@ -22,9 +22,11 @@ import sqlite3
 import threading
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Literal, TypeVar
+
+from boe_insights_mcp.clock import madrid_today
 
 __all__ = [
     "DuplicateNameError",
@@ -205,6 +207,7 @@ class SavedSearchStore:
                 connection.execute(
                     "ALTER TABLE saved_searches ADD COLUMN seen_items TEXT NOT NULL DEFAULT '{}'"
                 )
+                _reopen_the_day_of_saving(connection)
             # The version number alone is not trusted: a foreign file can carry any number.
             if _columns(connection) != _COLUMN_NAMES:
                 raise SearchStoreError("the saved-searches file has an unexpected layout")
@@ -412,14 +415,35 @@ class SavedSearchStore:
         checked_through, seen, seen_items, last_checked_at = new
 
         def work(db: sqlite3.Connection) -> bool:
-            """One conditional UPDATE."""
-            # ``IS`` instead of ``=`` so that NULL equals NULL. The JSON texts are compared as
-            # written: ``_to_row`` serialises deterministically (sorted), so equal progress gives
-            # equal text.
-            cursor = db.execute(
+            """Read the row, compare what it holds, then update it."""
+            row = db.execute(
+                f"SELECT {_COLUMNS} FROM saved_searches WHERE owner = ? AND name = ?",
+                (owner, name),
+            ).fetchone()
+            if row is None:
+                return False
+            # Why decoded values and not stored text: a row whose JSON is valid but spelled
+            # differently (another writer, a hand edit) must not fail the comparison forever.
+            # ``created_at`` is part of it so that a row deleted and saved again under the same
+            # name during a check is another row and never passes.
+            stored = _from_row(row)
+            if (
+                stored.seen,
+                stored.checked_through,
+                stored.seen_items,
+                stored.last_checked_at,
+                stored.created_at,
+            ) != (
+                expected.seen,
+                expected.checked_through,
+                expected.seen_items,
+                expected.last_checked_at,
+                expected.created_at,
+            ):
+                return False
+            db.execute(
                 "UPDATE saved_searches SET seen=?, checked_through=?, seen_items=?, "
-                "last_checked_at=? WHERE owner = ? AND name = ? AND seen = ? AND "
-                "checked_through IS ? AND seen_items = ? AND last_checked_at IS ?",
+                "last_checked_at=? WHERE owner = ? AND name = ?",
                 (
                     _dump_seen(seen),
                     _day_text(checked_through),
@@ -427,13 +451,9 @@ class SavedSearchStore:
                     _moment_text(last_checked_at),
                     owner,
                     name,
-                    _dump_seen(expected.seen),
-                    _day_text(expected.checked_through),
-                    _dump_seen_items(expected.seen_items),
-                    _moment_text(expected.last_checked_at),
                 ),
             )
-            return cursor.rowcount == 1
+            return True
 
         return self._transaction(work)
 
@@ -458,6 +478,33 @@ def _make_private_directories(directory: Path) -> None:
     for created in reversed(missing):
         created.mkdir(mode=0o700)
         created.chmod(0o700)
+
+
+def _reopen_the_day_of_saving(connection: sqlite3.Connection) -> None:
+    """Move a version-1 gazette bookmark that marked the day of saving or checking one day back.
+
+    Version 1 bookmarked today as finished, which loses what its issue gains later that day;
+    version 2 never does, so such a bookmark is one day earlier. Version 1 was never released,
+    so this stays small: a row whose dates cannot be read is left as it is.
+    """
+    rows = connection.execute(
+        "SELECT owner, name, checked_through, created_at, last_checked_at FROM saved_searches "
+        "WHERE kind = 'gazette' AND checked_through IS NOT NULL"
+    ).fetchall()
+    for owner, name, through, created, checked in rows:
+        try:
+            bookmark = date.fromisoformat(through)
+            # The Madrid day, the one the BOE's calendar uses, not the UTC one the text holds.
+            days = {
+                madrid_today(datetime.fromisoformat(text)) for text in (created, checked) if text
+            }
+        except (ValueError, TypeError):
+            continue
+        if bookmark in days:
+            connection.execute(
+                "UPDATE saved_searches SET checked_through = ? WHERE owner = ? AND name = ?",
+                ((bookmark - timedelta(days=1)).isoformat(), owner, name),
+            )
 
 
 def _columns(connection: sqlite3.Connection) -> frozenset[str]:

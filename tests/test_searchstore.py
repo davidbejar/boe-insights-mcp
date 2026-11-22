@@ -571,6 +571,79 @@ async def test_a_migrated_file_accepts_progress_and_reopens_cleanly(tmp_path: Pa
     await second.close()
 
 
+async def test_migration_moves_a_bookmark_that_marked_the_day_of_saving_one_day_back(
+    tmp_path: Path,
+) -> None:
+    # Version 1 marked today as finished when saving or checking; version 2 never does.
+    path = tmp_path / "saved_searches.sqlite3"
+    write_version_one(path)
+    connection = sqlite3.connect(path)
+    rows = [
+        # (name, checked_through, created_at, last_checked_at)
+        ("saved-today", "2026-11-21", "2026-11-21T09:00:00+00:00", None),
+        ("checked-today", "2026-11-21", "2026-11-01T09:00:00+00:00", "2026-11-21T10:00:00+00:00"),
+        # 23:30 UTC on the 20th is 00:30 on the 21st in Madrid: the Madrid day counts.
+        ("late-utc", "2026-11-21", "2026-11-20T23:30:00+00:00", None),
+        ("earlier", "2026-11-19", "2026-11-21T09:00:00+00:00", "2026-11-20T10:00:00+00:00"),
+        ("never", None, "2026-11-21T09:00:00+00:00", None),
+    ]
+    for name, through, created, checked in rows:
+        connection.execute(
+            "INSERT INTO saved_searches VALUES ('user:alice',?,'gazette','x',NULL,NULL,NULL,NULL,"
+            "'[]',?,?,?)",
+            (name, through, created, checked),
+        )
+    connection.execute(
+        "INSERT INTO saved_searches VALUES ('user:alice','law-today','law',NULL,NULL,NULL,'L',"
+        "'T','[]','2026-11-21','2026-11-21T09:00:00+00:00',NULL)"
+    )
+    connection.commit()
+    connection.close()
+
+    opened = SavedSearchStore(path)
+    through = {row.name: row.checked_through for row in await opened.list(ALICE)}
+    await opened.close()
+
+    assert through["saved-today"] == date(2026, 11, 20)
+    assert through["checked-today"] == date(2026, 11, 20)
+    assert through["late-utc"] == date(2026, 11, 20)
+    assert through["earlier"] == date(2026, 11, 19)
+    assert through["never"] is None
+    assert through["old"] == date(2026, 11, 1)
+    assert through["law-today"] == date(2026, 11, 21)  # not a gazette search: left alone
+
+
+async def test_update_progress_compares_decoded_values_not_stored_text(tmp_path: Path) -> None:
+    path = tmp_path / "saved_searches.sqlite3"
+    store = SavedSearchStore(path)
+    original = gazette(ALICE, "uno", seen=frozenset({"k"}))
+    await store.add(original)
+    await store.close()
+    connection = sqlite3.connect(path)
+    # Valid JSON in another spelling than this program writes (another writer, a hand edit).
+    connection.execute("UPDATE saved_searches SET seen = '[ \"k\" ]', seen_items = '{ }'")
+    connection.commit()
+    connection.close()
+    store = SavedSearchStore(path)
+
+    assert await progress(store, original) is True
+    assert (await store.get(ALICE, "uno")).checked_through == date(2026, 11, 9)
+    await store.close()
+
+
+async def test_update_progress_is_false_for_a_row_deleted_and_saved_again_meanwhile(
+    store: SavedSearchStore,
+) -> None:
+    original = gazette(ALICE, "uno")
+    await store.add(original)
+    await store.delete(ALICE, "uno")
+    # Same name, same progress, saved a moment later: not the row the check was reading.
+    await store.add(gazette(ALICE, "uno", minutes=1))
+
+    assert await progress(store, original) is False
+    assert (await store.get(ALICE, "uno")).checked_through == date(2026, 11, 1)
+
+
 # --- update_progress: a check writes only progress, and only if nothing moved --------------------
 
 
