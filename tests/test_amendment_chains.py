@@ -257,6 +257,33 @@ async def test_nodes_carry_title_rank_and_date_from_the_collection_only() -> Non
     assert dumped["in_collection"] is False
 
 
+async def test_rank_and_date_are_given_for_the_root_and_first_level_only() -> None:
+    fake = FakeAnalyses({ROOT: later(ref(2)), lid(2): later(ref(3))})
+
+    result = await explore(catalogue_of(2, 3), fake, depth=2)
+
+    by_depth = {node.depth: node for node in result.nodes}
+    assert by_depth[1].rank == "Ley" and by_depth[1].published_on == date(2000, 1, 1)
+    assert by_depth[2].title is not None
+    assert by_depth[2].rank is None and by_depth[2].published_on is None
+    # The depth limit is why this node is not expanded; that flag stays.
+    assert set(by_depth[2].model_dump()) == {"law_id", "depth", "title", "expanded", "reason"}
+
+
+async def test_titles_deeper_than_the_first_level_are_cut_at_80_characters() -> None:
+    laws = [
+        make_law(lid(n), title="T" * 300, published=date(2000, 1, 1), updated_at=NEWEST)
+        for n in (1, 2, 3)
+    ]
+    fake = FakeAnalyses({ROOT: later(ref(2)), lid(2): later(ref(3))})
+
+    result = await explore(CatalogueStore(FakeSearch(laws), clock=lambda: NOW), fake, depth=2)
+
+    by_depth = {node.depth: node for node in result.nodes}
+    assert by_depth[1].title == "T" * 99 + "…"
+    assert by_depth[2].title == "T" * 79 + "…"
+
+
 async def test_a_law_reached_twice_is_read_once_and_the_edge_to_it_is_kept() -> None:
     # 2 and 3 are both amended by 4: a diamond. Law 4 costs one request, not two.
     fake = FakeAnalyses(
@@ -331,12 +358,12 @@ async def test_court_rulings_on_the_starting_law_are_counted_when_left_out() -> 
     assert [e.kind for e in wide.edges] == ["modifies", "judicial", "judicial"]
 
 
-async def test_a_long_detail_is_cut_at_200_characters() -> None:
+async def test_a_long_detail_is_cut_at_120_characters() -> None:
     fake = FakeAnalyses({ROOT: later(ref(2, detail="x" * 500))})
 
     result = await explore(catalogue_of(2), fake, depth=1)
 
-    assert result.edges[0].detail == "x" * 199 + "…"
+    assert result.edges[0].detail == "x" * 119 + "…"
 
 
 # --- budget and resume -------------------------------------------------------------------------

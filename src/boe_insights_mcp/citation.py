@@ -77,13 +77,25 @@ _DIFFERENCES_CAP = 600
 _MARGIN = 0.05
 _MARGIN_TOLERANCE = 1e-9
 _SEEDS = 3
+# The work one ``match_quote`` or ``match_versions`` call may spend, counted in tokens compared and
+# alignment steps (see ``_Budget``), never in seconds, so the same input always gets the same
+# answer on any machine. When every quote word occurs in the text (a long quote made of the
+# article's own words in another order) the pruning bounds in ``_best_window`` prove nothing and
+# the search is quadratic or worse: 250 shuffled words against a 700-word article took minutes.
+# The server will be exposed over HTTP, so no input may hold a worker for long. The figure sits
+# about forty times the most the realistic cases in the tests need (about 24,000 units: a
+# 350-word quote from another article, a 5,000-character quote, a 300-token near-match in 20,000
+# tokens) and lets the shuffled worst case end in under two seconds on a development laptop.
+_WORK_BUDGET = 1_000_000
 
 # Words whose presence in a difference can reverse or change the figure of a provision. The
 # comparison reports them as flags because the similarity score treats "no" like any other word.
 _NEGATIONS = frozenset({"no", "ni", "nunca", "jamás", "tampoco", "sin", "salvo", "excepto"})
+# "uno" and "una" are left out: as articles ("una vez inscritos") they are far more common than
+# as figures, and flagging them would mark ordinary rewordings as changed numbers.
 _NUMBER_WORDS = frozenset(
     {
-        *("uno", "una", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"),
+        *("dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve"),
         *("diez", "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete"),
         *("dieciocho", "diecinueve", "veinte", "treinta", "cuarenta", "cincuenta", "sesenta"),
         *("setenta", "ochenta", "noventa", "cien", "mil"),
@@ -138,6 +150,9 @@ class QuoteMatch:
     flags: tuple[str, ...] = ()
     """Words that can change the meaning: ``negation`` or ``number`` when such a word is among the
     differences, ``omitted_negation`` or ``omitted_number`` when it is in an omitted passage."""
+    gave_up: bool = False
+    """True when the search for an approximate match used up its work budget: the level is then
+    ``none`` and says nothing about whether the quote is near the text."""
 
 
 @dataclass(frozen=True)
@@ -163,6 +178,8 @@ class CitationMatch:
     """The version in effect on the date; ``None`` if none was."""
     best_other: VersionMatch | None
     """The best-matching other version, only when it is strictly better than ``current``."""
+    gave_up: bool = False
+    """True when ``current`` gave up (see ``QuoteMatch.gave_up``)."""
     editorial: bool = False
     """True when no version's own text matches the quote exactly or closely but the notes the BOE
     adds to some version do (``Paragraph`` footnotes and quoted notes)."""
@@ -236,6 +253,25 @@ class _Text:
         return self.source[self.spans[first][0] : self.spans[last][1]]
 
 
+class _GaveUp(Exception):
+    """Raised inside the window search when the work budget is spent."""
+
+
+class _Budget:
+    """A deterministic allowance of work for one matching call, shared by all its searches."""
+
+    def __init__(self, limit: int | None = None) -> None:
+        """A budget of ``limit`` units (``_WORK_BUDGET`` by default); ``spent`` counts the use."""
+        self.limit = _WORK_BUDGET if limit is None else limit
+        self.spent = 0
+
+    def spend(self, units: int) -> None:
+        """Use ``units``; raises ``_GaveUp`` once the total passes the limit."""
+        self.spent += units
+        if self.spent > self.limit:
+            raise _GaveUp
+
+
 @dataclass(frozen=True)
 class _Aligned:
     """The window chosen for one segment: token indices (inclusive) and matching tokens."""
@@ -280,11 +316,15 @@ def match_quote(quote: str, text: str) -> QuoteMatch:
     ``partial`` or ``none``. A quote with fewer than 4 words can only be ``exact`` or ``none``.
     Raises ``ValueError`` when the quote contains no words.
     """
-    return _match_prepared(_split_quote(quote), _prepare_text(text))
+    return _match_prepared(_split_quote(quote), _prepare_text(text), _Budget())
 
 
-def _match_prepared(segments: Sequence[_Segment], text: _Text) -> QuoteMatch:
-    """``match_quote`` for a quote already split into segments and a prepared text."""
+def _match_prepared(segments: Sequence[_Segment], text: _Text, budget: _Budget) -> QuoteMatch:
+    """``match_quote`` for a quote already split into segments and a prepared text.
+
+    An exact match is found before any budget is spent. When ``budget`` runs out during the
+    approximate search the result is ``none`` with ``gave_up`` set.
+    """
     exact = _exact_runs(segments, text)
     if exact is not None:
         first, last = exact[0][0], exact[-1][1]
@@ -306,9 +346,16 @@ def _match_prepared(segments: Sequence[_Segment], text: _Text) -> QuoteMatch:
     position = 0
     weighted = Fraction(0)
     for segment in segments:
-        aligned = _best_window(
-            segment.tokens, text.tokens, position, _segment_floor(len(segment.tokens), total)
-        )
+        try:
+            aligned = _best_window(
+                segment.tokens,
+                text.tokens,
+                position,
+                _segment_floor(len(segment.tokens), total),
+                budget,
+            )
+        except _GaveUp:
+            return QuoteMatch("none", 0.0, "", "", len(segments), gave_up=True)
         alignments.append(aligned)
         if aligned is not None:
             length = aligned.last - aligned.first + 1
@@ -386,7 +433,7 @@ def _find_run(needle: Sequence[str], tokens: Sequence[str], start: int) -> int |
 
 
 def _evaluate(
-    segment: Sequence[str], tokens: Sequence[str], first: int, last: int
+    segment: Sequence[str], tokens: Sequence[str], first: int, last: int, budget: _Budget
 ) -> tuple[int, int, int] | None:
     """Matching tokens of ``segment`` against ``tokens[first..last]``, when the window is valid.
 
@@ -395,6 +442,7 @@ def _evaluate(
     when both offsets touch its ends; callers check that.
     """
     window = tokens[first : last + 1]
+    budget.spend(len(segment) + len(window))
     blocks = SequenceMatcher(None, segment, window, autojunk=False).get_matching_blocks()[:-1]
     if not blocks:
         return None
@@ -435,7 +483,11 @@ def _overlaps(
 
 
 def _best_window(
-    segment: Sequence[str], tokens: Sequence[str], lo: int, floor: Fraction | None = None
+    segment: Sequence[str],
+    tokens: Sequence[str],
+    lo: int,
+    floor: Fraction | None,
+    budget: _Budget,
 ) -> _Aligned | None:
     """The window of ``tokens[lo:]`` that best matches ``segment``, or ``None`` if none does.
 
@@ -456,6 +508,9 @@ def _best_window(
       are real windows scored for real, so a quote that nearly appears in the text prunes
       almost everything at once, or from ``floor`` when that is higher. Scanning starts in order
       and replaces the best only on a strictly higher score, which gives the tie-break for free.
+
+    Every window step and every alignment is charged to ``budget``; ``_GaveUp`` propagates to the
+    caller when it is spent.
     """
     size = len(segment)
     wanted = Counter(segment)
@@ -463,7 +518,8 @@ def _best_window(
     if not positions:
         return None
 
-    floor_n, floor_d = _seed_score(segment, tokens, positions, wanted)
+    budget.spend(len(tokens) - lo)
+    floor_n, floor_d = _seed_score(segment, tokens, positions, wanted, budget)
     # A quote that is nowhere in the text has no seed worth anything, and the search would then
     # try thousands of windows that all end up below the "partial" threshold and are reported as
     # "none" anyway. Starting from the threshold makes those windows prunable from the first step;
@@ -491,6 +547,7 @@ def _best_window(
         for b in range(a, len(positions)):
             end = positions[b]
             length = end - start + 1
+            budget.spend(1)
             if not beats(size, length):
                 break
             token = tokens[end]
@@ -499,7 +556,7 @@ def _best_window(
                 overlap += 1
             if not beats(min(size, overlap), max(size, length)):
                 continue
-            outcome = _evaluate(segment, tokens, start, end)
+            outcome = _evaluate(segment, tokens, start, end, budget)
             if outcome is None or outcome[1] != 0 or outcome[2] != length - 1:
                 continue
             matched, denominator = outcome[0], max(size, length)
@@ -517,7 +574,11 @@ def _best_window(
 
 
 def _seed_score(
-    segment: Sequence[str], tokens: Sequence[str], positions: Sequence[int], wanted: Counter[str]
+    segment: Sequence[str],
+    tokens: Sequence[str],
+    positions: Sequence[int],
+    wanted: Counter[str],
+    budget: _Budget,
 ) -> tuple[int, int]:
     """A score some real window achieves, used to start the pruning; ``(matched, denominator)``.
 
@@ -538,7 +599,7 @@ def _seed_score(
         first = positions[a]
         last = positions[bisect_right(positions, first + size - 1) - 1]
         for _ in range(3):
-            outcome = _evaluate(segment, tokens, first, last)
+            outcome = _evaluate(segment, tokens, first, last, budget)
             if outcome is None:
                 break
             matched, low, high = outcome
@@ -611,6 +672,8 @@ def match_versions(quote: str, block: Block, on: date) -> CitationMatch:
     ``ValueError`` when the quote contains no words.
     """
     segments = _split_quote(quote)
+    # One budget for the whole call: a block with dozens of versions must not multiply the work.
+    budget = _Budget()
     in_effect = version_on(block, on)
     versions = block.versions
     current: VersionMatch | None = None
@@ -630,7 +693,7 @@ def match_versions(quote: str, block: Block, on: date) -> CitationMatch:
             position=index + 1,
             starts_on=starts,
             ends_on=None if following is None else following - timedelta(days=1),
-            match=_match_prepared(segments, text),
+            match=_match_prepared(segments, text, budget),
             relation=relation,
         )
         if relation == "current":
@@ -650,20 +713,23 @@ def match_versions(quote: str, block: Block, on: date) -> CitationMatch:
         # pass only here: when a version already matches, the notes cannot change the answer.
         editorial = any(
             _match_prepared(
-                segments, _prepare_text("\n".join(p.text for p in v.editorial_paragraphs))
+                segments,
+                _prepare_text("\n".join(p.text for p in v.editorial_paragraphs)),
+                budget,
             ).level
             in ("exact", "close")
             for v in versions
             if v.editorial_paragraphs
         )
+    gave_up = current is not None and current.match.gave_up
     if not candidates:
-        return CitationMatch(current=current, best_other=None, editorial=editorial)
+        return CitationMatch(current=current, best_other=None, gave_up=gave_up, editorial=editorial)
     # ``max`` keeps the first of equal keys and the position is part of the key, so among equal
     # level and similarity the latest version wins: it is the most recent wording that says it.
     best = max(candidates, key=lambda v: (_RANK[v.match.level], v.match.similarity, v.position))
     if current is None or _clearly_better(best.match, current.match):
-        return CitationMatch(current=current, best_other=best, editorial=editorial)
-    return CitationMatch(current=current, best_other=None, editorial=editorial)
+        return CitationMatch(current=current, best_other=best, gave_up=gave_up, editorial=editorial)
+    return CitationMatch(current=current, best_other=None, gave_up=gave_up, editorial=editorial)
 
 
 def _clearly_better(other: QuoteMatch, current: QuoteMatch) -> bool:

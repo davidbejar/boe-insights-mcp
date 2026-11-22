@@ -1005,10 +1005,14 @@ class ChainNodeInfo(_Output):
     law_id: str
     depth: int = Field(description="Distance from the starting law (0).")
     title: str | None = Field(
-        default=None, description="From the collection, when it has the law; cut at 100 characters."
+        default=None,
+        description="From the collection, when it has the law; cut at 100 characters (80 from "
+        "level 2 on).",
     )
-    rank: str | None = None
-    published_on: date | None = None
+    rank: str | None = Field(default=None, description="Starting law and first level only.")
+    published_on: date | None = Field(
+        default=None, description="Starting law and first level only."
+    )
     in_collection: bool = Field(
         default=True,
         description="Omitted when true. False for norms outside the consolidated collection "
@@ -1044,7 +1048,7 @@ class ChainEdgeInfo(_Output):
     kind: RelationKind
     detail: str | None = Field(
         default=None,
-        description="Reference text from the BOE (Spanish), cut at 200 characters; it carries "
+        description="Reference text from the BOE (Spanish), cut at 120 characters; it carries "
         "the BOE's wording of the relation. Given as the details argument says.",
     )
 

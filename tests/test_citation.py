@@ -436,6 +436,7 @@ def test_quote_match_is_a_frozen_dataclass_with_the_specified_fields() -> None:
         "segments",
         "omitted",
         "flags",
+        "gave_up",
     ]
     with pytest.raises(dataclasses.FrozenInstanceError):
         result.level = "none"  # type: ignore[misc]
@@ -1912,3 +1913,26 @@ def test_a_decimal_is_not_a_thousands_separator() -> None:
 def test_the_matched_text_keeps_the_original_typography() -> None:
     result = match_quote("hasta 3000 euros", "Multa de hasta 3.000 euros anuales")
     assert result.matched_text == "hasta 3.000 euros"
+
+
+def test_a_long_quote_of_the_articles_own_words_shuffled_gives_up_in_bounded_time(
+    ley40_blocks: dict[str, Block],
+) -> None:
+    # Every quote word occurs in the text, so no pruning bound helps: without a work budget this
+    # search takes minutes. The budget makes it stop and say so.
+    article = own_text(ley40_blocks["a19"])
+    own_words = article.split()
+    assert len(own_words) >= 600
+    shuffled = random.Random(20261122).sample(own_words, 300)
+    started = time.monotonic()
+    found = match_quote(" ".join(shuffled), article)
+    assert time.monotonic() - started < 5.0
+    assert found.gave_up or found.level != "none"
+    assert not found.gave_up or (found.level == "none" and found.matched_text == "")
+
+
+def test_a_realistic_search_does_not_give_up(ley40_blocks: dict[str, Block]) -> None:
+    quote = " ".join(own_text(ley40_blocks["a19"]).split()[:350])
+    found = match_quote(quote, own_text(ley40_blocks["a48"]))
+    assert found.level == "none"
+    assert not found.gave_up

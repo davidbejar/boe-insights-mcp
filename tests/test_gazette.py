@@ -734,7 +734,8 @@ async def test_a_scan_that_ends_on_an_unpublished_today_says_so() -> None:
 
     assert result.complete is True
     assert (
-        result.note == "Today's issue was not available when scanned; it may not be published yet."
+        result.note == "No issue for today when scanned: none is published on most Sundays, "
+        "or it is not out yet."
     )
     assert result.provenance.data_updated_at == datetime(
         ago(1).year, ago(1).month, ago(1).day, tzinfo=UTC

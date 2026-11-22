@@ -60,6 +60,11 @@ _EDITORIAL_NOTE = (
     "The words match an editorial note of the BOE about this article, not the article's text."
 )
 
+_GAVE_UP_NOTE = (
+    "The quote was too scrambled to compare in the time allowed; it does not match the text "
+    "as written."
+)
+
 
 def _cap(text: str, limit: int = _MAX_MATCHED_CHARS) -> str:
     """Cut ``text`` to ``limit`` characters, the last one being "…" when cut."""
@@ -233,7 +238,12 @@ async def _check(
             f"Checked against the whole article; '{loaded.ignored}' was not used to narrow "
             "the text."
         )
-    if status == "quote_not_found" and found is not None and found.editorial:
+    if found is not None and found.gave_up and status in ("text_differs", "quote_not_found"):
+        # The search for an approximate match ran out of its work budget, so "none" is not a
+        # measurement: say so, and do not let a half-search suggest a near miss.
+        status = "quote_not_found"
+        notes.append(_GAVE_UP_NOTE)
+    elif status == "quote_not_found" and found is not None and found.editorial:
         notes.append(_EDITORIAL_NOTE)
     if (sentence := articles.law_repeal_note(repeal, on, state)) is not None:
         notes.append(sentence)

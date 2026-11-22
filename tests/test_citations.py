@@ -17,7 +17,7 @@ import httpx
 import pytest
 import respx
 
-from boe_insights_mcp import citations
+from boe_insights_mcp import citation, citations
 from boe_insights_mcp.cache import MemoryCache
 from boe_insights_mcp.client import BASE_URL, BoeClient
 from boe_insights_mcp.ratelimit import RateLimiter
@@ -275,6 +275,22 @@ async def test_a_changed_number_makes_the_text_differ(client: BoeClient, mocks: 
     assert 0.5 <= check.quote_match.similarity < 1.0
     assert "[-15-]" in check.quote_match.differences
     assert "{+5+}" in check.quote_match.differences
+
+
+async def test_a_quote_too_scrambled_to_compare_is_not_found_with_a_note(
+    client: BoeClient, mocks: Mocks, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    article48(mocks)
+    monkeypatch.setattr(citation, "_WORK_BUDGET", 1)
+
+    result = await verify(client, request(quote=OLD.replace("15", "7")))
+
+    check = result.results[0]
+    assert check.status == "quote_not_found"
+    assert check.note is not None
+    assert "too scrambled to compare in the time allowed" in check.note
+    assert check.quote_match is not None
+    assert check.quote_match.level == "none"
 
 
 async def test_words_found_in_no_version_are_not_found(client: BoeClient, mocks: Mocks) -> None:

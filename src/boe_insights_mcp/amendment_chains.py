@@ -60,8 +60,11 @@ MAX_NODES = 150
 # ``nodes_total`` and ``edges_total`` say how many were found.
 MAX_SHOWN_NODES = 100
 MAX_EDGES = 250
-_MAX_DETAIL = 200
+# Deep chains are long, so the text is kept short: the full wording is one explore call away.
+_MAX_DETAIL = 120
 _MAX_TITLE = 100
+# Titles two or more levels away are cut shorter, for the same reason as their other fields.
+_MAX_DEEP_TITLE = 80
 # Same budget as ``most_amended_laws``: no fresh request starts in the last 5 seconds of 40.
 CHAIN_TIME_LIMIT = 40.0
 _TIME_MARGIN = 5.0
@@ -87,14 +90,20 @@ def _incomplete_note(examined: int, pending: int) -> str:
 
 
 def _node_info(node: chains.ChainNode, laws: Mapping[str, LawSummary]) -> ChainNodeInfo:
-    """The tool-facing record of a node, with the collection's title, rank and date when known."""
+    """The tool-facing record of a node, with the collection's title when known.
+
+    Rank and publication date are given for the starting law and the first level only.
+    """
     law = laws.get(node.law_id)
+    # Nodes two or more levels away are the bulk of a default result and the model rarely needs
+    # more than their identifier and title; ``get_law_overview`` has the rest.
+    near = node.depth <= 1
     return ChainNodeInfo(
         law_id=node.law_id,
         depth=node.depth,
-        title=_cut(law.title, _MAX_TITLE) if law is not None else None,
-        rank=law.rank.text if law is not None and law.rank is not None else None,
-        published_on=law.published_on if law is not None else None,
+        title=_cut(law.title, _MAX_TITLE if near else _MAX_DEEP_TITLE) if law is not None else None,
+        rank=law.rank.text if near and law is not None and law.rank is not None else None,
+        published_on=law.published_on if near and law is not None else None,
         in_collection=law is not None,
         expanded=node.expanded,
         reason=node.reason or None,

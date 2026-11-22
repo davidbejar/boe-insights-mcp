@@ -344,7 +344,10 @@ def _scan_note(
     """What to tell the caller about an incomplete scan or skipped days; ``None`` when nothing."""
     parts: list[str] = []
     if today_missing:
-        parts.append("Today's issue was not available when scanned; it may not be published yet.")
+        parts.append(
+            "No issue for today when scanned: none is published on most Sundays, "
+            "or it is not out yet."
+        )
     if pending:
         parts.append(
             f"Scanned {scanned} of {total} days. Call again with the same arguments to continue "
