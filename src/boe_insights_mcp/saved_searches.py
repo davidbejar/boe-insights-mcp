@@ -727,7 +727,7 @@ async def _read_law(
     try:
         # A cached analysis is free, so it never counts against the budget; an uncached one is
         # not requested once the deadline has passed and the law waits for the next call.
-        if not await client.has_cached_analysis(law_id) and tally.out_of_time():
+        if tally.out_of_time() and not await client.has_cached_analysis(law_id):
             return _Unread("partial", "Not read yet; call again.")
         return await client.get_law_analysis(law_id)
     except BoeNotFoundError:
@@ -881,8 +881,7 @@ async def _read_days(
     """
     reading = _Reading()
     for day in days:
-        cached = await client.has_cached_summary(day, today=today)
-        if not cached and tally.out_of_time():
+        if tally.out_of_time() and not await client.has_cached_summary(day, today=today):
             break
         try:
             found = await client.get_daily_summary(day, today=today)
