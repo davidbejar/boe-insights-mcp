@@ -24,7 +24,7 @@ from boe_insights_mcp.chains import AMENDING_KINDS, Chain, Direction, RelationKi
 from boe_insights_mcp.clock import utc_now
 from boe_insights_mcp.errors import BoeError
 from boe_insights_mcp.identifiers import normalise_identifier
-from boe_insights_mcp.models import LawAnalysis, LawSummary
+from boe_insights_mcp.models import LawAnalysis, LawSummary, ellipsize
 from boe_insights_mcp.schemas import (
     AmendmentChainResult,
     ChainEdgeInfo,
@@ -76,11 +76,6 @@ _ALL_KINDS: frozenset[RelationKind] = frozenset(
 )
 
 
-def _cut(text: str, limit: int) -> str:
-    """Cut ``text`` to ``limit`` characters, the last one being "…" when cut."""
-    return text if len(text) <= limit else text[: limit - 1] + "…"
-
-
 def _incomplete_note(examined: int, pending: int) -> str:
     """What to tell the caller when laws are still to be read."""
     return (
@@ -101,7 +96,9 @@ def _node_info(node: chains.ChainNode, laws: Mapping[str, LawSummary]) -> ChainN
     return ChainNodeInfo(
         law_id=node.law_id,
         depth=node.depth,
-        title=_cut(law.title, _MAX_TITLE if near else _MAX_DEEP_TITLE) if law is not None else None,
+        title=ellipsize(law.title, _MAX_TITLE if near else _MAX_DEEP_TITLE)
+        if law is not None
+        else None,
         rank=law.rank.text if near and law is not None and law.rank is not None else None,
         published_on=law.published_on if near and law is not None else None,
         in_collection=law is not None,
@@ -261,7 +258,7 @@ def _edge_info(edge: chains.ChainEdge, root: str, details: Details) -> ChainEdge
         amending=edge.amending,
         amended=edge.amended,
         kind=edge.kind,
-        detail=_cut(edge.detail, _MAX_DETAIL) if wanted else None,
+        detail=ellipsize(edge.detail, _MAX_DETAIL) if wanted else None,
     )
 
 

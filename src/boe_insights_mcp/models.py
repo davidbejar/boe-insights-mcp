@@ -48,6 +48,8 @@ __all__ = [
     "StrippedText",
     "as_list",
     "collapse_whitespace",
+    "ellipsize",
+    "strip_or_none",
 ]
 
 
@@ -67,6 +69,17 @@ def collapse_whitespace(value: str) -> str:
     # ``str.split()`` with no argument treats U+00A0 as whitespace, and the API uses NBSP in
     # titles such as ``Artículo\xa046`` (api-notes 6), so one call handles both.
     return " ".join(value.split())
+
+
+def strip_or_none(value: str | None) -> str | None:
+    """Strip a text; an empty or missing one becomes ``None``."""
+    stripped = (value or "").strip()
+    return stripped or None
+
+
+def ellipsize(text: str, limit: int) -> str:
+    """Cut ``text`` to ``limit`` characters, the last one being "…" when cut."""
+    return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
 def _normalise_title(value: Any) -> Any:

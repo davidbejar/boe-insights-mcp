@@ -21,11 +21,11 @@ from __future__ import annotations
 import asyncio
 from collections import Counter
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import date, datetime
 from typing import Literal
 
 from boe_insights_mcp.client import BoeClient
-from boe_insights_mcp.clock import madrid_today, utc_now
+from boe_insights_mcp.clock import madrid_today, midnight_utc, utc_now
 from boe_insights_mcp.errors import BoeNotFoundError
 from boe_insights_mcp.identifiers import normalise_identifier
 from boe_insights_mcp.locator import LocateResult, locate, locate_block_id
@@ -129,11 +129,6 @@ def _check_range(name: str, value: int, low: int, high: int) -> None:
         raise ValueError(f"{name} must be between {low} and {high}")
 
 
-def _midnight_utc(day: date | None) -> datetime | None:
-    """The given day as a UTC midnight datetime (the shape of ``Provenance``), or ``None``."""
-    return datetime(day.year, day.month, day.day, tzinfo=UTC) if day is not None else None
-
-
 def _candidates(located: LocateResult) -> list[ArticleCandidate]:
     """The candidate blocks of a locate result as tool-facing records."""
     return [ArticleCandidate(block_id=e.block_id, title=e.title) for e in located.candidates]
@@ -172,7 +167,7 @@ def _check_selector(article: str | None, block_id: str | None) -> None:
 
 def _newest_update(index: list[IndexEntry]) -> datetime | None:
     """The newest ``updated_on`` of the index as a UTC datetime; ``None`` when none is dated."""
-    return _midnight_utc(max((e.updated_on for e in index if e.updated_on), default=None))
+    return midnight_utc(max((e.updated_on for e in index if e.updated_on), default=None))
 
 
 async def _fetch_block_and_repeal(
@@ -244,7 +239,7 @@ async def load_article(
         outcome="found",
         block_id=entry.block_id,
         block_title=entry.title,
-        provenance=Provenance(generated_at=moment, data_updated_at=_midnight_utc(entry.updated_on)),
+        provenance=Provenance(generated_at=moment, data_updated_at=midnight_utc(entry.updated_on)),
     )
     notes = ()
     if located.ignored:
