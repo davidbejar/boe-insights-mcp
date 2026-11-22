@@ -21,6 +21,7 @@ from collections import Counter
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
+from functools import lru_cache
 from typing import Literal
 
 from boe_insights_mcp.models import CodedValue, LawSummary
@@ -351,11 +352,20 @@ def _wanted_forms(text: str) -> list[frozenset[str]]:
     return [_forms(word) for word in _words(text)]
 
 
-def _has_all(wanted: Sequence[frozenset[str]], title: str) -> bool:
-    """Whether every wanted word meets a word of ``title`` (they share a form)."""
+# Why cached: a check applies every saved search to the same titles, and folding and splitting a
+# title is the whole cost of a match. The key is the title itself, so a hit is always exact.
+@lru_cache(maxsize=4096)
+def _title_forms(title: str) -> frozenset[str]:
+    """Every form of every word of ``title``: the set a wanted word has to meet."""
     available: set[str] = set()
     for word in _words(title):
         available |= _forms(word)
+    return frozenset(available)
+
+
+def _has_all(wanted: Sequence[frozenset[str]], title: str) -> bool:
+    """Whether every wanted word meets a word of ``title`` (they share a form)."""
+    available = _title_forms(title)
     return all(not forms.isdisjoint(available) for forms in wanted)
 
 
