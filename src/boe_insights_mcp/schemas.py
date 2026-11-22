@@ -911,8 +911,8 @@ class SearchCheck(_Output):
     name: str
     kind: Literal["gazette", "law"]
     status: SearchStatus = Field(
-        description="'checked': up to date. 'partial': more to read, call again. 'failed': "
-        "could not be read; see note."
+        description="checked: up to date. partial: more remains, call again. failed: could not "
+        "be read; see note."
     )
     # The fields below belong to one kind each; ``exclude_if`` leaves out those that do not
     # apply (or, for the dates, that nothing was read for).
@@ -944,12 +944,12 @@ class SearchCheck(_Output):
     items: list[ScannedEntry] | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
-        description="Gazette: matches, newest day first.",
+        description="Gazette: new matches, oldest day first.",
     )
     has_more: bool | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
-        description="Gazette: more matches than items.",
+        description="Gazette: new matches remain that were not shown.",
     )
     law_id: str | None = Field(default=None, exclude_if=lambda value: value is None)
     law_title: str | None = Field(default=None, exclude_if=lambda value: value is None)
@@ -963,11 +963,11 @@ class SearchCheck(_Output):
         exclude_if=lambda value: value is None,
         description="Law: all new changes, which may exceed len(changes).",
     )
-    other_new: int | None = Field(
+    other_new: dict[str, int] | None = Field(
         default=None,
         exclude_if=lambda value: value is None,
-        description="Law: new references that are not changes (court rulings, citations); "
-        "counted only.",
+        description="Law: new references that are not changes, counted only: court_rulings, "
+        "citations, other.",
     )
     note: str | None = Field(default=None, exclude_if=lambda value: value is None)
 

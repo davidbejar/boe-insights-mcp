@@ -82,6 +82,16 @@ async def call(mcp: Client[Any], tool: str, **arguments: Any) -> dict[str, Any]:
     return result.structured_content
 
 
+@pytest.fixture(autouse=True)
+def thursday_without_an_issue(
+    router: respx.MockRouter, xml_response: Xml, load_fixture: Loader
+) -> respx.Route:
+    """Saving a gazette search reads today's issue (Thursday 2026-11-19): not out yet."""
+    return router.get(f"{SUMMARY_URL}20261119").mock(
+        return_value=xml_response(load_fixture("error_404_sumario_sunday_20261115.xml"), 404)
+    )
+
+
 def friday_route(router: respx.MockRouter, xml_response: Xml, load_fixture: Loader) -> respx.Route:
     """2026-11-20 answers with the recorded ordinary day."""
     return router.get(f"{SUMMARY_URL}20261120").mock(
@@ -204,31 +214,33 @@ async def test_the_instructions_tell_the_model_how_saved_searches_work(
 
 async def test_a_gazette_search_from_save_to_delete(
     mcp: Client[Any],
+    thursday_without_an_issue: respx.Route,
     clock: Clock,
     router: respx.MockRouter,
     xml_response: Xml,
     load_fixture: Loader,
 ) -> None:
-    # Thursday 2026-11-19: save. No request is made (the router has no route at all).
+    thursday = thursday_without_an_issue
+    # Thursday 2026-11-19: save. Today's issue is read once, for the baseline: it is not out.
     saved = SaveSearchResult.model_validate(await call(mcp, "save_search", words="Real Decreto"))
     assert saved.search.name == "real-decreto"
     assert saved.name_was_proposed is True
     assert saved.total == 1
     assert saved.note is not None
-    assert saved.note.endswith("The first check reports issues dated after 2026-11-19.")
-    assert router.calls.call_count == 0
+    assert "The first check reports what is published from now on." in saved.note
+    assert thursday.call_count == 1
 
     listed = SavedSearchList.model_validate(await call(mcp, "list_saved_searches"))
     assert [s.name for s in listed.searches] == ["real-decreto"]
-    assert listed.searches[0].checked_through == date(2026, 11, 19)
+    assert listed.searches[0].checked_through == date(2026, 11, 18)
     assert listed.searches[0].last_checked_at is None
 
-    # Check the same day: nothing is new and nothing is requested.
+    # Check the same day: nothing is new; today's issue is asked for again.
     first = CheckSearchesResult.model_validate(await call(mcp, "check_saved_searches"))
     assert first.complete is True
     assert first.results[0].matched == 0
-    assert first.results[0].note == "Already checked through 2026-11-19."
-    assert router.calls.call_count == 0
+    assert first.note is not None and "No issue for today" in first.note
+    assert thursday.call_count == 2
 
     # Friday: a new issue appears. The check reports it.
     clock.moment = datetime(2026, 11, 20, 12, 0, tzinfo=UTC)
@@ -236,7 +248,10 @@ async def test_a_gazette_search_from_save_to_delete(
     second = CheckSearchesResult.model_validate(await call(mcp, "check_saved_searches"))
     gazette_check = second.results[0]
     assert (gazette_check.status, second.complete) == ("checked", True)
-    assert gazette_check.from_date == gazette_check.to_date == date(2026, 11, 20)
+    assert (gazette_check.from_date, gazette_check.to_date) == (
+        date(2026, 11, 19),
+        date(2026, 11, 20),
+    )
     assert gazette_check.matched is not None and gazette_check.matched >= 4
     assert gazette_check.items is not None
     assert all("Real Decreto" in entry.title for entry in gazette_check.items)
@@ -244,11 +259,11 @@ async def test_a_gazette_search_from_save_to_delete(
     assert friday.call_count == 1
     assert second.provenance.data_updated_at == datetime(2026, 11, 20, tzinfo=UTC)
 
-    # Checking again reports nothing and asks for nothing.
+    # Checking again reports nothing new; today's issue is read again (it can still grow).
     third = CheckSearchesResult.model_validate(await call(mcp, "check_saved_searches"))
     assert third.results[0].matched == 0
     assert third.results[0].items == []
-    assert friday.call_count == 1
+    assert friday.call_count == 2
 
     # since re-reads without moving anything.
     again = CheckSearchesResult.model_validate(
@@ -256,7 +271,9 @@ async def test_a_gazette_search_from_save_to_delete(
     )
     assert again.results[0].matched == gazette_check.matched
     after = SavedSearchList.model_validate(await call(mcp, "list_saved_searches"))
-    assert after.searches[0].checked_through == date(2026, 11, 20)
+    # Thursday answered "no issue" and a weekday's 404 is not trusted for a week, so the
+    # bookmark waits at Wednesday while what was delivered for Friday is remembered.
+    assert after.searches[0].checked_through == date(2026, 11, 18)
     assert after.searches[0].last_checked_at == third.provenance.generated_at
 
     # Edit: rename and add a section; the bookmark stays.
@@ -265,7 +282,7 @@ async def test_a_gazette_search_from_save_to_delete(
     )
     assert edited.search.name == "decretos"
     assert edited.search.section == "1"
-    assert edited.search.checked_through == date(2026, 11, 20)
+    assert edited.search.checked_through == date(2026, 11, 18)
     assert edited.name_was_proposed is False
 
     # Delete.
@@ -294,11 +311,14 @@ async def test_a_law_search_reports_a_new_amendment_once(
     assert saved.search.kind == "law"
     assert saved.search.law_id == LEY_40
     assert saved.note is not None
-    assert saved.note.endswith("The first check reports changes recorded after now.")
+    assert (
+        "The first check reports changes recorded from now on "
+        "(the BOE data read can be up to 6 hours old)."
+    ) in saved.note
 
     quiet = CheckSearchesResult.model_validate(await call(mcp, "check_saved_searches"))
     assert quiet.results[0].changes == []
-    assert quiet.results[0].other_new == 0
+    assert quiet.results[0].other_new is None
 
     # The BOE records a new amendment and a new court ruling on the law.
     ley_40_routes(
@@ -314,13 +334,13 @@ async def test_a_law_search_reports_a_new_amendment_once(
         ("BOE-A-2026-9001", "modifies", "SE MODIFICA")
     ]
     assert law_check.changes_total == 1
-    assert law_check.other_new == 1
+    assert law_check.other_new == {"court_rulings": 1}
     assert law_check.status == "checked"
     assert news.complete is True
 
     nothing = CheckSearchesResult.model_validate(await call(mcp, "check_saved_searches"))
     assert nothing.results[0].changes == []
-    assert nothing.results[0].other_new == 0
+    assert nothing.results[0].other_new is None
 
     # A law search can only be renamed.
     with pytest.raises(ToolError, match="a law search can only be renamed"):
@@ -348,7 +368,9 @@ async def test_since_on_a_law_search_stores_nothing(
     peek = await call(mcp, "check_saved_searches", since="2026-10-01")
     real = await call(mcp, "check_saved_searches")
 
-    assert [c["law_id"] for c in peek["results"][0]["changes"]] == ["BOE-A-2026-9001"]
+    # A law has no dated history to re-read: since leaves it alone and says where to look.
+    assert peek["results"][0]["changes"] == []
+    assert "get_amendment_history" in peek["results"][0]["note"]
     assert [c["law_id"] for c in real["results"][0]["changes"]] == ["BOE-A-2026-9001"]
 
 
@@ -430,7 +452,10 @@ async def test_a_check_reports_progress(
 
     await mcp.call_tool("check_saved_searches", {}, progress_handler=on_progress)
 
-    assert reports == [(1, 1, "Read 1 of 1 laws and days.")]
+    assert reports == [
+        (1, 2, "Read 1 of 2 laws and days."),
+        (2, 2, "Read 2 of 2 laws and days."),
+    ]
 
 
 # --- owners ------------------------------------------------------------------------------------

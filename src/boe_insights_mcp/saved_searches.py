@@ -15,18 +15,20 @@ server turns into an "Invalid argument" tool error.
 
 from __future__ import annotations
 
-import re
 import time
-from collections.abc import Callable
+from collections import Counter
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from typing import Protocol
 
 from boe_insights_mcp.catalogue import ProgressCallback
 from boe_insights_mcp.chains import AMENDING_KINDS, RelationKind, relation_kind
+from boe_insights_mcp.client import SUMMARY_ABSENCE_SETTLED_DAYS
 from boe_insights_mcp.clock import madrid_today, midnight_utc, utc_now
 from boe_insights_mcp.errors import BoeError, BoeNotFoundError
 from boe_insights_mcp.gazette import (
+    MAX_SCAN_DAYS,
     TODAY_MISSING_NOTE,
     GazetteFilter,
     scanned_entry,
@@ -34,6 +36,7 @@ from boe_insights_mcp.gazette import (
 from boe_insights_mcp.identifiers import normalise_identifier
 from boe_insights_mcp.models import (
     DailySummary,
+    GazetteItem,
     LawAnalysis,
     LawMetadata,
     LawReference,
@@ -49,7 +52,6 @@ from boe_insights_mcp.schemas import (
     SavedSearchInfo,
     SavedSearchList,
     SaveSearchResult,
-    ScannedEntry,
     SearchChange,
     SearchCheck,
     SearchStatus,
@@ -69,6 +71,7 @@ __all__ = [
     "MAX_ITEMS",
     "MAX_SEARCHES",
     "MAX_SINCE_DAYS",
+    "MAX_TOTAL_ITEMS",
     "REPORTED_KINDS",
     "SavedSearchClient",
     "check_saved_searches",
@@ -87,6 +90,9 @@ CHECK_TIME_LIMIT = 40.0
 _TIME_MARGIN = 5.0
 DEFAULT_ITEMS = 20
 MAX_ITEMS = 50
+MAX_TOTAL_ITEMS = 60
+"""Items and changes delivered per call over all searches, so that a result stays readable."""
+MAX_WORDS = 200
 REPORTED_KINDS: frozenset[RelationKind] = AMENDING_KINDS | frozenset[RelationKind](["corrects"])
 """The relation kinds reported as changes; court rulings and citations are only counted."""
 
@@ -94,7 +100,18 @@ _MAX_TEXT = 200
 _NO_SEARCHES = "No saved searches. Create one with save_search."
 _NO_FILTER = "give at least one of words, section or department_code"
 _NO_LAW_FILTER = "a law search can only be renamed; save a new search for another law"
-_YEAR_IN_ID = re.compile(r"-(\d{4})-")
+_NOT_REACHED_NOTE = "Not reached in this call; call again."
+_CHANGED_NOTE = "Changed during the check; nothing was marked as seen."
+_LAW_SINCE_NOTE = (
+    "since applies to gazette searches; get_amendment_history lists a law's past amendments."
+)
+_BOTH_NOTICE = (
+    "Gazette items are summaries of the official gazette; only the texts published in the BOE "
+    "itself are authentic. Consolidated texts are provided for information only and have no "
+    "official legal value."
+)
+_SUNDAY = 6
+_NAME_ATTEMPTS = 5
 
 
 class SavedSearchClient(Protocol):
@@ -173,8 +190,11 @@ def _normalised(
     words: str | None, section: str | None, department: str | None
 ) -> tuple[str | None, str | None, str | None]:
     """Blank filters become ``None``; the section is upper-cased (as ``GazetteFilter`` does)."""
+    words = strip_or_none(words)
+    if words is not None and len(words) > MAX_WORDS:
+        raise ValueError(f"words must be at most {MAX_WORDS} characters")
     section = strip_or_none(section)
-    return strip_or_none(words), section.upper() if section else None, strip_or_none(department)
+    return words, section.upper() if section else None, strip_or_none(department)
 
 
 def _reference_key(reference: LawReference) -> str:
@@ -228,6 +248,23 @@ async def save_search(
         # Built for its validation only: words without letters or digits would match everything.
         GazetteFilter(words, section, department_code)
         base = gazette_base(words, section, department_code)
+        # The baseline: what today's issue already has is not news. Everything in it is
+        # remembered, not only what matches now, so that editing the filter later does not bring
+        # it back. The bookmark is yesterday, so that an issue published after saving, even
+        # later the same day, is reported by the first check.
+        seen_items: dict[date, frozenset[str]] = {}
+        try:
+            todays = await client.get_daily_summary(current, today=current)
+        except BoeError:
+            todays = None
+            unread_today = (
+                "Today's issue could not be read; the first check may include items "
+                "published earlier today."
+            )
+        else:
+            unread_today = None
+        if todays is not None:
+            seen_items[current] = frozenset(item.identifier for item in todays.items)
         search = SavedSearch(
             owner=owner,
             name="",
@@ -235,11 +272,13 @@ async def save_search(
             words=words,
             section=section,
             department_code=department_code,
-            # Saving is silent (no request): the first check reports what is dated after today.
-            checked_through=current,
+            checked_through=current - timedelta(days=1),
+            seen_items=seen_items,
             created_at=moment,
         )
-        first_check = f"The first check reports issues dated after {current.isoformat()}."
+        first_check = "The first check reports what is published from now on."
+        if unread_today:
+            first_check = f"{first_check} {unread_today}"
     else:
         # A malformed identifier is passed through so that the client raises its own ValueError.
         identifier = normalise_identifier(law) or law
@@ -257,27 +296,39 @@ async def save_search(
             seen=frozenset(_reference_key(ref) for ref in analysis.later),
             created_at=moment,
         )
-        first_check = "The first check reports changes recorded after now."
+        first_check = (
+            "The first check reports changes recorded from now on "
+            "(the BOE data read can be up to 6 hours old)."
+        )
 
     proposed = slug is None
     final = slug if slug is not None else propose_name(base, taken)
-    try:
-        await store.add(replace(search, name=final))
-    except DuplicateNameError:
-        raise _duplicate(final) from None
-    except SearchLimitError:
-        raise _limit_reached() from None
-    note = first_check
+    for attempt in range(_NAME_ATTEMPTS):
+        try:
+            await store.add(replace(search, name=final))
+            break
+        except DuplicateNameError:
+            # A name the caller chose is theirs to change. A proposed one may have been taken a
+            # moment ago by a save that ran at the same time: propose again from what is stored.
+            if not proposed or attempt == _NAME_ATTEMPTS - 1:
+                raise _duplicate(final) from None
+            taken = await store.names(owner)
+            final = propose_name(base, taken)
+        except SearchLimitError:
+            raise _limit_reached() from None
+    notes = []
     if proposed:
-        note = (
-            f"Saved as '{final}'; rename it with edit_saved_search if you prefer another name. "
-            f"{first_check}"
+        notes.append(
+            f"Saved as '{final}'; rename it with edit_saved_search if you prefer another name."
         )
+    notes.append(first_check)
+    if store.in_memory:
+        notes.append("Stored in memory only: it is lost when the server stops.")
     return SaveSearchResult(
         search=_info(replace(search, name=final)),
         name_was_proposed=proposed,
-        total=len(taken) + 1,
-        note=note,
+        total=len(await store.names(owner)),
+        note=" ".join(notes),
         provenance=Provenance(generated_at=moment),
     )
 
@@ -395,15 +446,55 @@ class _Reading:
     summaries: dict[date, DailySummary] = field(default_factory=dict)
     """Days that had an issue."""
     empty: set[date] = field(default_factory=set)
-    """Past days with no issue (read, nothing in them)."""
+    """Days that answered "no issue" (today included: it may just not be out yet)."""
     failed: set[date] = field(default_factory=set)
     """Days skipped after an error that retrying cannot fix."""
-    today_missing: bool = False
-    """Today answered "no issue": not read, because it may just not be out yet."""
 
-    def counts(self, day: date) -> bool:
-        """Whether ``day`` is part of a contiguous run (read, empty, or skipped for good)."""
+    def read(self, day: date) -> bool:
+        """Whether the BOE answered for ``day`` (an issue, no issue, or a permanent error)."""
         return day in self.summaries or day in self.empty or day in self.failed
+
+    def settled(self, day: date, today: date) -> bool:
+        """Whether what was read for ``day`` can be trusted to be final.
+
+        Today never is: its issue may still grow (docs/api-notes.md records a day with two
+        issues). A past day that had an issue is, and so is one skipped for a permanent error.
+        A past "no issue" is final only when it is a Sunday or old enough that the client
+        itself remembers it (``SUMMARY_ABSENCE_SETTLED_DAYS``): a recent weekday's 404 can be
+        a late publication or a transient error, and trusting it would lose that issue.
+        """
+        if day >= today:
+            return False
+        if day in self.summaries or day in self.failed:
+            return True
+        return day.weekday() == _SUNDAY or (today - day).days > SUMMARY_ABSENCE_SETTLED_DAYS
+
+
+@dataclass(frozen=True)
+class _Progress:
+    """The progress columns a check wants to store for one search."""
+
+    checked_through: date | None
+    seen: frozenset[str]
+    seen_items: Mapping[date, frozenset[str]]
+    last_checked_at: datetime
+
+
+@dataclass(frozen=True)
+class _Outcome:
+    """The result for one search, the progress to store (if any) and the items it used up."""
+
+    check: SearchCheck
+    progress: _Progress | None = None
+    used: int = 0
+
+
+@dataclass(frozen=True)
+class _Unread:
+    """A law that could not be read this time, and why."""
+
+    status: SearchStatus
+    note: str
 
 
 @dataclass
@@ -430,19 +521,13 @@ class _Tally:
 
 
 def _validate_since(since: date | None, today: date) -> None:
-    """Raise ``ValueError`` for a ``since`` in the future or 90 or more days back."""
+    """Raise ``ValueError`` for a ``since`` in the future or more than 90 days back."""
     if since is None:
         return
     if since > today:
         raise ValueError("since is in the future")
-    if (today - since).days >= MAX_SINCE_DAYS:
+    if (today - since).days > MAX_SINCE_DAYS:
         raise ValueError(f"since may be at most {MAX_SINCE_DAYS} days back")
-
-
-def _year_of(law_id: str) -> int | None:
-    """The year in an identifier such as ``BOE-A-2020-3692``, or ``None`` when it has none."""
-    found = _YEAR_IN_ID.search(law_id)
-    return int(found.group(1)) if found else None
 
 
 async def check_saved_searches(
@@ -459,13 +544,15 @@ async def check_saved_searches(
     clock: Callable[[], float] = time.monotonic,
     time_limit: float = CHECK_TIME_LIMIT,
 ) -> CheckSearchesResult:
-    """Report what is new for the owner's saved searches and move their bookmarks.
+    """Report what is new for the owner's saved searches and remember what was delivered.
 
     Law searches are read first (one analysis each), then the gazette days of all gazette
     searches once, oldest first. No uncached request starts once ``time_limit`` seconds minus a
     5 s margin have passed; a search that could not be finished is ``partial`` and a later call
-    continues from its bookmark. With ``since`` nothing stored changes. Raises ``ValueError`` for
-    a limit outside 1..``MAX_ITEMS``, an unknown ``name`` or a ``since`` out of range.
+    continues from what it remembers. At most ``limit`` items per search and ``MAX_TOTAL_ITEMS``
+    in all are delivered per call, searches being served in list order. With ``since`` gazette
+    searches are re-read from that day and nothing stored changes. Raises ``ValueError`` for a
+    limit outside 1..``MAX_ITEMS``, an unknown ``name`` or a ``since`` out of range.
     """
     # Started first, as in ``scan_gazette``: the client bounds the whole call.
     deadline = clock() + time_limit - _TIME_MARGIN
@@ -502,55 +589,106 @@ async def check_saved_searches(
             for day in _days(span.start, span.end)
         }
     )
-    laws = [search for search in searches if search.kind == "law"]
+    # ``since`` does not read laws: their references carry no date (see ``_law_outcome``).
+    laws = [] if since is not None else [search for search in searches if search.kind == "law"]
     tally = _Tally(len(laws) + len(union), progress, clock, deadline)
-
-    outcomes: dict[str, tuple[SearchCheck, SavedSearch | None]] = {}
-    for search in laws:
-        outcomes[search.name] = await _check_law(
-            client, search, since=since, limit=limit, moment=moment, tally=tally
-        )
+    analyses = {search.name: await _read_law(client, search, tally) for search in laws}
     reading = await _read_days(client, union, current, tally)
+
+    # The items are shared out only now, in list order, whatever the order the BOE was read in:
+    # the search that comes first in the list is the one served first when the total runs out.
+    remaining = MAX_TOTAL_ITEMS
+    results: list[SearchCheck] = []
     for search in searches:
-        if search.kind == "gazette":
-            outcomes[search.name] = _check_gazette(
+        allowance = min(limit, remaining)
+        if search.kind == "law":
+            outcome = _law_outcome(
+                search,
+                analyses.get(search.name),
+                since=since,
+                allowance=allowance,
+                moment=moment,
+            )
+        else:
+            outcome = _gazette_outcome(
                 search,
                 ranges[search.name],
                 reading,
-                limit=limit,
+                since=since,
+                allowance=allowance,
                 moment=moment,
                 today=current,
             )
+        remaining -= outcome.used
+        results.append(await _stored(store, owner, search, outcome))
 
-    results: list[SearchCheck] = []
-    for search in searches:
-        result, updated = outcomes[search.name]
-        # With ``since`` the outcome carries no new row, so nothing stored changes.
-        if updated is not None and since is None:
-            await store.replace(owner, search.name, updated)
-        results.append(result)
-    checked = sum(result.status == "checked" for result in results)
     notes: list[str] = []
-    if checked < len(results):
+    failed = sum(result.status == "failed" for result in results)
+    partial = sum(result.status == "partial" for result in results)
+    checked = sum(result.status == "checked" for result in results)
+    if failed:
+        notes.append(
+            f"{failed} saved {'search' if failed == 1 else 'searches'} could not be checked; "
+            f"see {'its' if failed == 1 else 'their'} note{'' if failed == 1 else 's'}."
+        )
+    if partial:
         notes.append(
             f"{checked} of {len(results)} saved searches fully checked. Call again to continue."
         )
-    if reading.today_missing:
+    if current in reading.empty:
         notes.append(TODAY_MISSING_NOTE)
-    newest = max(reading.summaries, default=None)
-    reads_gazette = bool(ranges)
+    kinds = {search.kind for search in searches}
     return CheckSearchesResult(
         checked=checked,
         total=len(results),
-        complete=checked == len(results),
+        complete=partial == 0,
         results=results,
         note=" ".join(notes) or None,
         provenance=Provenance(
             generated_at=moment,
-            data_updated_at=midnight_utc(newest),
-            **({"notice": GAZETTE_NOTICE} if reads_gazette else {}),
+            data_updated_at=midnight_utc(max(reading.summaries, default=None)),
+            **_notice(kinds),
         ),
     )
+
+
+def _notice(kinds: set[str]) -> dict[str, str]:
+    """The ``notice`` override for a check of these kinds of search (none for laws alone)."""
+    if kinds == {"law"}:
+        return {}
+    return {"notice": _BOTH_NOTICE if "law" in kinds else GAZETTE_NOTICE}
+
+
+async def _stored(
+    store: SavedSearchStore, owner: str, search: SavedSearch, outcome: _Outcome
+) -> SearchCheck:
+    """Store the progress of one outcome and return its check, as delivered.
+
+    The check is returned as it is only if the progress was stored. If the row changed or went
+    away while the check was reading (another check, a rename, a delete) nothing is marked as
+    seen, so the items are not shown either: they would be shown again by the next call.
+    """
+    update = outcome.progress
+    if update is None:
+        return outcome.check
+    stored = await store.update_progress(
+        owner,
+        search.name,
+        expected=search,
+        checked_through=update.checked_through,
+        seen=update.seen,
+        seen_items=update.seen_items,
+        last_checked_at=update.last_checked_at,
+    )
+    if stored:
+        return outcome.check
+    check = outcome.check
+    changes: dict[str, object] = {"status": "partial", "note": _CHANGED_NOTE}
+    if check.items is not None:
+        changes |= {"items": [], "has_more": bool(check.matched)}
+    if check.changes is not None:
+        changes |= {"changes": [], "other_new": None}
+    return check.model_copy(update=changes)
 
 
 def _days(start: date, end: date) -> list[date]:
@@ -561,52 +699,26 @@ def _days(start: date, end: date) -> list[date]:
 # -- law searches --
 
 
-async def _check_law(
-    client: SavedSearchClient,
-    search: SavedSearch,
-    *,
-    since: date | None,
-    limit: int,
-    moment: datetime,
-    tally: _Tally,
-) -> tuple[SearchCheck, SavedSearch | None]:
-    """Check one law search; returns its result and the row to store (``None``: leave as is)."""
+async def _read_law(
+    client: SavedSearchClient, search: SavedSearch, tally: _Tally
+) -> LawAnalysis | _Unread:
+    """Read one law's analysis, or say why it could not be read."""
     law_id = search.law_id or ""
-
-    def unread(status: SearchStatus, note: str) -> tuple[SearchCheck, None]:
-        """The result for a law that could not be read: nothing is reported or stored."""
-        check = SearchCheck(
-            name=search.name,
-            kind="law",
-            status=status,
-            law_id=law_id,
-            law_title=search.law_title,
-            changes=[],
-            changes_total=0,
-            other_new=0,
-            note=note,
-        )
-        return check, None
-
     try:
         # A cached analysis is free, so it never counts against the budget; an uncached one is
         # not requested once the deadline has passed and the law waits for the next call.
         if not await client.has_cached_analysis(law_id) and tally.out_of_time():
-            return unread("partial", "Not read yet; call again.")
-        analysis = await client.get_law_analysis(law_id)
+            return _Unread("partial", "Not read yet; call again.")
+        return await client.get_law_analysis(law_id)
     except BoeNotFoundError:
-        return unread("failed", "The BOE no longer has this law.")
+        return _Unread("failed", "The BOE no longer has this law.")
     except BoeError as error:
         # Never the API's own words: they are not ours to relay and mean nothing to the user.
         if error.retryable:
-            return unread("partial", "Could not be read; try again.")
-        return unread("failed", "Could not be read.")
+            return _Unread("partial", "Could not be read; try again.")
+        return _Unread("failed", "Could not be read.")
     finally:
         await tally.step()
-
-    if since is not None:
-        return _law_since(search, analysis, since, limit), None
-    return _law_new(search, analysis, limit, moment)
 
 
 def _change(reference: LawReference) -> SearchChange:
@@ -619,43 +731,60 @@ def _change(reference: LawReference) -> SearchChange:
     )
 
 
-def _law_since(search: SavedSearch, analysis: LawAnalysis, since: date, limit: int) -> SearchCheck:
-    """A law's changes whose amending norm is from ``since``'s year or later (nothing stored)."""
-    # The references carry no date, only the amending norm's identifier, whose year is the
-    # nearest thing: so ``since`` works by year for a law (and references without one are left out).
-    found = [
-        reference
-        for reference in analysis.later
-        if relation_kind(reference.relation.code) in REPORTED_KINDS
-        and (year := _year_of(reference.law_id)) is not None
-        and year >= since.year
-    ]
-    notes = []
-    if len(found) > limit:
-        notes.append(f"Showing {limit} of {len(found)} changes.")
-    notes.append("For a law, since works by the year of the amending norm.")
+def _law_check(
+    search: SavedSearch,
+    status: SearchStatus,
+    *,
+    note: str | None,
+    changes: list[SearchChange] | None = None,
+    total: int = 0,
+    other_new: dict[str, int] | None = None,
+) -> SearchCheck:
+    """The check of a law search; by default nothing is reported."""
     return SearchCheck(
         name=search.name,
         kind="law",
+        status=status,
         law_id=search.law_id,
         law_title=search.law_title,
-        status="checked",
-        changes=[_change(reference) for reference in found[:limit]],
-        changes_total=len(found),
-        other_new=0,
-        note=" ".join(notes),
+        changes=changes or [],
+        changes_total=total,
+        other_new=other_new,
+        note=note,
     )
 
 
-def _law_new(
+def _other_counts(others: list[LawReference]) -> dict[str, int]:
+    """Count references that are not changes by what they are; zero counts are left out."""
+    kinds = Counter(
+        {"judicial": "court_rulings", "cites": "citations"}.get(
+            relation_kind(reference.relation.code), "other"
+        )
+        for reference in others
+    )
+    return {
+        label: kinds[label] for label in ("court_rulings", "citations", "other") if kinds[label]
+    }
+
+
+def _law_outcome(
     search: SavedSearch,
-    analysis: LawAnalysis,
-    limit: int,
+    read: LawAnalysis | _Unread | None,
+    *,
+    since: date | None,
+    allowance: int,
     moment: datetime,
-) -> tuple[SearchCheck, SavedSearch]:
-    """The references not in ``seen``, and the row with ``seen`` grown by what was reported."""
+) -> _Outcome:
+    """The check of a law search: its references not seen yet, and ``seen`` grown by those shown."""
+    if since is not None:
+        # The references carry no date, only the acting norm's identifier, and a year taken from
+        # it would pass for a date: so a law is not re-read by date at all.
+        return _Outcome(_law_check(search, "checked", note=_LAW_SINCE_NOTE))
+    if read is None or isinstance(read, _Unread):
+        unread = read or _Unread("partial", "Not read yet; call again.")
+        return _Outcome(_law_check(search, unread.status, note=unread.note))
     fresh: dict[str, LawReference] = {}
-    for reference in analysis.later:
+    for reference in read.later:
         key = _reference_key(reference)
         if key not in search.seen:
             fresh.setdefault(key, reference)
@@ -664,28 +793,43 @@ def _law_new(
         for key, reference in fresh.items()
         if relation_kind(reference.relation.code) in REPORTED_KINDS
     ]
-    others = [key for key, reference in fresh.items() if (key, reference) not in reported]
-    shown = reported[:limit]
+    others = [
+        (key, reference)
+        for key, reference in fresh.items()
+        if relation_kind(reference.relation.code) not in REPORTED_KINDS
+    ]
+    if reported and allowance == 0:
+        # The call's total was used up by earlier searches: nothing is marked, nothing lost.
+        return _Outcome(_law_check(search, "partial", note=_NOT_REACHED_NOTE, total=len(reported)))
+    shown = reported[:allowance]
     # Why only the shown changes are remembered: the rest were never put in front of the reader,
     # so marking them seen would lose them for good; they stay new for the next call.
     # Why ``seen`` only grows: a reference that vanishes from the analysis and comes back (a
     # correction of the BOE's data) must not be reported twice.
-    seen = search.seen | {key for key, _ in shown} | set(others)
+    seen = search.seen | {key for key, _ in shown} | {key for key, _ in others}
+    counts = _other_counts([reference for _, reference in others])
     cut = len(reported) > len(shown)
-    check = SearchCheck(
-        name=search.name,
-        kind="law",
-        law_id=search.law_id,
-        law_title=search.law_title,
-        status="partial" if cut else "checked",
-        changes=[_change(reference) for _, reference in shown],
-        changes_total=len(reported),
-        other_new=len(others),
-        note=f"Showing {len(shown)} of {len(reported)} changes; call again for the rest."
-        if cut
-        else None,
+    notes: list[str] = []
+    if cut:
+        notes.append(f"Showing {len(shown)} of {len(reported)} changes; call again for the rest.")
+    if rulings := counts.get("court_rulings"):
+        notes.append(
+            f"{rulings} new court {'ruling' if rulings == 1 else 'rulings'} on this law "
+            f"{'is' if rulings == 1 else 'are'} not listed; explore_amendment_chain with "
+            "include='all' shows them."
+        )
+    return _Outcome(
+        _law_check(
+            search,
+            "partial" if cut else "checked",
+            note=" ".join(notes) or None,
+            changes=[_change(reference) for _, reference in shown],
+            total=len(reported),
+            other_new=counts or None,
+        ),
+        _Progress(search.checked_through, seen, search.seen_items, moment),
+        used=len(shown),
     )
-    return check, replace(search, seen=seen, last_checked_at=moment)
 
 
 # -- gazette searches --
@@ -720,8 +864,9 @@ async def _read_days(
     """Read ``days`` (oldest first) once, stopping where reading cannot go on.
 
     Oldest first, unlike ``scan_gazette`` (newest first): a bookmark can only move over an
-    unbroken run of read days, so the days nearest the bookmark must be read before any later
-    one, and stopping early (budget, a temporary error) leaves nothing unread in the middle.
+    unbroken run of finished days, so the days nearest the bookmark must be read before any
+    later one, and stopping early (budget, a temporary error) leaves nothing unread in the
+    middle.
     """
     reading = _Reading()
     for day in days:
@@ -738,27 +883,31 @@ async def _read_days(
         else:
             if found is not None:
                 reading.summaries[day] = found
-            elif day == today:
-                # Today's missing issue is not remembered by the client and means "not out yet"
-                # as often as "no issue", so it is not read and never moves the bookmark.
-                reading.today_missing = True
             else:
                 reading.empty.add(day)
         await tally.step()
     return reading
 
 
-def _check_gazette(
+def _gazette_outcome(
     search: SavedSearch,
     span: _Range,
     reading: _Reading,
     *,
-    limit: int,
+    since: date | None,
+    allowance: int,
     moment: datetime,
     today: date,
-) -> tuple[SearchCheck, SavedSearch | None]:
-    """The result of one gazette search over the days read, and the row with its bookmark moved."""
+) -> _Outcome:
+    """The check of a gazette search over the days read, and the progress it earns.
+
+    New matches are the matching items of the days read that were not delivered before, shown
+    oldest day first up to ``allowance``. A day is finished when it was read, all its new
+    matches were delivered and it is settled; the bookmark moves over the unbroken run of
+    finished days from the start, and the identifiers delivered for the days after it are kept.
+    """
     if span.start > span.end:
+        # Only a version-1 row that was checked through today gets here.
         through = search.checked_through
         check = SearchCheck(
             name=search.name,
@@ -771,37 +920,51 @@ def _check_gazette(
             has_more=False,
             note=f"Already checked through {through.isoformat() if through else today}.",
         )
-        return check, replace(search, last_checked_at=moment)
+        return _Outcome(check, _Progress(through, search.seen, search.seen_items, moment))
 
-    # The run: consecutive days from the start that were read (or skipped for good).
+    days = _days(span.start, span.end)
     run: list[date] = []
-    for day in _days(span.start, span.end):
-        if not reading.counts(day):
+    for day in days:
+        if not reading.read(day):
             break
         run.append(day)
-    last = run[-1] if run else None
-    # Today without an issue is not "pending": the range is done once it reaches yesterday, but
-    # the bookmark stays there so that the next check asks for today again.
-    target = (
-        span.end - timedelta(days=1) if reading.today_missing and span.end == today else span.end
-    )
-    done = (last is not None and last >= target) or span.start > target
-    status: SearchStatus = "checked" if done else "partial"
-    pending = 0 if done else (span.end - last).days if last else (span.end - span.start).days + 1
-    skipped_days = [day for day in run if day in reading.failed]
 
     wanted = GazetteFilter(search.words, search.section, search.department_code)
-    matches: list[ScannedEntry] = []
-    for day in reversed(run):
+    fresh: dict[date, list[GazetteItem]] = {}
+    for day in run:
         found = reading.summaries.get(day)
         if found is None:
             continue
-        matches.extend(
-            scanned_entry(day, item, several_issues=len(found.issues) > 1)
-            for item in found.items
-            if wanted.matches(item)
-        )
-    shown = matches[:limit]
+        # With ``since`` what was delivered before is shown again: it is a re-read.
+        known = frozenset() if since is not None else search.seen_items.get(day, frozenset())
+        matches = [
+            item for item in found.items if wanted.matches(item) and item.identifier not in known
+        ]
+        if matches:
+            fresh[day] = matches
+    matched = sum(len(matches) for matches in fresh.values())
+
+    delivered: dict[date, list[GazetteItem]] = {}
+    room = allowance
+    for day, matches in fresh.items():  # oldest day first: the run is in that order
+        taken = matches[:room]
+        room -= len(taken)
+        if taken:
+            delivered[day] = taken
+    entries = [
+        scanned_entry(day, item, several_issues=len(reading.summaries[day].issues) > 1)
+        for day, taken in delivered.items()
+        for item in taken
+    ]
+    undelivered = matched - len(entries)
+    # Calling again can only help when something is stored; with ``since`` it cannot.
+    not_reached = since is None and undelivered > 0 and not entries
+    all_read = len(run) == len(days)
+    status: SearchStatus = (
+        "checked" if all_read and (undelivered == 0 or since is not None) else "partial"
+    )
+    skipped_days = [day for day in run if day in reading.failed]
+
     notes: list[str] = []
     if span.skipped:
         notes.append(
@@ -809,35 +972,49 @@ def _check_gazette(
             f"{'day was' if span.skipped == 1 else 'days were'} skipped. "
             f"Pass since to read up to {MAX_SINCE_DAYS} days back."
         )
-    if run and len(matches) > len(shown):
-        notes.append(
-            f"Showing {len(shown)} of {len(matches)}; scan_gazette with the same filters from "
-            f"{run[0].isoformat()} to {run[-1].isoformat()} lists them all."
-        )
+    if not_reached:
+        notes.append(_NOT_REACHED_NOTE)
+    elif undelivered:
+        if since is not None:
+            notes.append(
+                f"Showing {len(entries)} of {matched}; scan_gazette with the same filters lists "
+                f"them all (at most {MAX_SCAN_DAYS} days per call)."
+            )
+        else:
+            notes.append(f"Showing {len(entries)} of {matched} new items; call again for the rest.")
     if skipped_days:
         notes.append(
             f"{len(skipped_days)} day{'s' if len(skipped_days) != 1 else ''} could not be read "
-            "and "
-            f"{'were' if len(skipped_days) != 1 else 'was'} skipped."
+            f"and {'were' if len(skipped_days) != 1 else 'was'} skipped."
         )
     check = SearchCheck(
         name=search.name,
         kind="gazette",
         status=status,
         from_date=run[0] if run else None,
-        to_date=last,
-        days_pending=pending,
+        to_date=run[-1] if run else None,
+        days_pending=len(days) - len(run),
         days_failed=len(skipped_days),
-        matched=len(matches),
-        items=shown,
-        has_more=len(matches) > len(shown),
+        matched=matched,
+        items=entries,
+        has_more=undelivered > 0,
         note=" ".join(notes) or None,
     )
-    if last is None and not done:
-        # Nothing was read (budget or a temporary error): there is no new bookmark to store.
-        return check, None
+    if since is not None or not_reached or not run:
+        # ``since`` stores nothing; a search that was not reached or read nothing has no news
+        # for the store either.
+        return _Outcome(check, used=len(entries))
+
     through = search.checked_through
-    if last is not None and (through is None or last > through):
-        # Never earlier than it was; ``since`` ranges can end before the bookmark.
-        through = last
-    return check, replace(search, checked_through=through, last_checked_at=moment)
+    for day in run:
+        if not (
+            reading.settled(day, today) and len(delivered.get(day, ())) == len(fresh.get(day, ()))
+        ):
+            break
+        through = day
+    remembered = dict(search.seen_items)
+    for day, taken in delivered.items():
+        remembered[day] = remembered.get(day, frozenset()) | {item.identifier for item in taken}
+    # Days up to the bookmark are finished: their identifiers are no longer needed.
+    kept = {day: ids for day, ids in remembered.items() if through is None or day > through}
+    return _Outcome(check, _Progress(through, search.seen, kept, moment), used=len(entries))

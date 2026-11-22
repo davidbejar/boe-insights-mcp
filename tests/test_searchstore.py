@@ -7,6 +7,7 @@ touches the user's data directory or the network.
 from __future__ import annotations
 
 import asyncio
+import os
 import sqlite3
 import stat
 from collections.abc import AsyncIterator
@@ -428,7 +429,7 @@ async def test_the_parent_directory_is_created_private_and_the_file_too(tmp_path
     assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
 
 
-async def test_a_new_file_gets_user_version_one(tmp_path: Path) -> None:
+async def test_a_new_file_gets_the_current_user_version(tmp_path: Path) -> None:
     path = tmp_path / "saved_searches.sqlite3"
     opened = SavedSearchStore(path)
     await opened.add(gazette(ALICE, "uno"))
@@ -436,7 +437,7 @@ async def test_a_new_file_gets_user_version_one(tmp_path: Path) -> None:
 
     connection = sqlite3.connect(path)
     try:
-        assert connection.execute("PRAGMA user_version").fetchone() == (1,)
+        assert connection.execute("PRAGMA user_version").fetchone() == (2,)
     finally:
         connection.close()
 
@@ -448,7 +449,7 @@ async def test_a_file_written_by_a_newer_program_is_refused_and_left_unmodified(
     connection = sqlite3.connect(path)
     connection.execute("CREATE TABLE future (x TEXT)")
     connection.execute("INSERT INTO future VALUES ('keep me')")
-    connection.execute("PRAGMA user_version = 2")
+    connection.execute("PRAGMA user_version = 3")
     connection.commit()
     connection.close()
     before = path.read_bytes()
@@ -461,7 +462,7 @@ async def test_a_file_written_by_a_newer_program_is_refused_and_left_unmodified(
     assert path.read_bytes() == before
     check = sqlite3.connect(path)
     try:
-        assert check.execute("PRAGMA user_version").fetchone() == (2,)
+        assert check.execute("PRAGMA user_version").fetchone() == (3,)
         assert check.execute("SELECT x FROM future").fetchall() == [("keep me",)]
         tables = {row[0] for row in check.execute("SELECT name FROM sqlite_master")}
         assert tables == {"future"}
@@ -477,3 +478,337 @@ async def test_in_memory_stores_are_independent() -> None:
     assert await second.list(ALICE) == []
     await first.close()
     await second.close()
+
+
+# --- items already delivered (schema version 2) ------------------------------------------------
+
+
+async def test_seen_items_round_trip_per_day(tmp_path: Path) -> None:
+    path = tmp_path / "saved_searches.sqlite3"
+    saved = gazette(
+        ALICE,
+        "uno",
+        seen_items={date(2026, 11, 3): frozenset({"A", "B"}), date(2026, 11, 4): frozenset()},
+    )
+    first = SavedSearchStore(path)
+    await first.add(saved)
+    await first.close()
+
+    second = SavedSearchStore(path)
+
+    assert (await second.get(ALICE, "uno")).seen_items == saved.seen_items
+    await second.close()
+
+
+_V1_SCHEMA = """
+CREATE TABLE saved_searches (
+    owner TEXT NOT NULL, name TEXT NOT NULL, kind TEXT NOT NULL, words TEXT, section TEXT,
+    department_code TEXT, law_id TEXT, law_title TEXT, seen TEXT NOT NULL, checked_through TEXT,
+    created_at TEXT NOT NULL, last_checked_at TEXT, PRIMARY KEY (owner, name)
+)
+"""
+
+
+def write_version_one(path: Path) -> None:
+    """A file as the previous program wrote it: user_version 1, no seen_items column."""
+    connection = sqlite3.connect(path)
+    connection.execute(_V1_SCHEMA)
+    connection.execute(
+        "INSERT INTO saved_searches VALUES ('user:alice','old','gazette','vivienda',NULL,NULL,"
+        "NULL,NULL,'[]','2026-11-01','2026-10-01T09:00:00+00:00',NULL)"
+    )
+    connection.execute(
+        "INSERT INTO saved_searches VALUES ('user:alice','ley','law',NULL,NULL,NULL,"
+        "'BOE-A-2015-10566','Ley 39/2015','[\"k1\"]',NULL,'2026-10-02T09:00:00+00:00',NULL)"
+    )
+    connection.execute("PRAGMA user_version = 1")
+    connection.commit()
+    connection.close()
+
+
+async def test_a_version_one_file_is_migrated_in_place_keeping_every_row(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "saved_searches.sqlite3"
+    write_version_one(path)
+
+    opened = SavedSearchStore(path)
+    rows = await opened.list(ALICE)
+    await opened.close()
+
+    assert [row.name for row in rows] == ["old", "ley"]
+    assert rows[0].checked_through == date(2026, 11, 1)
+    assert rows[0].seen_items == {}
+    assert rows[1].seen == frozenset({"k1"})
+    check = sqlite3.connect(path)
+    try:
+        assert check.execute("PRAGMA user_version").fetchone() == (2,)
+    finally:
+        check.close()
+
+
+async def test_a_migrated_file_accepts_progress_and_reopens_cleanly(tmp_path: Path) -> None:
+    path = tmp_path / "saved_searches.sqlite3"
+    write_version_one(path)
+    first = SavedSearchStore(path)
+    row = await first.get(ALICE, "old")
+    assert await first.update_progress(
+        ALICE,
+        "old",
+        expected=row,
+        checked_through=date(2026, 11, 5),
+        seen=frozenset(),
+        seen_items={date(2026, 11, 6): frozenset({"X"})},
+        last_checked_at=T0,
+    )
+    await first.close()
+
+    second = SavedSearchStore(path)
+
+    updated = await second.get(ALICE, "old")
+    assert updated.seen_items == {date(2026, 11, 6): frozenset({"X"})}
+    assert updated.checked_through == date(2026, 11, 5)
+    await second.close()
+
+
+# --- update_progress: a check writes only progress, and only if nothing moved --------------------
+
+
+async def progress(store: SavedSearchStore, expected: SavedSearch, **change: object) -> bool:
+    """``update_progress`` from ``expected`` with a new bookmark unless ``change`` says more."""
+    values: dict[str, object] = {
+        "checked_through": date(2026, 11, 9),
+        "seen": expected.seen,
+        "seen_items": expected.seen_items,
+        "last_checked_at": T0 + timedelta(hours=1),
+        **change,
+    }
+    return await store.update_progress(expected.owner, expected.name, expected=expected, **values)  # type: ignore[arg-type]
+
+
+async def test_update_progress_changes_only_the_progress_columns(
+    store: SavedSearchStore,
+) -> None:
+    original = gazette(ALICE, "uno", section="3")
+    await store.add(original)
+
+    assert await progress(store, original) is True
+
+    row = await store.get(ALICE, "uno")
+    assert row.checked_through == date(2026, 11, 9)
+    assert row.last_checked_at == T0 + timedelta(hours=1)
+    assert (row.words, row.section, row.name, row.created_at) == ("vivienda", "3", "uno", T0)
+
+
+async def test_update_progress_keeps_a_filter_edited_after_the_check_started(
+    store: SavedSearchStore,
+) -> None:
+    original = gazette(ALICE, "uno")
+    await store.add(original)
+    await store.replace(ALICE, "uno", gazette(ALICE, "uno", words="alquiler"))
+
+    assert await progress(store, original) is True
+
+    assert (await store.get(ALICE, "uno")).words == "alquiler"
+
+
+async def test_update_progress_of_a_renamed_or_deleted_row_is_false_and_harmless(
+    store: SavedSearchStore,
+) -> None:
+    original = gazette(ALICE, "uno")
+    await store.add(original)
+    await store.replace(ALICE, "uno", gazette(ALICE, "dos"))
+
+    assert await progress(store, original) is False
+    assert [row.name for row in await store.list(ALICE)] == ["dos"]
+    await store.delete(ALICE, "dos")
+    assert await progress(store, gazette(ALICE, "dos")) is False
+    assert await store.list(ALICE) == []
+
+
+async def test_update_progress_is_false_when_the_progress_moved_meanwhile(
+    store: SavedSearchStore,
+) -> None:
+    original = gazette(ALICE, "uno")
+    await store.add(original)
+
+    assert await progress(store, original, checked_through=date(2026, 11, 5)) is True
+    assert await progress(store, original, checked_through=date(2026, 11, 7)) is False
+
+    assert (await store.get(ALICE, "uno")).checked_through == date(2026, 11, 5)
+
+
+async def test_update_progress_compares_the_seen_items_too(store: SavedSearchStore) -> None:
+    original = gazette(ALICE, "uno")
+    await store.add(original)
+    day = date(2026, 11, 10)
+
+    assert await progress(store, original, seen_items={day: frozenset({"A"})}) is True
+    assert await progress(store, original, seen_items={day: frozenset({"B"})}) is False
+
+    assert (await store.get(ALICE, "uno")).seen_items == {day: frozenset({"A"})}
+
+
+async def test_update_progress_touches_only_the_owner_given(store: SavedSearchStore) -> None:
+    mine = gazette(ALICE, "uno")
+    await store.add(mine)
+    await store.add(gazette(BOB, "uno"))
+
+    assert await progress(store, mine) is True
+
+    assert (await store.get(BOB, "uno")).checked_through == date(2026, 11, 1)
+
+
+# --- a bad file never breaks the server: every failure is a SearchStoreError --------------------
+
+
+def make_bad_file(path: Path, kind: str) -> None:
+    """Write a file the store cannot use, of the given ``kind``."""
+    if kind == "corrupt":
+        path.write_bytes(b"this is not a database" * 100)
+        return
+    connection = sqlite3.connect(path)
+    if kind == "foreign":
+        connection.execute("CREATE TABLE saved_searches (id INTEGER PRIMARY KEY, query TEXT)")
+        connection.execute("PRAGMA user_version = 1")
+    elif kind == "foreign-v2":
+        connection.execute("CREATE TABLE saved_searches (id INTEGER PRIMARY KEY, query TEXT)")
+        connection.execute("PRAGMA user_version = 2")
+    elif kind == "foreign-v0":
+        connection.execute("CREATE TABLE saved_searches (id INTEGER PRIMARY KEY, query TEXT)")
+    elif kind == "bad-date":
+        connection.execute(
+            _V1_SCHEMA.replace("seen TEXT", "seen_items TEXT NOT NULL DEFAULT '{}', seen TEXT")
+        )
+        connection.execute(
+            "INSERT INTO saved_searches VALUES ('user:alice','bad','gazette','y',NULL,NULL,NULL,"
+            "NULL,'{}','[]','not-a-date','2026-01-02',NULL)"
+        )
+        connection.execute("PRAGMA user_version = 2")
+    elif kind == "bad-json":
+        connection.execute(
+            _V1_SCHEMA.replace("seen TEXT", "seen_items TEXT NOT NULL DEFAULT '{}', seen TEXT")
+        )
+        connection.execute(
+            "INSERT INTO saved_searches VALUES ('user:alice','bad','gazette','y',NULL,NULL,NULL,"
+            "NULL,'{not json','[]','2026-11-01','2026-01-02',NULL)"
+        )
+        connection.execute("PRAGMA user_version = 2")
+    connection.commit()
+    connection.close()
+
+
+@pytest.mark.parametrize(
+    "kind", ["corrupt", "foreign", "foreign-v2", "foreign-v0", "bad-date", "bad-json"]
+)
+async def test_an_unusable_file_raises_search_store_error_on_use_not_on_creation(
+    tmp_path: Path, kind: str
+) -> None:
+    path = tmp_path / "saved_searches.sqlite3"
+    make_bad_file(path, kind)
+
+    unused = SavedSearchStore(path)  # lazy: building it never fails
+    with pytest.raises(SearchStoreError):
+        await unused.list(ALICE)
+    await unused.close()
+
+
+async def test_an_unwritable_directory_raises_search_store_error_on_use(
+    tmp_path: Path,
+) -> None:
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    locked.chmod(stat.S_IRUSR | stat.S_IXUSR)
+    try:
+        unused = SavedSearchStore(locked / "sub" / "saved_searches.sqlite3")
+        with pytest.raises(SearchStoreError):
+            await unused.names(ALICE)
+        await unused.close()
+    finally:
+        locked.chmod(stat.S_IRWXU)
+
+
+async def test_a_path_that_is_a_directory_raises_search_store_error(tmp_path: Path) -> None:
+    unused = SavedSearchStore(tmp_path)
+    with pytest.raises(SearchStoreError):
+        await unused.names(ALICE)
+    await unused.close()
+
+
+async def test_a_failure_to_open_is_retried_on_the_next_use(tmp_path: Path) -> None:
+    path = tmp_path / "saved_searches.sqlite3"
+    path.write_bytes(b"garbage" * 50)
+    unused = SavedSearchStore(path)
+    with pytest.raises(SearchStoreError):
+        await unused.names(ALICE)
+
+    path.unlink()
+
+    assert await unused.names(ALICE) == set()
+    await unused.close()
+
+
+async def test_the_store_does_not_touch_the_disk_until_it_is_used(tmp_path: Path) -> None:
+    path = tmp_path / "data" / "saved_searches.sqlite3"
+
+    unused = SavedSearchStore(path)
+    await unused.close()
+
+    assert not path.parent.exists()
+
+
+# --- modes -------------------------------------------------------------------------------------
+
+
+async def test_every_directory_the_store_creates_is_private(tmp_path: Path) -> None:
+    old_umask = os.umask(0o022)
+    try:
+        path = tmp_path / "a" / "b" / "c" / "saved_searches.sqlite3"
+        opened = SavedSearchStore(path)
+        await opened.names(ALICE)
+        await opened.close()
+    finally:
+        os.umask(old_umask)
+
+    for directory in (path.parent, path.parent.parent, path.parent.parent.parent):
+        assert stat.S_IMODE(directory.stat().st_mode) == 0o700
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+
+
+async def test_an_existing_file_with_loose_permissions_is_tightened(tmp_path: Path) -> None:
+    path = tmp_path / "saved_searches.sqlite3"
+    first = SavedSearchStore(path)
+    await first.names(ALICE)
+    await first.close()
+    path.chmod(0o644)
+
+    second = SavedSearchStore(path)
+    await second.names(ALICE)
+    await second.close()
+
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+
+
+# --- two processes sharing a file ------------------------------------------------------------
+
+
+async def test_two_stores_on_one_file_wait_for_each_other_instead_of_failing(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "saved_searches.sqlite3"
+    one, two = SavedSearchStore(path), SavedSearchStore(path)
+
+    await asyncio.gather(
+        *(one.add(gazette(ALICE, f"a{n}", minutes=n)) for n in range(5)),
+        *(two.add(gazette(BOB, f"b{n}", minutes=n)) for n in range(5)),
+    )
+
+    assert len(await one.names(ALICE)) == 5
+    assert len(await two.names(BOB)) == 5
+    await one.close()
+    await two.close()
+
+
+def test_the_store_says_whether_it_is_in_memory() -> None:
+    assert SavedSearchStore(None).in_memory is True
+    assert SavedSearchStore(Path("somewhere.sqlite3")).in_memory is False

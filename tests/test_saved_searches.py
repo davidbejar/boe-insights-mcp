@@ -313,12 +313,15 @@ async def test_blank_values_alone_are_nothing(store: SavedSearchStore) -> None:
 # --- 2.1 save_search: gazette -------------------------------------------------------------------
 
 
-async def test_a_gazette_search_is_saved_silently(store: SavedSearchStore) -> None:
+async def test_a_gazette_search_reads_only_todays_issue_when_saved(
+    store: SavedSearchStore,
+) -> None:
     fake = FakeBoe()
 
     result = await save(store, fake, words="Vivienda subvenciones")
 
-    assert fake.log == []
+    assert fake.requested_days == [TODAY]
+    assert fake.log == [("day", TODAY)]
     assert result.search.name == "vivienda-subvenciones"
     assert result.search.kind == "gazette"
     assert result.search.words == "Vivienda subvenciones"
@@ -326,7 +329,7 @@ async def test_a_gazette_search_is_saved_silently(store: SavedSearchStore) -> No
     assert result.total == 1
     stored = await store.get(OWNER, "vivienda-subvenciones")
     assert stored.kind == "gazette"
-    assert stored.checked_through == TODAY
+    assert stored.checked_through == ago(1)  # the baseline is yesterday; see test_..._bookmark
     assert stored.created_at == NOW
     assert stored.last_checked_at is None
     assert stored.law_id is None
@@ -338,16 +341,17 @@ async def test_the_note_of_a_proposed_gazette_name(store: SavedSearchStore) -> N
 
     assert result.note == (
         "Saved as 'vivienda'; rename it with edit_saved_search if you prefer another name. "
-        "The first check reports issues dated after 2026-11-21."
+        "The first check reports what is published from now on."
+        " Stored in memory only: it is lost when the server stops."
     )
 
 
-async def test_the_bookmark_of_a_gazette_search_is_the_madrid_day_given(
+async def test_the_bookmark_of_a_gazette_search_is_the_day_before_the_madrid_day_given(
     store: SavedSearchStore,
 ) -> None:
     await save(store, FakeBoe(), words="vivienda", today=ago(3))
 
-    assert (await store.get(OWNER, "vivienda")).checked_through == ago(3)
+    assert (await store.get(OWNER, "vivienda")).checked_through == ago(4)
 
 
 async def test_gazette_values_are_normalised(store: SavedSearchStore) -> None:
@@ -434,7 +438,9 @@ async def test_a_law_search_takes_its_baseline_from_all_current_references(
     assert result.name_was_proposed is True
     assert result.note == (
         "Saved as 'ley-39-2015'; rename it with edit_saved_search if you prefer another name. "
-        "The first check reports changes recorded after now."
+        "The first check reports changes recorded from now on "
+        "(the BOE data read can be up to 6 hours old)."
+        " Stored in memory only: it is lost when the server stops."
     )
     stored = await store.get(OWNER, "ley-39-2015")
     assert stored.seen == frozenset(key(r) for r in refs)
@@ -757,7 +763,11 @@ async def test_new_references_split_into_changes_and_other_new(store: SavedSearc
         ("BOE-A-2021-14", "corrects", "SE CORRIGE", "art. 5"),
     ]
     assert law_check.changes_total == 4
-    assert law_check.other_new == 2
+    assert law_check.other_new == {"court_rulings": 1, "citations": 1}
+    assert law_check.note == (
+        "1 new court ruling on this law is not listed; explore_amendment_chain with "
+        "include='all' shows them."
+    )
     assert result.checked == 1
     assert result.complete is True
     assert result.note is None
@@ -799,7 +809,7 @@ async def test_a_second_check_reports_nothing(store: SavedSearchStore) -> None:
     assert law_check.status == "checked"
     assert law_check.changes == []
     assert law_check.changes_total == 0
-    assert law_check.other_new == 0
+    assert law_check.other_new is None
 
 
 async def test_only_references_new_since_the_last_check_are_reported(
@@ -855,7 +865,7 @@ async def test_a_baseline_taken_by_saving_leaves_nothing_to_report(
     second = await check(store, fake)
 
     assert first.results[0].changes == []
-    assert first.results[0].other_new == 0
+    assert first.results[0].other_new is None
     assert change_ids(second.results[0]) == ["BOE-A-2023-1"]
 
 
@@ -912,8 +922,8 @@ async def test_a_cut_check_still_marks_the_unreported_references_seen(
     first = await check(store, fake, limit=1)
     second = await check(store, fake, limit=1)
 
-    assert first.results[0].other_new == 2
-    assert second.results[0].other_new == 0
+    assert first.results[0].other_new == {"court_rulings": 1, "citations": 1}
+    assert second.results[0].other_new is None
     assert change_ids(second.results[0]) == [REPEALS.law_id]
     assert second.results[0].status == "checked"
 
@@ -929,21 +939,26 @@ async def test_exactly_limit_changes_are_not_cut(store: SavedSearchStore) -> Non
     assert result.complete is True
 
 
-async def test_since_cut_by_the_limit_says_so_and_stores_nothing(
-    store: SavedSearchStore,
-) -> None:
+LAW_SINCE_NOTE = (
+    "since applies to gazette searches; get_amendment_history lists a law's past amendments."
+)
+
+
+async def test_since_does_not_read_a_law_search_and_says_so(store: SavedSearchStore) -> None:
     refs = [ref(f"BOE-A-2026-{n}", "270", "SE MODIFICA", f"art. {n}") for n in range(1, 6)]
-    seed = await seed_law(store, seen=frozenset(key(r) for r in refs))
+    seed = await seed_law(store, seen=frozenset())
     fake = FakeBoe(analyses={LAW: later(*refs)})
 
     result = await check(store, fake, since=ago(10), limit=2)
 
     law_check = result.results[0]
-    assert len(law_check.changes) == 2
-    assert law_check.changes_total == 5
+    assert fake.log == []
+    assert law_check.changes == []
+    assert law_check.changes_total == 0
+    assert law_check.other_new is None
     assert law_check.status == "checked"
-    assert law_check.note is not None
-    assert "Showing 2 of 5 changes." in law_check.note
+    assert law_check.note == LAW_SINCE_NOTE
+    assert result.complete is True
     assert await store.get(OWNER, seed.name) == seed
 
 
@@ -960,33 +975,6 @@ async def test_a_long_reference_text_is_cut(store: SavedSearchStore) -> None:
 
 
 # since, for a law
-
-
-async def test_since_filters_a_law_by_the_year_of_the_amending_norm(
-    store: SavedSearchStore,
-) -> None:
-    old = ref("BOE-A-2024-5", "270", "SE MODIFICA", "art. 1")
-    boundary = ref("BOE-A-2025-3692", "270", "SE MODIFICA", "art. 2")
-    newer = ref("BOE-A-2026-8", "210", "SE DEROGA", "art. 3")
-    cited = ref("BOE-A-2026-9", "330", "SE CITA", "art. 4")
-    undated = ref("XYZ", "407", "SE AÑADE", "art. 5")
-    # Everything is already seen: since reads the whole history, not what is new.
-    refs = [old, boundary, newer, cited, undated]
-    seed = await seed_law(store, seen=frozenset(key(r) for r in refs))
-    fake = FakeBoe(analyses={LAW: later(*refs)})
-
-    # The clock is moved to January so that a since inside the 90-day window still falls in the
-    # year before: the original date (2020) was far outside the window the spec allows.
-    result = await check(store, fake, since=date(2025, 11, 20), today=date(2026, 1, 15))
-
-    law_check = result.results[0]
-    assert law_check.status == "checked"
-    assert change_ids(law_check) == ["BOE-A-2025-3692", "BOE-A-2026-8"]
-    assert law_check.changes_total == 2
-    assert law_check.other_new == 0
-    assert law_check.note is not None
-    assert "For a law, since works by the year of the amending norm." in law_check.note
-    assert await store.get(OWNER, seed.name) == seed
 
 
 async def test_since_changes_nothing_stored_for_a_law(store: SavedSearchStore) -> None:
@@ -1011,8 +999,9 @@ async def test_a_law_the_boe_no_longer_has_fails(store: SavedSearchStore) -> Non
     assert law_check.status == "failed"
     assert law_check.note == "The BOE no longer has this law."
     assert result.checked == 0
-    assert result.complete is False
-    assert result.note == "0 of 1 saved searches fully checked. Call again to continue."
+    # Calling again cannot bring the law back, so a failed search does not make a call "again".
+    assert result.complete is True
+    assert result.note == "1 saved search could not be checked; see its note."
     assert await store.get(OWNER, seed.name) == seed
 
 
@@ -1026,6 +1015,7 @@ async def test_a_retryable_failure_of_a_law_is_partial(store: SavedSearchStore) 
     assert law_check.status == "partial"
     assert law_check.note == "Could not be read; try again."
     assert result.complete is False
+    assert result.note == "0 of 1 saved searches fully checked. Call again to continue."
     assert await store.get(OWNER, seed.name) == seed
 
 
@@ -1057,7 +1047,8 @@ async def test_one_failing_law_does_not_stop_the_others(store: SavedSearchStore)
     assert change_ids(result.results[1]) == ["BOE-A-2021-10"]
     assert result.checked == 1
     assert result.total == 2
-    assert result.note == "1 of 2 saved searches fully checked. Call again to continue."
+    assert result.complete is True
+    assert result.note == "1 saved search could not be checked; see its note."
 
 
 async def test_an_uncached_law_is_not_requested_after_the_deadline(
@@ -1090,7 +1081,7 @@ async def test_an_uncached_law_is_not_requested_after_the_deadline(
 # --- 2.3 gazette searches -----------------------------------------------------------------------
 
 
-async def test_a_silent_save_then_a_check_reports_only_later_issues(
+async def test_a_save_then_a_check_reports_only_what_came_after(
     store: SavedSearchStore,
 ) -> None:
     fake = FakeBoe(
@@ -1100,11 +1091,13 @@ async def test_a_silent_save_then_a_check_reports_only_later_issues(
         }
     )
     await save(store, fake, words="vivienda", today=ago(2))
-    assert fake.log == []
+    assert fake.requested_days == [ago(2)]
+    fake.log.clear()
 
     result = await check(store, fake)
 
     assert ids(result.results[0]) == ["NEW"]
+    # The issue of the day of saving is read again (it can grow); it was cached by the save.
     assert fake.requested_days == [ago(1), TODAY]
 
 
@@ -1125,15 +1118,15 @@ async def test_a_gazette_check_reports_matches_and_moves_the_bookmark(
     assert gazette_check.kind == "gazette"
     assert gazette_check.status == "checked"
     assert gazette_check.from_date == ago(2)
-    assert gazette_check.to_date == ago(1)
+    assert gazette_check.to_date == TODAY  # today answered "no issue": read, not finished
     assert gazette_check.matched == 3
     assert gazette_check.has_more is False
     assert gazette_check.days_failed == 0
     assert gazette_check.days_pending == 0
-    # Newest day first, document order within a day.
-    assert ids(gazette_check) == ["B1", "A1", "A3"]
-    assert [entry.date for entry in gazette_check.items] == [ago(1), ago(2), ago(2)]
-    first = gazette_check.items[0]
+    # Oldest day first, document order within a day.
+    assert ids(gazette_check) == ["A1", "A3", "B1"]
+    assert [entry.date for entry in gazette_check.items] == [ago(2), ago(2), ago(1)]
+    first = gazette_check.items[2]
     assert first.title == "Resolución sobre vivienda"
     assert first.section == "1"
     assert first.url == "https://www.boe.es/txt/B1"
@@ -1182,7 +1175,7 @@ async def test_a_second_check_reads_only_what_came_after(store: SavedSearchStore
     assert second.results[0].matched == 0
 
 
-async def test_today_without_an_issue_does_not_move_the_bookmark(
+async def test_today_without_an_issue_is_read_again_and_never_moves_the_bookmark(
     store: SavedSearchStore,
 ) -> None:
     await seed_gazette(store, checked_through=ago(2))
@@ -1191,8 +1184,8 @@ async def test_today_without_an_issue_does_not_move_the_bookmark(
     result = await check(store, fake)
 
     gazette_check = result.results[0]
-    assert gazette_check.status == "checked"  # reaches yesterday while today has no issue yet
-    assert gazette_check.to_date == ago(1)
+    assert gazette_check.status == "checked"  # today answered "no issue": read, nothing pending
+    assert gazette_check.to_date == TODAY
     assert (await store.get(OWNER, "vivienda")).checked_through == ago(1)
     assert result.complete is True
     assert result.note == NO_TODAY_ISSUE
@@ -1203,25 +1196,28 @@ async def test_today_without_an_issue_does_not_move_the_bookmark(
     second = await check(store, fake)
 
     assert ids(second.results[0]) == ["LATE"]
-    assert (await store.get(OWNER, "vivienda")).checked_through == TODAY
+    # Today is never finished (its issue may grow), so the bookmark stays and LATE is remembered.
+    stored = await store.get(OWNER, "vivienda")
+    assert stored.checked_through == ago(1)
+    assert stored.seen_items == {TODAY: frozenset({"LATE"})}
     assert second.note is None
 
 
 async def test_a_past_day_without_an_issue_counts_as_read(store: SavedSearchStore) -> None:
-    await seed_gazette(store, checked_through=ago(4))
-    fake = FakeBoe(
-        days={
-            ago(3): summary(ago(3), item("A1")),
-            ago(1): summary(ago(1), item("A2")),
-            TODAY: summary(TODAY, item("A3")),
-        }
-    )  # ago(2) was a Sunday: no issue
+    await seed_gazette(store, checked_through=ago(8))
+    days: dict[date, Any] = {ago(n): summary(ago(n)) for n in (5, 4, 3, 2)}
+    days |= {
+        ago(7): summary(ago(7), item("A1")),
+        ago(1): summary(ago(1), item("A2")),
+        TODAY: summary(TODAY, item("A3")),
+    }  # ago(6) was a Sunday: no issue
+    fake = FakeBoe(days=days)
 
     result = await check(store, fake)
 
     assert result.results[0].status == "checked"
-    assert ids(result.results[0]) == ["A3", "A2", "A1"]
-    assert (await store.get(OWNER, "vivienda")).checked_through == TODAY
+    assert ids(result.results[0]) == ["A1", "A2", "A3"]
+    assert (await store.get(OWNER, "vivienda")).checked_through == ago(1)
     assert result.note is None
 
 
@@ -1245,7 +1241,7 @@ async def test_nothing_new_to_read_when_checked_through_today(store: SavedSearch
 
 async def test_a_long_gap_is_capped_to_the_last_31_days(store: SavedSearchStore) -> None:
     await seed_gazette(store, checked_through=ago(40))
-    fake = FakeBoe()
+    fake = FakeBoe(days={ago(n): summary(ago(n)) for n in range(31)})
 
     result = await check(store, fake)
 
@@ -1304,7 +1300,7 @@ async def test_days_are_read_once_for_several_searches_oldest_first(
     # "uno" starts after its own bookmark, so it does not see ago(3) or ago(4).
     assert ids(uno) == ["D2"]
     assert uno.from_date == ago(2)
-    assert ids(dos) == ["D3", "D4"]
+    assert ids(dos) == ["D4", "D3"]  # oldest day first
     assert dos.from_date == ago(4)
     assert result.checked == 2
 
@@ -1352,7 +1348,7 @@ async def test_cached_days_are_still_read_after_the_deadline(store: SavedSearchS
 
     assert fake.requested_days == [ago(4)]  # ago(3) is free, ago(2) is uncached and too late
     assert result.results[0].to_date == ago(3)
-    assert ids(result.results[0]) == ["A2", "A1"]
+    assert ids(result.results[0]) == ["A1", "A2"]
     assert (await store.get(OWNER, "vivienda")).checked_through == ago(3)
 
 
@@ -1411,7 +1407,7 @@ async def test_a_permanent_failure_skips_the_day_and_reading_goes_on(
     assert fake.requested_days == [ago(3), ago(2), ago(1), TODAY]
     gazette_check = result.results[0]
     assert gazette_check.days_failed == 1
-    assert ids(gazette_check) == ["A3", "A1"]
+    assert ids(gazette_check) == ["A1", "A3"]
     assert gazette_check.status == "checked"
     assert (await store.get(OWNER, "vivienda")).checked_through == ago(1)
 
@@ -1431,16 +1427,21 @@ async def test_limit_bounds_the_items_and_says_so(store: SavedSearchStore) -> No
     result = await check(store, fake, limit=3)
 
     gazette_check = result.results[0]
-    assert ids(gazette_check) == ["N1", "N2", "N3"]
+    assert ids(gazette_check) == ["O1", "O2", "N1"]  # the oldest day first
     assert gazette_check.matched == 5
     assert gazette_check.has_more is True
-    assert gazette_check.note is not None
-    assert (
-        "Showing 3 of 5; scan_gazette with the same filters from 2026-11-19 to 2026-11-20 "
-        "lists them all."
-    ) in gazette_check.note
-    # The shown items are marked seen all the same: the bookmark moves over every matched day.
-    assert (await store.get(OWNER, "vivienda")).checked_through == ago(1)
+    assert gazette_check.status == "partial"
+    assert gazette_check.note == "Showing 3 of 5 new items; call again for the rest."
+    assert result.complete is False
+    # What was not shown stays new: the bookmark stops before the day it was cut in.
+    stored = await store.get(OWNER, "vivienda")
+    assert stored.checked_through == ago(2)
+    assert stored.seen_items == {ago(1): frozenset({"N1"})}
+
+    second = await check(store, fake, limit=3)
+
+    assert ids(second.results[0]) == ["N2", "N3"]
+    assert second.complete is True
 
 
 async def test_no_showing_note_when_everything_fits(store: SavedSearchStore) -> None:
@@ -1465,7 +1466,7 @@ async def test_since_rereads_without_changing_anything_stored(store: SavedSearch
     gazette_check = result.results[0]
     assert fake.requested_days == [ago(2), ago(1), TODAY]
     assert gazette_check.from_date == ago(2)
-    assert ids(gazette_check) == ["A2", "A1"]
+    assert ids(gazette_check) == ["A1", "A2"]
     assert gazette_check.status == "checked"
     assert await store.get(OWNER, seed.name) == seed
 
@@ -1489,14 +1490,14 @@ async def test_since_in_the_future_is_refused(store: SavedSearchStore) -> None:
         await check(store, FakeBoe(), since=TODAY + timedelta(days=1))
 
 
-async def test_since_more_than_89_days_back_is_refused(store: SavedSearchStore) -> None:
+async def test_since_more_than_90_days_back_is_refused(store: SavedSearchStore) -> None:
     await seed_gazette(store)
 
     with pytest.raises(ValueError, match="since may be at most 90 days back"):
-        await check(store, FakeBoe(), since=ago(90))
+        await check(store, FakeBoe(), since=ago(91))
 
 
-@pytest.mark.parametrize("back", [0, 89])
+@pytest.mark.parametrize("back", [0, 89, 90])
 async def test_since_within_bounds_is_accepted(store: SavedSearchStore, back: int) -> None:
     await seed_gazette(store)
 
@@ -1824,7 +1825,7 @@ async def test_s4_a_search_that_starts_today_with_no_issue_is_checked(
     assert fake.requested_days == [TODAY]
     assert gazette_check.status == "checked"
     assert gazette_check.days_pending == 0
-    assert gazette_check.from_date is None
+    assert gazette_check.from_date == TODAY
     assert (await store.get(OWNER, seed.name)).checked_through == ago(1)
     assert result.note == NO_TODAY_ISSUE
 
@@ -1861,8 +1862,12 @@ async def test_s6_a_given_name_leaves_only_the_first_check_sentence(
     fake = FakeBoe(metadata={LAW: metadata()}, analyses={LAW: later()})
     law_result = await save(store, fake, law_id=LAW, name="ley")
 
-    assert gazette_result.note == "The first check reports issues dated after 2026-11-21."
-    assert law_result.note == "The first check reports changes recorded after now."
+    memory = " Stored in memory only: it is lost when the server stops."
+    assert gazette_result.note == "The first check reports what is published from now on." + memory
+    assert law_result.note == (
+        "The first check reports changes recorded from now on "
+        "(the BOE data read can be up to 6 hours old)." + memory
+    )
 
 
 async def test_s7_values_equal_to_the_stored_ones_are_not_a_change(
@@ -2039,7 +2044,7 @@ async def test_the_gazette_notice_is_used_only_when_a_gazette_search_is_checked(
 
 async def test_every_use_case_acts_for_the_owner_it_is_given(store: SavedSearchStore) -> None:
     fake = FakeBoe(
-        days={ago(1): summary(ago(1), item("A1"))},
+        days={ago(2): summary(ago(2)), ago(1): summary(ago(1), item("A1"))},
         analyses={LAW: later(MODIFIES)},
         metadata={LAW: metadata()},
     )
