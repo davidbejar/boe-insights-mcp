@@ -21,7 +21,7 @@ import os
 import sqlite3
 import threading
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Literal, TypeVar
@@ -274,7 +274,15 @@ class SavedSearchStore:
             owner,
             name,
             expected,
-            (checked_through, seen, seen_items, last_checked_at),
+            # The progress to write, as the row it would make: the compared and the written fields
+            # are then both read off a ``SavedSearch``.
+            replace(
+                expected,
+                checked_through=checked_through,
+                seen=seen,
+                seen_items=seen_items,
+                last_checked_at=last_checked_at,
+            ),
         )
 
     async def delete(self, owner: str, name: str) -> None:
@@ -409,10 +417,9 @@ class SavedSearchStore:
         owner: str,
         name: str,
         expected: SavedSearch,
-        new: tuple[date | None, frozenset[str], Mapping[date, frozenset[str]], datetime | None],
+        new: SavedSearch,
     ) -> bool:
         """Compare-and-set of the progress columns; see ``update_progress``."""
-        checked_through, seen, seen_items, last_checked_at = new
 
         def work(db: sqlite3.Connection) -> bool:
             """Read the row, compare what it holds, then update it."""
@@ -427,28 +434,16 @@ class SavedSearchStore:
             # ``created_at`` is part of it so that a row deleted and saved again under the same
             # name during a check is another row and never passes.
             stored = _from_row(row)
-            if (
-                stored.seen,
-                stored.checked_through,
-                stored.seen_items,
-                stored.last_checked_at,
-                stored.created_at,
-            ) != (
-                expected.seen,
-                expected.checked_through,
-                expected.seen_items,
-                expected.last_checked_at,
-                expected.created_at,
-            ):
+            if _compared(stored) != _compared(expected):
                 return False
             db.execute(
                 "UPDATE saved_searches SET seen=?, checked_through=?, seen_items=?, "
                 "last_checked_at=? WHERE owner = ? AND name = ?",
                 (
-                    _dump_seen(seen),
-                    _day_text(checked_through),
-                    _dump_seen_items(seen_items),
-                    _moment_text(last_checked_at),
+                    _dump_seen(new.seen),
+                    _day_text(new.checked_through),
+                    _dump_seen_items(new.seen_items),
+                    _moment_text(new.last_checked_at),
                     owner,
                     name,
                 ),
@@ -464,6 +459,17 @@ class SavedSearchStore:
         )
         if cursor.rowcount == 0:
             raise SearchNotFoundError(f"no saved search named '{name}'")
+
+
+def _compared(search: SavedSearch) -> tuple[object, ...]:
+    """What the progress compare-and-set holds equal: the progress fields and ``created_at``."""
+    return (
+        search.seen,
+        search.checked_through,
+        search.seen_items,
+        search.last_checked_at,
+        search.created_at,
+    )
 
 
 def _make_private_directories(directory: Path) -> None:
