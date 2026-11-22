@@ -620,13 +620,14 @@ async def check_saved_searches(
     results: list[SearchCheck] = []
     for search in searches:
         allowance = min(limit, remaining)
-        if search.kind == "law":
+        if search.kind == "law" and since is not None:
+            # The references carry no date, only the acting norm's identifier, and a year taken
+            # from it would pass for a date: so a law is not re-read by date at all.
+            outcome = _Outcome(_law_check(search, "checked", note=_LAW_SINCE_NOTE))
+        elif search.kind == "law":
+            # Without ``since`` every law search has an entry: ``laws`` holds all of them.
             outcome = _law_outcome(
-                search,
-                analyses.get(search.name),
-                since=since,
-                allowance=allowance,
-                moment=moment,
+                search, analyses[search.name], allowance=allowance, moment=moment
             )
         else:
             outcome = _gazette_outcome(
@@ -789,20 +790,14 @@ def _other_counts(others: list[LawReference]) -> dict[str, int]:
 
 def _law_outcome(
     search: SavedSearch,
-    read: LawAnalysis | _Unread | None,
+    read: LawAnalysis | _Unread,
     *,
-    since: date | None,
     allowance: int,
     moment: datetime,
 ) -> _Outcome:
     """The check of a law search: its references not seen yet, and ``seen`` grown by those shown."""
-    if since is not None:
-        # The references carry no date, only the acting norm's identifier, and a year taken from
-        # it would pass for a date: so a law is not re-read by date at all.
-        return _Outcome(_law_check(search, "checked", note=_LAW_SINCE_NOTE))
-    if read is None or isinstance(read, _Unread):
-        unread = read or _Unread("partial", "Not read yet; call again.")
-        return _Outcome(_law_check(search, unread.status, note=unread.note))
+    if isinstance(read, _Unread):
+        return _Outcome(_law_check(search, read.status, note=read.note))
     fresh: dict[str, LawReference] = {}
     for reference in read.later:
         key = _reference_key(reference)
