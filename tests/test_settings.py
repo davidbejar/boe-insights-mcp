@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from boe_insights_mcp.cache import default_cache_dir
-from boe_insights_mcp.settings import Settings
+from boe_insights_mcp.settings import Settings, default_data_dir
 
 
 def test_defaults_without_environment() -> None:
@@ -93,3 +93,44 @@ def test_invalid_value_raises_naming_the_variable(variable: str, value: str) -> 
 def test_settings_are_immutable() -> None:
     with pytest.raises(AttributeError):
         Settings().min_interval = 5.0  # type: ignore[misc]
+
+
+def test_data_dir_defaults_to_the_platform_data_dir() -> None:
+    settings = Settings.from_env({})
+
+    assert settings.data_dir == default_data_dir()
+    assert settings.data_dir != settings.cache_dir
+    assert settings.data_dir_set is False
+
+
+def test_data_dir_variable_overrides_it(tmp_path: Path) -> None:
+    settings = Settings.from_env({"BOE_INSIGHTS_DATA_DIR": str(tmp_path)})
+
+    assert settings.data_dir == tmp_path
+    assert settings.data_dir_set is True
+    assert settings.saved_searches_path == tmp_path / "saved_searches.sqlite3"
+
+
+def test_empty_data_dir_variable_keeps_the_default() -> None:
+    settings = Settings.from_env({"BOE_INSIGHTS_DATA_DIR": ""})
+
+    assert settings.data_dir == default_data_dir()
+    assert settings.data_dir_set is False
+
+
+def test_disk_backend_stores_searches_in_the_data_dir() -> None:
+    settings = Settings.from_env({})
+
+    assert settings.saved_searches_path == default_data_dir() / "saved_searches.sqlite3"
+
+
+def test_memory_backend_without_a_data_dir_keeps_searches_in_memory() -> None:
+    assert Settings.from_env({"BOE_INSIGHTS_CACHE": "memory"}).saved_searches_path is None
+
+
+def test_memory_backend_with_a_data_dir_still_persists_searches(tmp_path: Path) -> None:
+    settings = Settings.from_env(
+        {"BOE_INSIGHTS_CACHE": "memory", "BOE_INSIGHTS_DATA_DIR": str(tmp_path)}
+    )
+
+    assert settings.saved_searches_path == tmp_path / "saved_searches.sqlite3"
