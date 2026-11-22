@@ -1,4 +1,4 @@
-"""MCP resources: a law, an article, a day of the gazette and the code tables, ready to attach.
+"""MCP resources: a law, an article, a day of the gazette, code tables and saved searches.
 
 In apps that support MCP resources a person can attach one of these to the conversation. Many
 apps do not let the model open resources, so a resource never offers anything a tool does not:
@@ -7,6 +7,9 @@ each one returns exactly what the matching tool returns (``legislation.get_law_o
 that ``find_codes`` searches. The JSON is the result model's own serialisation, so provenance,
 the BOE attribution and the informational notice travel with it, as the BOE reuse conditions
 require.
+
+The one static resource, ``boe://saved-searches``, is the owner's list of saved searches, read from
+the store the server lifespan provides.
 
 ``server.create_server`` calls :func:`register`; the use cases do all the work and this module
 only maps URIs onto them and turns expected failures into ``ResourceError`` messages.
@@ -23,7 +26,7 @@ from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ResourceError
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from boe_insights_mcp import articles, gazette, legislation
+from boe_insights_mcp import articles, gazette, legislation, owner, saved_searches
 from boe_insights_mcp.client import AuxiliaryTable, BoeClient
 from boe_insights_mcp.clock import utc_now
 from boe_insights_mcp.errors import BoeError, describe_error
@@ -155,8 +158,22 @@ async def _codes(kind: str, ctx: Context) -> str:
     return _as_json(await _guard(_build_table(_client(ctx), kind), "find_codes"))
 
 
+async def _saved_searches(ctx: Context) -> str:
+    """The current owner's saved searches, as ``list_saved_searches`` returns them."""
+    # The owner comes from the request, never from the URI, so one person's list cannot be read
+    # by naming another.
+    return _as_json(
+        await _guard(
+            saved_searches.list_saved_searches(
+                ctx.lifespan_context["searches"], owner.current_owner()
+            ),
+            "list_saved_searches",
+        )
+    )
+
+
 def register(server: FastMCP) -> None:
-    """Register the four resource templates on ``server``."""
+    """Register the four resource templates and the saved-searches resource on ``server``."""
     # Registered by call rather than with decorators on the module-level functions so that the
     # texts below, which the model and the person see, sit in one place.
     specs: list[tuple[Any, str, str, str, str]] = [
@@ -189,6 +206,15 @@ def register(server: FastMCP) -> None:
             "Every code and name of one BOE table; kind is department, subject or rank.",
         ),
     ]
+    specs.append(
+        (
+            _saved_searches,
+            "boe://saved-searches",
+            "saved_searches",
+            "Saved searches",
+            "Your saved searches, with their filters and when each was last checked.",
+        )
+    )
     for function, uri, name, title, description in specs:
         server.resource(uri, name=name, title=title, description=description, mime_type=_JSON)(
             function

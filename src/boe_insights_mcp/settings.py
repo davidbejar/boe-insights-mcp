@@ -28,9 +28,14 @@ _BACKENDS: tuple[CacheBackend, ...] = ("disk", "memory")
 _APP_NAME = "boe-insights-mcp"
 
 
-def default_data_dir() -> Path:
-    """Return the platform's per-user data directory for this server (not created)."""
-    return Path(user_data_dir(_APP_NAME))
+def default_data_dir(env: Mapping[str, str] | None = None) -> Path:
+    """Return ``$BOE_INSIGHTS_DATA_DIR`` if set, else the platform's per-user data directory.
+
+    ``env`` is the mapping to read the variable from (the process environment by default), like
+    ``cache.default_cache_dir``. The directory is not created.
+    """
+    override = (os.environ if env is None else env).get("BOE_INSIGHTS_DATA_DIR")
+    return Path(override) if override else Path(user_data_dir(_APP_NAME))
 
 
 @dataclass(frozen=True)
@@ -73,7 +78,7 @@ class Settings:
         return cls(
             cache_backend=_backend(env.get("BOE_INSIGHTS_CACHE"), defaults.cache_backend),
             cache_dir=Path(cache_dir) if cache_dir else default_cache_dir(env),
-            data_dir=Path(data_dir) if data_dir else default_data_dir(),
+            data_dir=default_data_dir(env),
             data_dir_set=bool(data_dir),
             min_interval=_min_interval(env.get("BOE_INSIGHTS_MIN_INTERVAL"), defaults.min_interval),
             max_concurrency=_max_concurrency(

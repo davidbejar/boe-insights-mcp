@@ -24,13 +24,19 @@ def test_variables_override_every_setting(tmp_path: Path) -> None:
         {
             "BOE_INSIGHTS_CACHE": "memory",
             "BOE_INSIGHTS_CACHE_DIR": str(tmp_path),
+            "BOE_INSIGHTS_DATA_DIR": str(tmp_path / "data"),
             "BOE_INSIGHTS_MIN_INTERVAL": "0.25",
             "BOE_INSIGHTS_MAX_CONCURRENCY": "4",
         }
     )
 
     assert settings == Settings(
-        cache_backend="memory", cache_dir=tmp_path, min_interval=0.25, max_concurrency=4
+        cache_backend="memory",
+        cache_dir=tmp_path,
+        data_dir=tmp_path / "data",
+        data_dir_set=True,
+        min_interval=0.25,
+        max_concurrency=4,
     )
 
 
@@ -98,7 +104,7 @@ def test_settings_are_immutable() -> None:
 def test_data_dir_defaults_to_the_platform_data_dir() -> None:
     settings = Settings.from_env({})
 
-    assert settings.data_dir == default_data_dir()
+    assert settings.data_dir == default_data_dir({})
     assert settings.data_dir != settings.cache_dir
     assert settings.data_dir_set is False
 
@@ -114,14 +120,22 @@ def test_data_dir_variable_overrides_it(tmp_path: Path) -> None:
 def test_empty_data_dir_variable_keeps_the_default() -> None:
     settings = Settings.from_env({"BOE_INSIGHTS_DATA_DIR": ""})
 
-    assert settings.data_dir == default_data_dir()
+    assert settings.data_dir == default_data_dir({})
     assert settings.data_dir_set is False
 
 
 def test_disk_backend_stores_searches_in_the_data_dir() -> None:
     settings = Settings.from_env({})
 
-    assert settings.saved_searches_path == default_data_dir() / "saved_searches.sqlite3"
+    assert settings.saved_searches_path == default_data_dir({}) / "saved_searches.sqlite3"
+
+
+def test_default_data_dir_follows_the_environment_at_call_time(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("BOE_INSIGHTS_DATA_DIR", str(tmp_path))
+
+    assert Settings().data_dir == tmp_path
 
 
 def test_memory_backend_without_a_data_dir_keeps_searches_in_memory() -> None:
