@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from fastmcp.server.dependencies import get_access_token
 
+from boe_insights_mcp.access import is_subject
+
 __all__ = ["LOCAL_OWNER", "NotSignedInError", "current_owner"]
 
 LOCAL_OWNER = "local"
@@ -41,7 +43,6 @@ def current_owner(*, remote: bool = False) -> str:
     if token is None:
         raise NotSignedInError("no access token; cannot tell who owns data")
     subject = (getattr(token, "claims", None) or {}).get("sub")
-    # ``isascii`` as well as ``isdigit``: the latter accepts superscripts and other scripts.
-    if not (isinstance(subject, str) and subject.isascii() and subject.isdigit()):
+    if not is_subject(subject):
         raise NotSignedInError("the access token has no usable subject; cannot tell who owns data")
     return f"github:{subject}"

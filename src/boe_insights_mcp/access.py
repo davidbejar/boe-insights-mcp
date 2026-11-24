@@ -14,7 +14,7 @@ from typing import Any
 
 from fastmcp.utilities.authorization import AuthCheck, AuthContext
 
-__all__ = ["VARIABLE", "AllowList", "allow_check"]
+__all__ = ["VARIABLE", "AllowList", "allow_check", "is_subject"]
 
 VARIABLE = "BOE_INSIGHTS_ALLOWED_USERS"
 
@@ -27,8 +27,12 @@ _ID_ENTRY = re.compile(r"id:[0-9]+")
 _EVERYONE = "*"
 
 
-def _is_subject(value: object) -> bool:
-    """Whether ``value`` is a usable GitHub subject: a non-empty string of ASCII digits."""
+def is_subject(value: object) -> bool:
+    """Whether ``value`` is a usable GitHub subject: a non-empty string of ASCII digits.
+
+    The one definition shared by the allow-list, ``owner`` (who owns a row) and ``callrate`` (whose
+    bucket a call uses), so the three can never disagree about who is identified.
+    """
     # ``isdigit`` alone accepts superscripts and other scripts' digits; ``isascii`` excludes them.
     return isinstance(value, str) and value.isascii() and value.isdigit()
 
@@ -75,7 +79,7 @@ class AllowList:
         Fails closed: a ``sub`` that is not a usable subject is refused whatever the list holds,
         ``*`` included. Claims come from a token, so any type is possible.
         """
-        if not _is_subject(sub):
+        if not is_subject(sub):
             return False
         if self.everyone or sub in self.ids:
             return True

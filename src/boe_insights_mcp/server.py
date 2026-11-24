@@ -56,6 +56,7 @@ from boe_insights_mcp import citations as citation_checks
 from boe_insights_mcp.access import AllowList, allow_check
 from boe_insights_mcp.analytics import Period
 from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
+from boe_insights_mcp.callrate import CallRateLimit
 from boe_insights_mcp.catalogue import CatalogueStore
 from boe_insights_mcp.chains import Direction
 from boe_insights_mcp.client import BoeClient
@@ -1281,6 +1282,13 @@ def create_server(
         mask_error_details=True,
         auth=auth if mode.signed_in else None,
     )
+    if mode.remote and settings is not None and settings.calls_per_minute > 0:
+        # First, so it is the outermost: callers the allow-list refuses are counted too, and a
+        # refused call costs the allow-list nothing. Signed in, one bucket per GitHub id; open,
+        # one for everybody.
+        server.add_middleware(
+            CallRateLimit(settings.calls_per_minute, settings.calls_burst, by_user=mode.signed_in)
+        )
     if mode.signed_in:
         assert settings is not None  # signed_in implies HTTP settings
         # The provider only proves who the caller is; this decides whether they may use the

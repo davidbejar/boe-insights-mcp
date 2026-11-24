@@ -38,6 +38,8 @@ _CLIENT_SECRET_VAR = "BOE_INSIGHTS_GITHUB_CLIENT_SECRET"
 _SIGNING_KEY_VAR = "BOE_INSIGHTS_AUTH_SIGNING_KEY"
 _BASE_URL_VAR = "BOE_INSIGHTS_BASE_URL"
 _ALLOWED_USERS_VAR = "BOE_INSIGHTS_ALLOWED_USERS"
+_CALLS_PER_MINUTE_VAR = "BOE_INSIGHTS_CALLS_PER_MINUTE"
+_CALLS_BURST_VAR = "BOE_INSIGHTS_CALLS_BURST"
 _MIN_SIGNING_KEY_LENGTH = 32
 
 
@@ -97,6 +99,11 @@ class Settings:
     allowed_users: tuple[str, ...] = ()
     """``BOE_INSIGHTS_ALLOWED_USERS``: comma-separated allow-list entries (see ``access``)."""
 
+    calls_per_minute: int = 60
+    """``BOE_INSIGHTS_CALLS_PER_MINUTE``: calls per caller per minute over HTTP; 0 is no limit."""
+    calls_burst: int = 20
+    """``BOE_INSIGHTS_CALLS_BURST``: how many calls a caller may make at once before waiting."""
+
     @property
     def login_enabled(self) -> bool:
         """Whether GitHub login is configured (all four variables; ``from_env`` allows no less)."""
@@ -146,6 +153,10 @@ class Settings:
             auth_signing_key=signing_key,
             base_url=base_url,
             allowed_users=allowed_users,
+            calls_per_minute=_calls_per_minute(
+                env.get(_CALLS_PER_MINUTE_VAR), defaults.calls_per_minute
+            ),
+            calls_burst=_calls_burst(env.get(_CALLS_BURST_VAR), defaults.calls_burst),
         )
 
 
@@ -209,6 +220,32 @@ def _port(value: str | None, default: int) -> int:
     if not 1 <= port <= 65535:
         raise ValueError(f"BOE_INSIGHTS_PORT must be an integer from 1 to 65535, got {value!r}")
     return port
+
+
+def _calls_per_minute(value: str | None, default: int) -> int:
+    """Parse ``BOE_INSIGHTS_CALLS_PER_MINUTE`` as an integer >= 0 (0 switches the limit off)."""
+    if not value:
+        return default
+    try:
+        count = int(value)
+    except ValueError:
+        count = -1
+    if count < 0:
+        raise ValueError(f"{_CALLS_PER_MINUTE_VAR} must be an integer >= 0, got {value!r}")
+    return count
+
+
+def _calls_burst(value: str | None, default: int) -> int:
+    """Parse ``BOE_INSIGHTS_CALLS_BURST`` as an integer >= 1."""
+    if not value:
+        return default
+    try:
+        count = int(value)
+    except ValueError:
+        count = 0
+    if count < 1:
+        raise ValueError(f"{_CALLS_BURST_VAR} must be an integer >= 1, got {value!r}")
+    return count
 
 
 def _csv(value: str | None) -> tuple[str, ...]:
