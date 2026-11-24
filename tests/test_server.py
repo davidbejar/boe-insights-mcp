@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import base64
 from collections.abc import AsyncIterator, Callable
 from datetime import date
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -146,6 +148,21 @@ async def test_server_name_and_instructions_guide_the_model(boe_client: BoeClien
     assert "resolve_reference" in instructions
     assert "Basado en datos de la Agencia Estatal Boletín Oficial del Estado" in instructions
     assert "no official legal value" in instructions
+
+
+async def test_server_exposes_one_icon_that_is_the_packaged_logo(boe_client: BoeClient) -> None:
+    server = create_server(client=boe_client)
+    packaged = resources.files("boe_insights_mcp").joinpath("assets/logo-icon.svg").read_bytes()
+
+    assert len(server.icons) == 1
+    icon = server.icons[0]
+    assert icon.mime_type == "image/svg+xml"
+    assert icon.sizes == ["any"]
+    prefix = "data:image/svg+xml;base64,"
+    assert icon.src.startswith(prefix)
+    assert base64.b64decode(icon.src.removeprefix(prefix)) == packaged
+    assert server.website_url == "https://github.com/davidbejar/boe-insights-mcp"
+    assert len(icon.src) < 4096  # the icon travels in the server info of every session
 
 
 @pytest.mark.parametrize("name", sorted(TOOL_NAMES))

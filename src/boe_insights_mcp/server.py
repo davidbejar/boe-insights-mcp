@@ -25,11 +25,13 @@ are model-facing text; explanations for human readers live in ``#`` comments.
 
 from __future__ import annotations
 
+import base64
 import os
 import sys
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
+from importlib.resources import files as package_files
 from typing import Annotated, Any, Literal, TypeVar
 
 from fastmcp import Context, FastMCP
@@ -37,7 +39,7 @@ from fastmcp.exceptions import ToolError
 from fastmcp.server.auth import AuthProvider
 from fastmcp.server.lifespan import lifespan
 from fastmcp.server.middleware.authorization import AuthMiddleware
-from mcp.types import ToolAnnotations
+from mcp.types import Icon, ToolAnnotations
 from pydantic import Field
 
 from boe_insights_mcp import (
@@ -134,6 +136,15 @@ _INSTRUCTIONS_TAIL = (
     "(https://www.boe.es) and say that consolidated texts are informational and have no "
     "official legal value."
 )
+
+# The project logo, a packaged data file (a hatch wheel includes everything under the package).
+# It is inlined as a ``data:`` URI because FastMCP's sign-in consent page puts ``icons[0].src``
+# in an ``<img>`` (its CSP allows ``img-src https: data:``) and falls back to the FastMCP logo
+# otherwise; MCP clients receive the same icon in the server info on every transport. At about
+# 2 KB it adds little to the initialize response.
+_LOGO_SVG = package_files("boe_insights_mcp").joinpath("assets/logo-icon.svg").read_bytes()
+LOGO_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(_LOGO_SVG).decode("ascii")
+WEBSITE_URL = "https://github.com/davidbejar/boe-insights-mcp"
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
 # The saved-search tools are the first that write (to the server's own store, not to the BOE).
@@ -1287,6 +1298,8 @@ def create_server(
         lifespan=_lifespan(client, settings, store, mode.remote),
         mask_error_details=True,
         auth=auth if mode.signed_in else None,
+        website_url=WEBSITE_URL,
+        icons=[Icon(src=LOGO_DATA_URI, mime_type="image/svg+xml", sizes=["any"])],
     )
     if mode.remote and settings is not None and settings.calls_per_minute > 0:
         # First, so it is the outermost: callers the allow-list refuses are counted too, and a

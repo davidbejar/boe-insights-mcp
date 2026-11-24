@@ -12,6 +12,7 @@ import base64
 import hashlib
 import re
 from collections.abc import Callable
+from importlib import resources
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
@@ -19,6 +20,7 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import pytest
 from fastmcp.server.auth.oauth_proxy import upstream as oauth_upstream
+from fastmcp.utilities.ui import FASTMCP_LOGO_URL
 
 from boe_insights_mcp import launch
 from boe_insights_mcp.access import AllowList
@@ -86,13 +88,10 @@ def stored_files(root: Path) -> set[Path]:
     }
 
 
-async def begin_sign_in(
-    http: httpx.AsyncClient, github: dict[str, str], upstream_token: str
-) -> tuple[str, str, str]:
-    """Register, authorize and consent; return ``(client_id, code_verifier, upstream_state)``.
-
-    The next step is GitHub's redirect to ``/auth/callback`` with that state.
-    """
+async def open_consent_page(
+    http: httpx.AsyncClient,
+) -> tuple[httpx.Response, str, str]:
+    """Register and authorize; return ``(consent page, client_id, code_verifier)``."""
     registered = await http.post(
         "/register", json={"redirect_uris": [REDIRECT], "token_endpoint_auth_method": "none"}
     )
@@ -113,7 +112,17 @@ async def begin_sign_in(
         },
     )
     assert authorize.status_code == 302
-    page = await http.get(authorize.headers["location"])
+    return await http.get(authorize.headers["location"]), client_id, verifier
+
+
+async def begin_sign_in(
+    http: httpx.AsyncClient, github: dict[str, str], upstream_token: str
+) -> tuple[str, str, str]:
+    """Register, authorize and consent; return ``(client_id, code_verifier, upstream_state)``.
+
+    The next step is GitHub's redirect to ``/auth/callback`` with that state.
+    """
+    page, client_id, verifier = await open_consent_page(http)
     form = dict(re.findall(r'<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"', page.text))
     form["action"] = "approve"
     consent = await http.post("/consent", data=form, headers={"Origin": BASE_URL})
@@ -156,6 +165,26 @@ async def sign_in_up_to_token(
         client_id=client_id,
     )
     return response, before
+
+
+async def test_the_consent_page_shows_the_project_logo_not_the_fastmcp_one(
+    tmp_path: Path, private_fastmcp_home: Path, upstream: UpstreamGitHub
+) -> None:
+    logo = resources.files("boe_insights_mcp").joinpath("assets/logo-icon.svg").read_bytes()
+    logo_data_uri = "data:image/svg+xml;base64," + base64.b64encode(logo).decode()
+    built, settings = build(login_env(tmp_path))
+    app = launch.build_http_app(built, settings)
+    async with (
+        app.lifespan(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=BASE_URL) as http,
+    ):
+        page, _, _ = await open_consent_page(http)
+
+    assert page.status_code == 200
+    assert logo_data_uri in page.text
+    assert FASTMCP_LOGO_URL not in page.text
+    assert "https://github.com/davidbejar/boe-insights-mcp" in page.text
+    assert "boe-insights" in page.text
 
 
 async def test_a_listed_user_signs_in_and_gets_a_working_session(
