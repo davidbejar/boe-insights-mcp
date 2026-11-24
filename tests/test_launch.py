@@ -320,4 +320,6 @@ def test_the_transport_choices_are_unchanged(capsys: pytest.CaptureFixture[str])
     with pytest.raises(SystemExit):
         launch.resolve_settings(["--transport", "sse"], {})
 
-    assert "(choose from stdio, http)" in capsys.readouterr().err
+    # argparse quotes the choices in some Python releases and not in others, so the quotes are
+    # dropped before comparing: what matters is which choices are offered, and in which order.
+    assert "(choose from stdio, http)" in capsys.readouterr().err.replace("'", "")
