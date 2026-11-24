@@ -14,6 +14,11 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
 
+    # Without this, every `uv run` below picks the version in `.python-version`, rebuilds the
+    # environment with it and so tests the same Python in all three jobs.
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -24,16 +29,19 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --all-groups --python ${{ matrix.python-version }}
+        run: uv sync --all-groups
+
+      - name: Show the Python in use
+        run: uv run --no-sync python --version
 
       - name: Lint
-        run: uv run ruff check .
+        run: uv run --no-sync ruff check .
 
       - name: Format check
-        run: uv run ruff format --check .
+        run: uv run --no-sync ruff format --check .
 
       - name: Type check
-        run: uv run pyright
+        run: uv run --no-sync pyright
 
       - name: Test
-        run: uv run pytest
+        run: uv run --no-sync pytest
