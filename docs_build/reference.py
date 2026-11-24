@@ -709,7 +709,9 @@ def _render_page(
         if title:
             blocks.append(f"## {title}")
         if note:
-            blocks.append(note)
+            # An admonition (the site enables the extension) sets the availability caveat apart
+            # from the entries; on a plain Markdown renderer it still reads as an indented note.
+            blocks.append(f'!!! note ""\n    {note}')
         for component in entries:
             summary = summaries[component.key] if summaries is not None else None
             blocks.extend(_entry(component, labels, summary))

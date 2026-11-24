@@ -1,3 +1,3 @@
 # Resources
 
-Coming soon: this page is a stub.
+This page is generated from the server at build time (hooks/reference_pages.py).
