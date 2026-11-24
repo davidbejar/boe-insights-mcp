@@ -26,7 +26,10 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "fastmcp>=4.2,<5",
+    # Narrow on purpose: login.py overrides private FastMCP internals (OAuth proxy), which can
+    # change in any minor release. Before raising this range, re-run the sign-in tests
+    # (tests/test_login*.py) and re-read login.py against the new FastMCP source.
+    "fastmcp>=4.2.4,<4.3",
     "httpx",
     "pydantic>=2",
     "diskcache",
