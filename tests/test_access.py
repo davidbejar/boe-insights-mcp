@@ -9,11 +9,13 @@ digits matches nothing, ``*`` included.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from fastmcp.utilities.authorization import AuthContext
 
-from boe_insights_mcp.access import AllowList
+from boe_insights_mcp.access import AllowList, allow_check
 
 VARIABLE = "BOE_INSIGHTS_ALLOWED_USERS"
 
@@ -324,3 +326,71 @@ def test_a_missing_or_odd_login_matches_no_username_entry(login: Any) -> None:
 @pytest.mark.parametrize("login", [None, "", "   ", 5, ["alice"]], ids=repr)
 def test_a_missing_or_odd_login_can_still_match_an_id_entry(login: Any) -> None:
     assert allowing("alice", "id:1001").allows("1001", login) is True
+
+
+# --- Answering for a token -----------------------------------------------------------------------
+
+
+def token(**claims: Any) -> Any:
+    """A token object carrying ``claims``, as FastMCP's access token does."""
+    return SimpleNamespace(claims=claims)
+
+
+NO_IDENTITY: list[Any] = [
+    pytest.param(None, id="no-token"),
+    # A token type without claims, as the SDK's own access token is.
+    pytest.param(object(), id="no-claims-attribute"),
+    pytest.param(SimpleNamespace(claims=None), id="claims-none"),
+    pytest.param(SimpleNamespace(claims={}), id="claims-empty"),
+]
+
+
+@pytest.mark.parametrize("given", NO_IDENTITY)
+def test_the_component_check_refuses_a_caller_without_an_identity(given: Any) -> None:
+    check = allow_check(allowing("*", "alice", "id:1001"))
+
+    assert check(AuthContext(token=given, component=object())) is False  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("given", NO_IDENTITY)
+def test_a_token_without_an_identity_is_not_allowed_even_by_a_star(given: Any) -> None:
+    assert allowing("*", "alice", "id:1001").allows_token(given) is False
+
+
+TOKEN_CASES: list[tuple[tuple[str, ...], dict[str, Any], bool]] = [
+    (("id:1001",), {"sub": "1001", "login": "someone-else"}, True),  # the id alone admits
+    (("alice",), {"sub": "1001", "login": "Alice"}, True),  # the login alone admits
+    (("alice",), {"login": "alice"}, False),  # a listed login without a subject does not
+    (("alice",), {"sub": "1001", "login": "bob"}, False),
+    (("id:1001",), {"sub": "1002", "login": "alice"}, False),
+    (("*",), {"sub": "7"}, True),
+    (("*",), {"sub": 7, "login": "alice"}, False),
+]
+
+
+@pytest.mark.parametrize(("entries", "claims", "expected"), TOKEN_CASES)
+def test_the_component_check_answers_from_the_sub_and_login_claims(
+    entries: tuple[str, ...], claims: dict[str, Any], expected: bool
+) -> None:
+    check = allow_check(allowing(*entries))
+
+    assert check(AuthContext(token=token(**claims), component=object())) is expected  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(("entries", "claims", "expected"), TOKEN_CASES)
+def test_a_token_is_answered_for_from_its_sub_and_login_claims(
+    entries: tuple[str, ...], claims: dict[str, Any], expected: bool
+) -> None:
+    assert allowing(*entries).allows_token(token(**claims)) is expected
+
+
+def test_claims_of_an_odd_type_raise_rather_than_admit() -> None:
+    # Pinned as it behaves today: claims are read as a mapping, and FastMCP's token types always
+    # carry one, so a truthy non-mapping fails loudly instead of being guessed at.
+    odd = SimpleNamespace(claims=["sub", "login"])
+    allow = allowing("*")
+
+    with pytest.raises(AttributeError):
+        allow.allows_token(odd)
+    with pytest.raises(AttributeError):
+        allow_check(allow)(AuthContext(token=odd, component=object()))  # type: ignore[arg-type]

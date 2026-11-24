@@ -87,6 +87,19 @@ class AllowList:
         # letters, which would let a look-alike login pass.
         return isinstance(login, str) and login.isascii() and login.lower() in self.names
 
+    def allows_token(self, token: object) -> bool:
+        """Whether the user named by ``token``'s ``sub`` and ``login`` claims may use the server.
+
+        The claims are read as a mapping. ``False`` when there is no token, or its ``claims`` are
+        missing, ``None`` or empty: there is no identity to admit.
+        """
+        if token is None:
+            return False
+        # ``getattr``: the SDK's own access token type has no ``claims`` attribute (only FastMCP's
+        # subclass does), and such a token names nobody.
+        claims = getattr(token, "claims", None) or {}
+        return self.allows(claims.get("sub"), claims.get("login"))
+
     def admitted_by_name_only(self, sub: Any, login: Any) -> bool:
         """Whether the user is allowed solely because their login is listed.
 
@@ -102,9 +115,6 @@ def allow_check(allow_list: AllowList) -> AuthCheck:
 
     def check(ctx: AuthContext) -> bool:
         """Allow the component when its caller's token is on the list; no token never is."""
-        if ctx.token is None:
-            return False
-        claims = getattr(ctx.token, "claims", None) or {}
-        return allow_list.allows(claims.get("sub"), claims.get("login"))
+        return allow_list.allows_token(ctx.token)
 
     return check

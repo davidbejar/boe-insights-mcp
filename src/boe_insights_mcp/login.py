@@ -11,7 +11,7 @@ components.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, NamedTuple
 from urllib.parse import parse_qs, urlsplit
 
 from fastmcp.server.auth.oauth_proxy.models import _hash_token
@@ -56,6 +56,20 @@ def _refusal_page(sub: Any, login: Any) -> str:
     message = "This GitHub account is not allowed to use this server." + who
     # create_error_html HTML-escapes the message, so GitHub-supplied text needs no escaping here.
     return create_error_html(error_title="Access not allowed", error_message=message)
+
+
+class _Screened(NamedTuple):
+    """What ``AllowListedGitHubProvider._screen_code`` found for a stored one-time code."""
+
+    admitted: bool
+    """Whether the allow-list admits the account; when not, the code has been deleted."""
+    upstream: AccessToken | None
+    """The verifier's token for the code's upstream token, with GitHub's claims.
+
+    ``None`` when the verifier returned no token: GitHub rejected the credentials, required
+    scopes are missing, or verification failed unexpectedly. An unreachable or rate-limited
+    GitHub raises ``TokenVerificationError`` instead, so it never produces a verdict.
+    """
 
 
 class AllowListedGitHubProvider(GitHubProvider):
@@ -120,14 +134,9 @@ class AllowListedGitHubProvider(GitHubProvider):
         ``TokenErrorCode``); it is how an authorization code that cannot be redeemed is reported
         (RFC 6749 section 5.2).
         """
-        code_model = await self._code_store.get(key=authorization_code.code)
-        if code_model is not None:
-            upstream = await self._token_validator.verify_token(
-                code_model.idp_tokens["access_token"]
-            )
-            if upstream is None or not self._admits(upstream):
-                await self._code_store.delete(key=authorization_code.code)
-                raise TokenError("invalid_grant", "This GitHub account is not permitted here")
+        screened = await self._screen_code(authorization_code.code)
+        if screened is not None and not screened.admitted:
+            raise TokenError("invalid_grant", "This GitHub account is not permitted here")
         return await super().exchange_authorization_code(client, authorization_code)
 
     async def exchange_refresh_token(
@@ -197,27 +206,41 @@ class AllowListedGitHubProvider(GitHubProvider):
         codes = parse_qs(urlsplit(response.headers["location"]).query).get("code")
         if not codes:
             return response  # an error redirect (RFC 6749 section 4.1.2.1): no code, no identity
-        code = codes[0]
+        screened = await self._screen_code(codes[0])
+        if screened is None or screened.admitted:
+            return response
+        claims = getattr(screened.upstream, "claims", None) or {}
+        return HTMLResponse(_refusal_page(claims.get("sub"), claims.get("login")), status_code=403)
+
+    async def _screen_code(self, code: str) -> _Screened | None:
+        """Decide whether the account behind the stored one-time ``code`` is admitted.
+
+        Returns ``None`` when no such code is stored (nothing is decided or deleted), otherwise
+        the verdict with GitHub's answer for the code's token. A refused code is deleted before
+        returning. Shared by the callback and the code exchange, which differ only in how they
+        refuse. A ``TokenVerificationError`` from the verifier propagates and the code stays.
+        """
         code_model = await self._code_store.get(key=code)
         if code_model is None:
-            return response
+            return None
         upstream = await self._token_validator.verify_token(code_model.idp_tokens["access_token"])
+        # ``_admits`` only sees a real answer, so an unverifiable token is refused without the
+        # "not on the allow-list" log line: it is not a verdict on the list.
         if upstream is not None and self._admits(upstream):
-            return response
+            return _Screened(admitted=True, upstream=upstream)
         await self._code_store.delete(key=code)
-        claims = getattr(upstream, "claims", None) or {}
-        return HTMLResponse(_refusal_page(claims.get("sub"), claims.get("login")), status_code=403)
+        return _Screened(admitted=False, upstream=upstream)
 
     def _admits(self, access: AccessToken) -> bool:
         """Whether the GitHub identity in ``access``'s claims is on the allow-list."""
-        # The proxy declares the SDK's token type, but the verifier's FastMCP token (with claims) is
-        # what it returns; a token without claims has no identity and is refused below.
-        claims = getattr(access, "claims", None) or {}
-        sub, login = claims.get("sub"), claims.get("login")
-        if not self._allow_list.allows(sub, login):
+        if not self._allow_list.allows_token(access):
             # Neither the token nor the identity is logged: a refusal is a normal event here.
             logger.debug("Refused a token of a user who is not on the allow-list")
             return False
+        # The proxy declares the SDK's token type, but the verifier returns FastMCP's token, whose
+        # claims carry GitHub's id (``sub``) and ``login``.
+        claims = getattr(access, "claims", None) or {}
+        sub, login = claims.get("sub"), claims.get("login")
         if self._allow_list.admitted_by_name_only(sub, login):
             self._note_name_entry(str(login), str(sub))
         return True
