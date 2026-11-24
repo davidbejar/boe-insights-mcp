@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<title>boe-insights-mcp: quartered shield icon, teal</title>
+<circle cx="256" cy="256" r="256" fill="#14524F"/>
+<path d="M128 112H384V272C384 352 320 392 256 416C192 392 128 352 128 272Z" fill="#FFFFFF"/>
+<path d="M240 112h32v304h-32zM128 224h256v32H128z" fill="#14524F"/>
+<circle cx="256" cy="240" r="52" fill="#14524F"/>
+<circle cx="256" cy="240" r="22" fill="#FFFFFF"/>
+</svg>
