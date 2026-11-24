@@ -219,3 +219,55 @@ def test_resolve_settings_keeps_the_login_values_for_the_factory() -> None:
     assert settings.login_enabled is True
     assert settings.github_client_id == CLIENT_ID
     assert settings.base_url == "https://boe.example.org"
+
+
+# --- Open HTTP on a reachable address ------------------------------------------------------------
+
+
+def _bind_warnings(warnings: list[logging.LogRecord]) -> list[str]:
+    """The messages of the warnings about serving without sign-in beyond this machine."""
+    return [w.getMessage() for w in warnings if "without sign-in" in w.getMessage()]
+
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "::", "203.0.113.7", "boe.example.org"])
+def test_open_http_on_a_reachable_address_warns_once(
+    host: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    recorder, warnings = run(["--transport", "http", "--host", host], {}, caplog)
+
+    assert [call[0] for call in recorder.calls] == ["http"]
+    [message] = _bind_warnings(warnings)
+    assert len(warnings) == 1
+    assert "other machines" in message
+    assert "reverse proxy" in message
+    assert "GitHub sign-in" in message
+    assert "loopback" in message  # the container case: publish the port on loopback
+
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "127.1.2.3", "::1", "localhost", "LOCALHOST"])
+def test_open_http_on_loopback_does_not_warn(host: str, caplog: pytest.LogCaptureFixture) -> None:
+    _, warnings = run(["--transport", "http", "--host", host], {}, caplog)
+
+    assert warnings == []
+
+
+def test_open_http_with_the_default_host_does_not_warn(caplog: pytest.LogCaptureFixture) -> None:
+    _, warnings = run(["--transport", "http"], {}, caplog)
+
+    assert warnings == []
+
+
+def test_stdio_does_not_warn_about_the_host(caplog: pytest.LogCaptureFixture) -> None:
+    _, warnings = run(["--host", "0.0.0.0"], {}, caplog)
+
+    assert warnings == []
+
+
+def test_signed_in_http_on_a_reachable_address_does_not_warn(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    env = {**LOGIN_ENV, USERS_VAR: "alice"}
+
+    _, warnings = run(["--transport", "http", "--host", "0.0.0.0"], env, caplog)
+
+    assert warnings == []

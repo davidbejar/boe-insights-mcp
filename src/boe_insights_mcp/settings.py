@@ -30,6 +30,7 @@ __all__ = [
     "CacheBackend",
     "Settings",
     "Transport",
+    "is_loopback",
     "port_in_range",
 ]
 
@@ -358,14 +359,14 @@ def _base_url(value: str) -> str:
         or _bare_host(parts.hostname) is None
     ):
         raise ValueError(problem)
-    if parts.scheme == "http" and not _is_loopback(parts.hostname):
+    if parts.scheme == "http" and not is_loopback(parts.hostname):
         # Sign-in codes and tokens travel over this URL's redirects; they must not cross a
         # network in clear text. A TLS-terminating proxy still gives the public https URL.
         raise ValueError(f"{_BASE_URL_VAR} must use https unless its host is loopback")
     return value.removesuffix("/")
 
 
-def _is_loopback(host: str) -> bool:
+def is_loopback(host: str) -> bool:
     """Whether ``host`` is ``localhost`` or a loopback IP literal (127.0.0.0/8 or ::1)."""
     if host.lower() == "localhost":
         return True
@@ -456,6 +457,6 @@ def _redirect_pattern(entry: str) -> str:
     port = parts.netloc.rpartition(":")[2] if ":" in parts.netloc else ""
     if port and not (port.isascii() and port.isdigit() and 0 < int(port) < 65536):
         raise ValueError(problem)
-    if parts.scheme == "http" and not _is_loopback(host):
+    if parts.scheme == "http" and not is_loopback(host):
         raise ValueError(problem)
     return entry

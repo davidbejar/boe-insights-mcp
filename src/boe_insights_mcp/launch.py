@@ -25,7 +25,13 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from boe_insights_mcp.httplimits import BodyLimit, QueryStripFilter
-from boe_insights_mcp.settings import PORT_REQUIREMENT, TRANSPORTS, Settings, port_in_range
+from boe_insights_mcp.settings import (
+    PORT_REQUIREMENT,
+    TRANSPORTS,
+    Settings,
+    is_loopback,
+    port_in_range,
+)
 
 __all__ = ["build_http_app", "register_health", "resolve_settings", "run"]
 
@@ -160,6 +166,21 @@ def run(argv: Sequence[str], env: Mapping[str, str], factory: ServerFactory) -> 
         logger.warning(
             "GitHub login is on but BOE_INSIGHTS_ALLOWED_USERS is empty: nobody can sign in "
             "until it is set"
+        )
+    if (
+        settings.transport == "http"
+        and not settings.login_enabled
+        and not is_loopback(settings.host)
+    ):
+        # A warning, not a refusal: the container image binds 0.0.0.0 on purpose (the published
+        # port is what decides who can reach it), so only the operator knows if this is safe.
+        logger.warning(
+            "Serving over HTTP on %s without sign-in: the server is reachable from other "
+            "machines, and anyone who can reach it can use the read-only tools and consume the "
+            "shared BOE request budget. Put a reverse proxy with access control in front, or "
+            "enable GitHub sign-in. In a container, publish the port on loopback only "
+            "(for example -p 127.0.0.1:8000:8000)",
+            settings.host,
         )
     server = factory(settings)
     if settings.transport == "stdio":
