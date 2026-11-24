@@ -13,27 +13,27 @@
 # --- Herramientas -------------------------------------------------------------------------------
 
 [tools.search_legislation]
-summary = "Busca leyes en la legislación consolidada por título, texto, rango, departamento, ámbito o fecha de publicación. Sin filtros devuelve las leyes publicadas más recientemente, en páginas."
+summary = "Busca normas de la legislación consolidada por título, texto, rango, departamento, ámbito o fecha de publicación. Sin filtros devuelve las normas publicadas más recientemente, paginadas."
 source_hash = "18249127bfcb"
 
 [tools.resolve_reference]
-summary = "Convierte el nombre o el número de una ley, como «Ley 40/2015», en su identificador del BOE, que necesitan las demás herramientas. Indica si hay una coincidencia, varias candidatas o ninguna."
+summary = "Convierte el nombre o el número de una norma (por ejemplo, Ley 40/2015) en su identificador del BOE, que necesitan las herramientas de normas y artículos. Indica si hay una coincidencia, varias candidatas o ninguna."
 source_hash = "0fc16bf947ae"
 
 [tools.get_law_overview]
-summary = "Resume una ley: título, rango, fechas, estado (vigente, derogada, etc.) y cuántas normas la han modificado o ha modificado ella. El estado se deduce de las marcas del BOE y es solo orientativo."
+summary = "Resume una norma: título, rango, fechas, estado (vigente, derogada, etc.) con una nota en inglés, y cuántas normas la han modificado o ha modificado ella. El estado se deduce de los indicadores y referencias del BOE y es solo orientativo: `in_force` no significa que sigan vigentes todas sus disposiciones."
 source_hash = "55fccc3a02d5"
 
 [tools.find_codes]
-summary = "Busca por nombre los códigos de departamento, materia o rango que usa el BOE. Sirve para obtener los valores de los filtros de las demás herramientas."
+summary = "Busca por nombre los códigos de departamento, materia o rango que usa el BOE. Sirve para obtener los valores de los filtros `department_code` y `subject_code` de `search_legislation`."
 source_hash = "0b4a177352a2"
 
 [tools.get_amendment_history]
-summary = "Lista las normas posteriores que han modificado, derogado o afectado de otro modo a una ley completa, de la más reciente a la más antigua, con recuentos por grupo y por año. Nombra las normas, no los artículos afectados."
+summary = "Lista las normas posteriores que han modificado, derogado o afectado de otro modo a una norma en su conjunto, de la más reciente a la más antigua, con recuentos por grupo y por año. Nombra las normas, no los artículos afectados."
 source_hash = "3f123599f6f8"
 
 [tools.read_article]
-summary = "Devuelve el texto de un artículo o disposición de una ley tal como estaba vigente en una fecha (por defecto, hoy). Si el artículo no se identifica con claridad, ofrece candidatos para repetir la consulta."
+summary = "Devuelve el texto de un artículo o disposición de una norma en su redacción vigente en una fecha (por defecto, hoy). Si el artículo no se identifica con claridad, ofrece bloques candidatos para repetir la consulta."
 source_hash = "a898dec8df95"
 
 [tools.compare_article_versions]
@@ -45,15 +45,15 @@ summary = "Lista las versiones de un artículo: desde cuándo rige cada una, qu�
 source_hash = "0924f03d08e5"
 
 [tools.get_law_structure]
-summary = "Devuelve el índice de una ley (libros, títulos, capítulos, secciones y epígrafes de artículos), cada uno con el identificador de bloque que usan las herramientas de artículos. Las normas muy extensas se paginan o se piden solo con epígrafes."
+summary = "Devuelve el índice de una norma (libros, títulos, capítulos, secciones y epígrafes de artículos), cada uno con el identificador de bloque que usan las herramientas de artículos. En los códigos muy extensos hay que paginar o pedir solo la estructura, sin artículos (`detail` = `headings`)."
 source_hash = "a7f7fb371917"
 
 [tools.legislation_over_time]
-summary = "Cuenta las leyes por año, trimestre o mes, con la opción de desglosarlas por rango, departamento o ámbito. Solo cubre la legislación consolidada; la primera vez descarga el catálogo y tarda unos treinta segundos."
+summary = "Cuenta las normas por año, trimestre o mes, con la opción de desglosarlas por rango, departamento o ámbito. Solo cubre la legislación consolidada; la primera vez descarga el catálogo y tarda unos treinta segundos."
 source_hash = "0bc57a6511e4"
 
 [tools.top_departments]
-summary = "Ordena los departamentos (ministerios, Jefatura del Estado, comunidades autónomas) según el número de leyes que han aprobado en un periodo, para saber quién legisla más sobre un asunto."
+summary = "Ordena los departamentos (ministerios, Jefatura del Estado, comunidades autónomas) según el número de normas que han dictado en un periodo, para saber quién legisla más sobre un asunto."
 source_hash = "7adc33385e63"
 
 [tools.compare_topics]
@@ -61,31 +61,31 @@ summary = "Compara con qué frecuencia aparecen entre dos y cinco temas en la le
 source_hash = "dd616fd64241"
 
 [tools.explain_spike]
-summary = "Explica por qué un periodo tiene un número inusualmente alto de leyes: qué rangos, departamentos y ámbitos crecieron frente a los periodos anteriores, con las leyes concretas. Sin periodo indicado, elige el pico más fuerte del intervalo."
+summary = "Explica por qué un periodo tiene un número inusualmente alto de normas: qué rangos, departamentos y ámbitos crecieron frente a los periodos anteriores, con las normas concretas. Sin `period_key`, elige el pico más fuerte del intervalo."
 source_hash = "3ffd31115dea"
 
 [tools.most_amended_laws]
-summary = "Ordena las leyes de un conjunto filtrado según cuántas leyes posteriores las han modificado. Examina un número limitado de leyes por llamada, así que hay que repetirla mientras el resultado no esté completo."
+summary = "Ordena las normas de un conjunto filtrado según cuántas normas posteriores las han modificado. Examina un número limitado de normas por llamada, así que hay que repetirla mientras el resultado no esté completo."
 source_hash = "b2db041642c9"
 
 [tools.get_daily_summary]
-summary = "Devuelve todo lo que el BOE publicó un día (disposiciones, nombramientos, subvenciones y anuncios) por sección y departamento. Abarca todo el diario desde 1960, no solo las leyes consolidadas; sin fecha da el último número."
+summary = "Devuelve todo lo que el BOE publicó un día (disposiciones, nombramientos, subvenciones y anuncios) por sección y departamento. Abarca todo el diario oficial desde el 1 de septiembre de 1960, no solo la legislación consolidada; sin fecha, da el último número."
 source_hash = "9ff8f2cfd7cf"
 
 [tools.scan_gazette]
-summary = "Busca en el BOE de hasta 31 días las publicaciones cuyo título contenga unas palabras o que pertenezcan a una sección o departamento. Solo compara títulos y hay que repetir la llamada mientras el resultado no esté completo."
+summary = "Busca, en un intervalo de hasta 31 días, las publicaciones del BOE cuyo título contenga las palabras indicadas (palabras completas; el singular y el plural coinciden) o que pertenezcan a una sección o departamento. Solo compara títulos; si el resultado no está completo, hay que repetir la llamada."
 source_hash = "6b3f3ce8a897"
 
 [tools.verify_citation]
-summary = "Comprueba citas de leyes españolas con el texto consolidado: si existen la ley y el artículo, en qué estado estaban en una fecha y si las palabras citadas coinciden con el texto vigente o con una versión anterior. Comprueba palabras, no sentido jurídico."
+summary = "Comprueba citas de normas españolas con el texto consolidado: si existen la norma y el artículo, en qué estado estaban en una fecha y si las palabras citadas coinciden con el texto vigente o con una versión anterior. Compara palabras, no significado, y no se pronuncia sobre la corrección jurídica."
 source_hash = "7ae7294db201"
 
 [tools.explore_amendment_chain]
-summary = "Sigue las modificaciones entre leyes hasta tres niveles, ya sea las leyes que modificaron una ley y las que modificaron a estas, o lo que una ley modificó. Examina un número limitado de leyes por llamada."
+summary = "Sigue las modificaciones entre normas hasta tres niveles: las normas que modificaron una norma y las que modificaron a estas, o las que una norma modificó. Una norma a dos niveles modificó la intermedia, no necesariamente las partes que afectan a la de partida. Examina un número limitado de normas por llamada; si el resultado no está completo, hay que repetirla."
 source_hash = "5ba2dd4a7217"
 
 [tools.save_search]
-summary = "Guarda una búsqueda para volver a consultarla: publicaciones del BOE por palabras del título, sección o departamento, o una ley concreta cuyas modificaciones y sentencias se quieren seguir. No envía nada por sí sola; las novedades se ven con la herramienta de comprobación."
+summary = "Guarda una búsqueda para volver a consultarla: publicaciones del BOE por palabras del título, sección o departamento, o una norma concreta cuyas modificaciones y resoluciones judiciales se quieren seguir. No envía nada por sí sola; las novedades se ven con `check_saved_searches`."
 source_hash = "5cf7b1d92d23"
 
 [tools.list_saved_searches]
@@ -93,11 +93,11 @@ summary = "Muestra las búsquedas guardadas con sus filtros y la fecha de su úl
 source_hash = "479db1ec4826"
 
 [tools.check_saved_searches]
-summary = "Muestra las novedades de las búsquedas guardadas desde la última comprobación y las marca como vistas. Abarca como máximo los últimos 31 días y hay que repetir la llamada mientras el resultado no esté completo."
+summary = "Muestra las novedades de las búsquedas guardadas desde la última comprobación y marca como visto lo que muestra. Abarca como máximo los últimos 31 días y 60 elementos por llamada, así que hay que repetirla mientras el resultado no esté completo. Con `since` vuelve a leer las búsquedas del diario hasta 90 días atrás sin marcar nada."
 source_hash = "f31d336bd08b"
 
 [tools.edit_saved_search]
-summary = "Cambia el nombre de una búsqueda guardada o sus filtros del BOE; conserva el punto de la última comprobación."
+summary = "Cambia el nombre de una búsqueda guardada o sus filtros del diario oficial; conserva el marcador de la última comprobación."
 source_hash = "0ddf60cfcb05"
 
 [tools.delete_saved_search]
@@ -111,11 +111,11 @@ summary = "La lista de búsquedas guardadas de quien usa el servidor, con sus fi
 source_hash = "93ee51c353ed"
 
 [resources.law]
-summary = "Resumen de una ley consolidada, a partir de su identificador del BOE: estado, fechas, departamento y recuento de modificaciones."
+summary = "Resumen de una norma consolidada, a partir de su identificador del BOE: estado, fechas, departamento y recuento de modificaciones."
 source_hash = "81f7876b9f64"
 
 [resources.article]
-summary = "Texto vigente de un artículo de una ley consolidada, a partir del identificador de la ley y del bloque del artículo."
+summary = "Texto vigente de un artículo de una norma consolidada, a partir del identificador de la norma y del bloque del artículo."
 source_hash = "e78372f96b48"
 
 [resources.gazette_day]
@@ -123,7 +123,7 @@ summary = "Lo publicado por el BOE en un día (fecha ISO), agrupado por sección
 source_hash = "940e19315134"
 
 [resources.codes]
-summary = "Todos los códigos y nombres de una tabla del BOE: departamentos o rangos. Los códigos de materia se consultan con la herramienta de búsqueda de códigos."
+summary = "Todos los códigos y nombres de una tabla del BOE: departamentos o rangos. Los códigos de materia se consultan con `find_codes`."
 source_hash = "e2d9e2e9a77a"
 
 # --- Prompts ------------------------------------------------------------------------------------
@@ -133,7 +133,7 @@ summary = "Petición preparada, en inglés, para explicar una ley española: qu�
 source_hash = "399aad8ea321"
 
 [prompts.explicar_ley]
-summary = "Versión en español de la petición para explicar una ley española: qué regula, su estado, su estructura y sus modificaciones."
+summary = "Versión en español de la petición para explicar una ley española: qué regula, su estado, cómo se organiza y cuántas veces se ha modificado."
 source_hash = "68dbea5ea00e"
 
 [prompts.article_changes]
@@ -141,7 +141,7 @@ summary = "Petición preparada, en inglés, para ver cómo ha cambiado un artíc
 source_hash = "d84cbc269e9f"
 
 [prompts.cambios_articulo]
-summary = "Versión en español de la petición para ver cómo ha cambiado un artículo de una ley española y qué normas lo modificaron; la fecha de inicio es opcional."
+summary = "Versión en español de la petición para ver cómo ha cambiado un artículo de una ley española con el tiempo y qué normas lo modificaron; admite una fecha de inicio opcional."
 source_hash = "eb1b960afea5"
 
 [prompts.check_citations]

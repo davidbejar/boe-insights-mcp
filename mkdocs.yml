@@ -7,7 +7,7 @@ edit_uri: ""
 # The footer carries the BOE attribution and the independence statement. The Spanish site
 # overrides it in the i18n language entry below.
 copyright: >-
-  Basado en datos de la Agencia Estatal Boletín Oficial del Estado.
+  Basado en datos de la <a href="https://www.boe.es">Agencia Estatal Boletín Oficial del Estado</a>.
   An independent open-source project. Not affiliated with, endorsed by or connected to the
   Agencia Estatal Boletín Oficial del Estado.
 
@@ -67,9 +67,28 @@ plugins:
         - locale: es
           name: Español
           build: true
+          site_description: Servidor MCP con herramientas analíticas sobre los datos abiertos del BOE.
+          # A language's theme entry replaces the matching top-level theme keys, so the whole
+          # palette is repeated here only to give the light/dark toggle Spanish labels.
+          theme:
+            palette:
+              - media: "(prefers-color-scheme: light)"
+                scheme: default
+                primary: custom
+                accent: custom
+                toggle:
+                  icon: material/weather-night
+                  name: Cambiar al modo oscuro
+              - media: "(prefers-color-scheme: dark)"
+                scheme: slate
+                primary: custom
+                accent: custom
+                toggle:
+                  icon: material/weather-sunny
+                  name: Cambiar al modo claro
           copyright: >-
-            Basado en datos de la Agencia Estatal Boletín Oficial del Estado.
-            Proyecto independiente de código abierto. No está afiliado a la Agencia Estatal
+            Basado en datos de la <a href="https://www.boe.es">Agencia Estatal Boletín Oficial
+            del Estado</a>. Proyecto independiente de código abierto. No está afiliado a la Agencia Estatal
             Boletín Oficial del Estado, ni cuenta con su respaldo ni tiene relación alguna con ella.
           nav_translations:
             Home: Inicio
@@ -99,6 +118,7 @@ markdown_extensions:
   - tables
   - admonition
   - pymdownx.superfences
+  - pymdownx.tasklist # renders the "- [ ]" checklists (operating page, roadmap) as checkboxes
 
 nav:
   - Home: index.md

@@ -16,7 +16,7 @@
 
 Servidor [MCP](https://modelcontextprotocol.io) (Model Context Protocol) que ofrece a asistentes de IA como Claude herramientas analíticas sobre los datos abiertos del BOE (Boletín Oficial del Estado). En lugar de una herramienta por cada endpoint de la API, las herramientas se diseñan en torno a las preguntas que la gente se hace de verdad: "¿sigue vigente esta ley?", "¿qué ha cambiado en este artículo?", "¿cómo ha evolucionado la legislación sobre X?".
 
-**Estado:** desarrollo temprano. Hoy hay veintitrés herramientas disponibles (localizar una norma, buscar, consultar su situación de vigencia y buscar códigos; historial y cadenas de modificaciones; leer, comparar y consultar el historial de cada artículo; comprobar citas contra el texto; el índice de una norma; análisis de tendencias sobre toda la colección consolidada; el diario oficial día a día; y búsquedas guardadas), además de cinco [recursos](#recursos-y-prompts) y ocho prompts (cuatro, cada uno en español y en inglés); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). Todavía no está en PyPI (la versión 0.1.0 es la siguiente): se ejecuta con `uvx` directamente desde GitHub o desde el código fuente, mira el [inicio rápido](#inicio-rápido).
+**Estado:** desarrollo temprano. Hoy hay veintitrés herramientas disponibles (localizar una norma, buscar, consultar su situación de vigencia y buscar códigos; historial y cadenas de modificaciones; leer, comparar y consultar el historial de cada artículo; cotejar citas con el texto; el índice de una norma; análisis de tendencias sobre toda la colección consolidada; el diario oficial día a día; y búsquedas guardadas), además de cinco [recursos](#recursos-y-prompts) y ocho prompts (cuatro, cada uno en inglés y en español); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). Todavía no está en PyPI (la versión 0.1.0 es la siguiente): se ejecuta con `uvx` directamente desde GitHub o desde el código fuente, mira el [inicio rápido](#inicio-rápido).
 
 ## Qué puedes preguntar
 
@@ -65,12 +65,12 @@ explain_spike(rank="real_decreto_ley", period_key="2020", from_date="2010-01-01"
 | Reales decretos-leyes en la colección (`count`) | 19 | 12 | **38** | 28 | 20 | 8 |
 | Número oficial más alto visto (`highest_number`) | 28 | 18 | **39** | 32 | 20 | 8 |
 
-- De 2010 a 2025 hay 230; 2020 es el pico más fuerte: 38 frente a una referencia de 11.0 (ratio 3.45).
+- De 2010 a 2025 hay 230; 2020 es el pico más fuerte: 38 frente a una referencia de 11,0 (ratio 3,45).
 - La colección no contiene todas las normas de un año, por eso este resultado incluye también `highest_number`: el número oficial más alto visto ese año, una cota inferior de cuántas se aprobaron. 2020 contiene 38 de al menos 39. Los años vecinos están más incompletos (2019: 12 de al menos 18; 2018: 19 de 28; 2021: 28 de 32), mientras que 2022 y 2023 parecen completos (20 de 20, 8 de 8).
-- La conclusión se sostiene con esa cobertura: 2020 tiene más decretos-leyes que cualquier otro año de 2010 a 2025, tanto por las normas que contiene (38) como por el número más alto visto (39; el siguiente es 32, en 2021). Los años recientes están incompletos (2025 contiene 4 de al menos 16), así que no conviene leer el descenso desde 2023 como una tendencia.
-- `explain_spike` para 2020 fija la referencia en 10.2 (los 5 años anteriores). Su desglose (`contributions`) está vacío aquí: las 38 normas son leyes estatales de la Jefatura del Estado, y una dimensión con un único valor no se informa.
+- La conclusión se sostiene con esa cobertura: 2020 tiene más decretos-leyes que cualquier otro año de 2010 a 2025, tanto por las normas que contiene (38) como por el número más alto visto (39; el siguiente es 32, en 2021). Los años recientes están incompletos (2025 contiene 4 de al menos 16), así que no interpretes el descenso desde 2023 como una tendencia.
+- `explain_spike` para 2020 fija la referencia en 10,2 (los 5 años anteriores). Su desglose (`contributions`) está vacío aquí: las 38 normas son leyes estatales de la Jefatura del Estado, y una dimensión con un único valor no se incluye.
 - `laws` es una muestra equiespaciada de las 38 por orden de fecha (`max_laws=8`, con la primera y la última): Real Decreto-ley 1/2020 (pensiones), 7/2020 (impacto económico del COVID-19), 13/2020 (empleo agrario), 18/2020 (medidas sociales en defensa del empleo), 23/2020 (energía y reactivación económica), 28/2020 (trabajo a distancia), 34/2020 (solvencia empresarial, sector energético y materia tributaria) y 36/2020 (modernización de la Administración Pública y Plan de Recuperación).
-- La herramienta cuenta y lista normas; la relación entre el pico y la pandemia la lee el usuario en los títulos.
+- La herramienta cuenta y lista normas; la relación entre el pico y la pandemia la deduces tú de los títulos.
 
 ### 4. Normas más modificadas
 
@@ -153,7 +153,7 @@ explore_amendment_chain(law_id="BOE-A-2020-3824", direction="amended_by", depth=
 - `amends`: el real decreto-ley actúa sobre 9 normas (`levels` [1, 9]): 6 modificaciones, 2 suspensiones y 1 derogación. Aristas, con la redacción del propio BOE en `detail`: `modifies` Real Decreto-ley 7/2020, "el art. 16 del Real Decreto-ley 7/2020, de 12 de marzo"; `suspends` `BOE-A-2015-2495`, "en la forma y con los efectos indicados la vigencia de los arts. 3.5 y 6 de la Orden IET/389/2015, de 5 de marzo".
 - `amended_by`, profundidad 2: 72 normas (`levels` [1, 23, 48]) y 142 aristas, 117 `modifies` y 25 `repeals` (las derogaciones incluyen las parciales), con las 24 normas examinadas (`complete` true). Dos aristas que tocan la norma de partida: `repeals`, Ley 2/2021, "el art. 42, SE MODIFICA el art. 40.1 y 2, Ley 2/2021, de 29 de marzo"; `modifies`, `BOE-A-2023-6967`, "el art. 17.9, por Real Decreto-ley 2/2023, de 16 de marzo".
 - `court_rulings_excluded` es 3: tres resoluciones judiciales sobre este real decreto-ley quedan fuera por defecto, porque solo se siguen las modificaciones; `include="all"` las lista.
-- Cautela: las 48 normas del nivel 2 modificaron una de las 23 normas del nivel 1, no necesariamente las partes que afectan al Real Decreto-ley 8/2020. Por defecto no se muestra su `detail`.
+- Atención: las 48 normas del nivel 2 modificaron una de las 23 normas del nivel 1, no necesariamente las partes que afectan al Real Decreto-ley 8/2020. Por defecto no se muestra su `detail`.
 
 ### 8. El diario oficial día a día
 
@@ -169,10 +169,10 @@ get_daily_summary(date="2020-03-14", limit=5)
 *"¿Hay algo sobre vivienda en el BOE esta semana?"*
 
 ```text
-scan_gazette(words="vivienda")      -> rango por defecto: los últimos 7 días, del 2026-11-16 al 2026-11-22
+scan_gazette(words="vivienda")      -> intervalo por defecto: los últimos 7 días, del 2026-11-16 al 2026-11-22
 ```
 
-- 7 días examinados, 6 con número (el 22 es domingo y no hay): coinciden 11 títulos: 2026-11-16 1, 11-17 2, 11-18 1, 11-19 2, 11-20 4, 11-21 1.
+- 7 días examinados, 6 con número (el 22 es domingo y no hay); coinciden 11 títulos: 2026-11-16 1, 11-17 2, 11-18 1, 11-19 2, 11-20 4, 11-21 1.
 - 2026-11-21, `BOE-A-2026-24487`: "Resolución de 10 de noviembre de 2026, de la Dirección General de Vivienda y Suelo, por la que se publica el Convenio con la Comunidad Autónoma de Castilla-La Mancha, …"
 - 2026-11-19, `BOE-B-2026-38005`: "Anuncio del concurso de proyectos de: Secretaría General de Agenda Urbana, Vivienda y Arquitectura. …"
 - 2026-11-20, `BOE-B-2026-38218`: "Resolución del Departamento de Territorio, Vivienda y Transición Ecológica TER/4133/2026, por la que se otorga …"
@@ -204,7 +204,7 @@ Ejecutado un domingo, 2026-11-22, con el almacén vacío. Guardar una búsqueda 
 - **La cobertura es la colección de legislación consolidada del BOE**, no todo lo publicado en el BOE, y contiene solo una parte de las normas de cada año, una parte variable (más escasa antes de 2010 aproximadamente y en el último año o dos). Un cambio en un recuento no es por sí mismo un cambio en cuánto se legisló. Al contar un rango (Ley con `scope="state"`, Ley Orgánica, Real Decreto-ley o Real Decreto Legislativo) por años, `legislation_over_time` añade `highest_number` para que puedas valorar la cobertura. Los recuentos lo indican en sus `caveats`.
 - **La cobertura autonómica son leyes y decretos-leyes con rango de ley**, no decretos ni órdenes autonómicos, que están en el diario oficial de cada comunidad.
 - **Las leyes autonómicas se fechan por su reproducción en el BOE** (que puede llegar semanas o años después de la publicación autonómica), salvo que pases `date_basis="enacted"`; con `enacted` los últimos tres meses están incompletos, porque las normas se publican semanas después de aprobarse.
-- **Las búsquedas guardadas no avisan a nadie.** El servidor solo responde cuando se le pregunta y no puede enviar mensajes ni ejecutarse por su cuenta. Consulta [Cómo funcionan las búsquedas guardadas](#cómo-funcionan-las-búsquedas-guardadas) para saber qué cubre una comprobación y dónde se guardan los datos. Algunos límites: un elemento se entrega una sola vez (`since` lo vuelve a leer si un resultado no llegó a ti); una referencia de una norma cuya redacción cambie el BOE después se notifica de nuevo entera; `section` y `department_code` no se comprueban contra las tablas del BOE, así que un código erróneo simplemente no encuentra nada; y los mismos filtros se pueden guardar dos veces.
+- **Las búsquedas guardadas no avisan a nadie.** El servidor solo responde cuando se le pregunta y no puede enviar mensajes ni ejecutarse de forma programada. Consulta [Cómo funcionan las búsquedas guardadas](#cómo-funcionan-las-búsquedas-guardadas) para saber qué cubre una comprobación y dónde se guardan los datos. Algunos límites: un elemento se entrega una sola vez (`since` lo vuelve a leer si un resultado nunca te llegó); una referencia de una norma cuya redacción cambie el BOE después se notifica de nuevo entera; `section` y `department_code` no se cotejan con las tablas del BOE, así que un código erróneo simplemente no encuentra nada; y los mismos filtros se pueden guardar dos veces.
 - **Los textos consolidados son informativos y carecen de valor jurídico oficial.** Consulta el [aviso legal](#fuente-de-los-datos-atribución-y-aviso-legal).
 
 ## Herramientas
@@ -246,7 +246,7 @@ Estas dos herramientas cubren todo lo que imprime el BOE (nombramientos, subvenc
 
 Las dieciocho primeras herramientas son de solo lectura; las cinco [herramientas de búsquedas guardadas](#cómo-funcionan-las-búsquedas-guardadas) son las únicas que cambian algo, y solo en el almacén del propio servidor, nunca en el BOE. `resolve_reference` devuelve `resolved`, `ambiguous` (con candidatas y una pista) o `not_found`. `search_legislation` pagina con `next_offset`, porque la API no ofrece el número total de resultados. `find_codes` devuelve los pares `{code, text}` que coinciden.
 
-**Situación de vigencia de la norma.** `get_law_overview` devuelve un `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` o `not_yet_in_force`) con una nota explicativa, la nota inicial del BOE si el texto la tiene, y recuentos y muestras de las normas que modifican la norma consultada o que esta modifica. El `status` se deriva de los indicadores del BOE y de las referencias de modificación, por lo que es una indicación, no una determinación jurídica. La derogación total también se detecta a partir de la nota inicial del texto consolidado ("Norma derogada..."), porque algunas normas derogadas por completo solo llevan esa nota y no el indicador de los metadatos.
+**Situación de vigencia de la norma.** `get_law_overview` devuelve un `status` (`in_force`, `partially_repealed`, `repealed`, `annulled`, `validity_exhausted` o `not_yet_in_force`) con una nota explicativa en inglés, la nota inicial del BOE si el texto la tiene, y recuentos y muestras de las normas que modifican la norma consultada o que esta modifica. El `status` se deriva de los indicadores del BOE y de las referencias de modificación, por lo que es una indicación, no una determinación jurídica. La derogación total también se detecta a partir de la nota inicial del texto consolidado ("Norma derogada..."), porque algunas normas derogadas por completo solo llevan esa nota y no el indicador de los metadatos.
 
 **Estados de un artículo.** `read_article` indica el `state` del artículo en la fecha pedida y `get_article_history` su `current_state`: `in_force` (en vigor), `repealed` (derogado), `not_yet_in_force` (texto publicado, pero todavía sin vigencia) o `did_not_exist` (la fecha es anterior a la primera versión del artículo). Un artículo de una norma derogada por completo no lleva ninguna marca de derogación, así que las herramientas de artículos comprueban también la norma (sus metadatos y, si el texto la tiene, su nota inicial): desde la fecha de derogación el estado es `repealed` (se sigue devolviendo el último texto), `law_repealed` y `law_repealed_on` lo indican y `note` lo explica. Una derogación con fecha futura solo está anunciada, y si no se puede hacer la comprobación `law_repealed` es `null` y `note` lo dice.
 
@@ -259,12 +259,12 @@ Las dieciocho primeras herramientas son de solo lectura; las cinco [herramientas
 | `legislation_over_time` | ¿Cuántas normas sobre X hay por año, trimestre o mes? | `title`, `text`, `subject_code`, `rank`, `scope`, `department_code`, `from_date`, `to_date`, `period`, `date_basis`, `group_by` (`none`, `rank`, `department` o `scope`), `top_groups` |
 | `top_departments` | ¿Qué departamentos o comunidades autónomas han dictado más normas sobre X? | los mismos filtros, más `limit` |
 | `compare_topics` | ¿Cómo se comparan entre sí de 2 a 5 temas a lo largo del tiempo? | `topics` (cada uno con `name` y `title`, `text` o `subject_code`), `rank`, `scope`, `department_code`, `from_date`, `to_date`, `period`, `date_basis` |
-| `explain_spike` | ¿Por qué este periodo tiene tantas normas? | los mismos filtros, más `period_key` (`2020`, `2020-Q2` o `2020-03`), `period`, `baseline_periods`, `max_laws` |
+| `explain_spike` | ¿Por qué este periodo tiene un número inusual de normas? | los mismos filtros, más `period_key` (`2020`, `2020-Q2` o `2020-03`), `period`, `baseline_periods`, `max_laws` |
 | `most_amended_laws` | ¿Qué normas sobre X han sido modificadas más veces por normas posteriores? | los mismos filtros, más `limit`, `max_laws` (normas examinadas por llamada) |
 
-Las herramientas de tendencias cuentan sobre una copia local de toda la colección consolidada (véase [Cómo funciona](#cómo-funciona)); la primera tarda unos treinta segundos. `from_date` es por defecto el 1 de enero del año 19 años anterior a `to_date` (`most_amended_laws` no tiene límite inferior por defecto) y `to_date` hoy. Se rechaza un resultado de más de 1.500 puntos (series por periodos) con el consejo de usar un periodo más grueso, un rango más corto o menos grupos. `date_basis` es `published` (publicación en el BOE, por defecto) o `enacted`. `most_amended_laws` consulta los datos de modificaciones de una norma por petición, así que cada llamada examina como máximo `max_laws` normas: mientras `complete` sea false, repite la llamada con los mismos argumentos para continuar desde la caché.
+Las herramientas de tendencias cuentan sobre una copia local de toda la colección consolidada (véase [Cómo funciona](#cómo-funciona)); la primera tarda unos treinta segundos. `from_date` es por defecto el 1 de enero del año 19 años anterior a `to_date` (`most_amended_laws` no tiene límite inferior por defecto) y `to_date` hoy. Se rechaza un resultado de más de 1.500 puntos (series por periodos) con el consejo de usar un periodo más amplio, un intervalo más corto o menos grupos. `date_basis` es `published` (publicación en el BOE, por defecto) o `enacted`. `most_amended_laws` consulta los datos de modificaciones de una norma por petición, así que cada llamada examina como máximo `max_laws` normas: mientras `complete` sea false, repite la llamada con los mismos argumentos para continuar desde la caché.
 
-Cada resultado incluye un bloque `provenance`. Salida abreviada de `compare_article_versions` para el artículo 48 de `BOE-A-2015-10566` entre el 2016-10-02 y el 2026-11-21 (fixtures de pruebas grabados, sin peticiones reales). Las cadenas largas (`inline`, `unified_diff`) se acortan aquí con `…`. `[-antes-] {+después+}` marca una reformulación dentro de un párrafo: un párrafo reformulado se devuelve solo como `inline` (`old_text` y `new_text` son `null`), salvo las tablas, que devuelven ambos textos y no `inline`. Los textos de las claves y de las notas se mantienen tal como los devuelve la herramienta:
+Cada resultado incluye un bloque `provenance`. Salida abreviada de `compare_article_versions` para el artículo 48 de `BOE-A-2015-10566` entre el 2016-10-02 y el 2026-11-21 (fixtures de pruebas grabados, sin peticiones reales). Las cadenas largas (`inline`, `unified_diff`) se acortan aquí con `…`. `[-antes-] {+después+}` marca una reformulación dentro de un párrafo: un párrafo reformulado se devuelve solo como `inline` (`old_text` y `new_text` son `null`), salvo las tablas, que devuelven ambos textos y no `inline`:
 
 ```json
 {
@@ -351,13 +351,13 @@ Guardar una búsqueda del diario lee el número de hoy una vez y recuerda lo que
 
 **Nombres.** Puedes dar uno (`name`) o dejar que el servidor lo proponga a partir de los filtros, como `vivienda`, `seccion-1` o `ley-40-2015`. El nombre se guarda en minúsculas, con letras, cifras y guiones, de hasta 60 caracteres, así que "Ley 40/2015" pasa a ser `ley-40-2015`; si ya existe, se añade `-2`, `-3` y así sucesivamente. `edit_saved_search` cambia el nombre y, en una búsqueda del diario, también sus filtros, conservando el marcador.
 
-**Qué cubre una comprobación.** La de una búsqueda del diario lee los días desde la última comprobación hasta hoy, como máximo los últimos 31 días; si se han quedado más días sin revisar, lo dice e indica cuántos se dejaron fuera. Muestra lo nuevo, del día más antiguo al más reciente, y recuerda lo que ha mostrado: volver a preguntar nunca repite un elemento, y uno añadido al número de hoy después de una comprobación lo muestra la siguiente. El número de hoy, y un día laborable reciente que respondió "sin número" (el BOE puede publicar tarde), se vuelven a leer en la siguiente comprobación. Una comprobación muestra como máximo `limit` elementos por búsqueda y 60 en total por llamada, atendiendo las búsquedas en el orden de tu lista; si queda más, `complete` es false y la siguiente llamada trae el resto. Una búsqueda de norma informa de las referencias nuevas del mismo modo. Pasa `since` para volver a leer las búsquedas del diario desde una fecha anterior, hasta 90 días atrás: no se marca nada como visto, así que sirve para mirar atrás, para probar una búsqueda guardada hoy o para recuperar un resultado que no llegó a ti (la entrega es como máximo una vez: un elemento mostrado al asistente no se vuelve a mostrar, aunque la aplicación haya perdido la respuesta). `since` no se aplica a las búsquedas de norma; `get_amendment_history` lista las modificaciones pasadas de una norma. Una comprobación tiene un presupuesto de unos 40 segundos: si `complete` es false, vuelve a pedirla y continúa donde se quedó. Los días que el BOE no pudo servir se reintentan en cada comprobación durante una semana antes de omitirse, y el resultado lo indica. La mayoría de los domingos no hay número, y una búsqueda que no se pudo leer (una norma que el BOE ya no tiene) lo dice en su propia nota sin mantener la llamada abierta.
+**Qué cubre una comprobación.** La de una búsqueda del diario lee los días desde la última comprobación hasta hoy, como máximo los últimos 31 días; si se han quedado más días sin revisar, lo dice e indica cuántos se dejaron fuera. Muestra lo nuevo, del día más antiguo al más reciente, y recuerda lo que ha mostrado: volver a preguntar nunca repite un elemento, y uno añadido al número de hoy después de una comprobación lo muestra la siguiente. El número de hoy, y un día laborable reciente que respondió "sin número" (el BOE puede publicar tarde), se vuelven a leer en la siguiente comprobación. Una comprobación muestra como máximo `limit` elementos por búsqueda y 60 en total por llamada, atendiendo las búsquedas en el orden de tu lista; si queda más, `complete` es false y la siguiente llamada trae el resto. Una búsqueda de norma informa de las referencias nuevas del mismo modo. Pasa `since` para volver a leer las búsquedas del diario desde una fecha anterior, hasta 90 días atrás: no se marca nada como visto, así que sirve para mirar atrás, para probar una búsqueda guardada hoy o para recuperar un resultado que nunca te llegó (la entrega es como máximo una vez: un elemento mostrado al asistente no se vuelve a mostrar, aunque la aplicación haya perdido la respuesta). `since` no se aplica a las búsquedas de norma; `get_amendment_history` lista las modificaciones pasadas de una norma. Una comprobación tiene un presupuesto de unos 40 segundos: si `complete` es false, vuelve a pedirla y continúa donde se quedó. Los días que el BOE no pudo servir se reintentan en cada comprobación durante una semana antes de omitirse, y el resultado lo indica. La mayoría de los domingos no hay número, y una búsqueda que no se pudo leer (una norma que el BOE ya no tiene) lo dice en su propia nota sin mantener la llamada abierta.
 
 **Límite.** 20 búsquedas guardadas. Guardar la 21.ª falla con un mensaje que pide borrar una antes.
 
 **Dónde se guardan los datos.** En un pequeño archivo SQLite, `saved_searches.sqlite3`, dentro del directorio de datos de tu usuario (en macOS `~/Library/Application Support/boe-insights-mcp/`, en Linux `~/.local/share/boe-insights-mcp/`). El archivo es privado para tu usuario, se queda en tu equipo y no se envía a ninguna parte; una comprobación solo envía las peticiones al BOE que necesita. Para llevarte tus búsquedas a otro equipo, copia el archivo a la misma ubicación allí, o define `BOE_INSIGHTS_DATA_DIR` ([Configuración](#configuración)). Para borrarlo todo, borra el archivo. Es independiente de la caché de respuestas, que se puede borrar en cualquier momento: vaciar la caché nunca hace perder una búsqueda guardada. Con `BOE_INSIGHTS_CACHE=memory` y sin `BOE_INSIGHTS_DATA_DIR`, las búsquedas solo se guardan en memoria y se pierden al detener el servidor.
 
-En un servidor compartido por HTTP con inicio de sesión de GitHub, el archivo está en la máquina del servidor y cada búsqueda pertenece a la cuenta que la guardó (se almacena como `github:<id>`; en local, el propietario es `local`): nadie más puede verla, revisarla, editarla ni borrarla, y el límite de 20 búsquedas se aplica por cuenta. Sin inicio de sesión, un servidor abierto por HTTP no ofrece búsquedas guardadas.
+En un servidor compartido por HTTP con inicio de sesión con GitHub, el archivo está en la máquina del servidor y cada búsqueda pertenece a la cuenta que la guardó (se almacena como `github:<id>`; en local, el propietario es `local`): nadie más puede verla, revisarla, editarla ni borrarla, y el límite de 20 búsquedas se aplica por cuenta. Sin inicio de sesión, un servidor abierto por HTTP no ofrece búsquedas guardadas.
 
 **Son las únicas herramientas que cambian algo**, y solo en ese archivo. `edit_saved_search` y `delete_saved_search` están marcadas como destructivas, así que algunas aplicaciones piden confirmación antes de ejecutarlas; una búsqueda borrada no se puede recuperar. `check_saved_searches` también cambia algo (anota lo que ha mostrado), salvo que pases `since`.
 
@@ -391,32 +391,28 @@ Ambos son extras opcionales que reflejan las herramientas: no ofrecen nada que e
 
 En Claude Code se adjunta un recurso escribiendo `@` y eligiéndolo, por ejemplo `@boe-insights:boe://law/BOE-A-2015-10566`.
 
-**Los prompts** son peticiones ya preparadas que indican al asistente qué herramientas llamar y cómo presentar el resultado. Cada uno existe en español y en inglés, con los mismos pasos; los argumentos se llaman en el idioma del prompt.
+**Los prompts** son peticiones ya preparadas que indican al asistente qué herramientas llamar y cómo presentar el resultado. Cada uno existe en inglés y en español, con los mismos pasos; los argumentos se llaman en el idioma del prompt.
 
-| Español | English | Argumentos | Qué pide |
+| English | Español | Argumentos | Qué pide |
 |---|---|---|---|
-| `explicar_ley` | `explain_law` | `ley` / `law` | Qué regula una norma, su estado, su estructura y cuántas veces se ha modificado. |
-| `cambios_articulo` | `article_changes` | `ley`, `articulo`, `desde` (opcional) / `law`, `article`, `since` (optional) | Cómo ha cambiado un artículo y qué normas lo modificaron. |
-| `comprobar_citas` | `check_citations` | `texto` / `text` | Comprobar las citas de leyes de un texto con los textos consolidados. |
-| `resumen_boe` | `gazette_briefing` | `tema`, `dias` (1-31, por defecto 7) / `topic`, `days` | Qué publicó el BOE sobre un tema en los últimos días. |
+| `explain_law` | `explicar_ley` | `law` / `ley` | Qué regula una norma, su estado, su estructura y cuántas veces se ha modificado. |
+| `article_changes` | `cambios_articulo` | `law`, `article`, `since` (opcional) / `ley`, `articulo`, `desde` (opcional) | Cómo ha cambiado un artículo y qué normas lo modificaron. |
+| `check_citations` | `comprobar_citas` | `text` / `texto` | Comprobar las citas de leyes de un texto con los textos consolidados. |
+| `gazette_briefing` | `resumen_boe` | `topic`, `days` (1-31, por defecto 7) / `tema`, `dias` | Qué publicó el BOE sobre un tema en los últimos días. |
 
-En Claude Code los prompts aparecen como comandos con barra, por ejemplo `/mcp__boe-insights__explicar_ley`.
+En Claude Code los prompts aparecen como comandos con barra, por ejemplo `/mcp__boe-insights__explain_law`.
 
 ## Inicio rápido
 
 Requisitos previos: Python 3.11 o superior y [uv](https://docs.astral.sh/uv/). No hace falta clave de API: la API de datos abiertos del BOE es pública.
 
-El servidor habla MCP por stdio, así que normalmente no lo arrancas tú: lo hace tu cliente MCP. El comando que ejecuta es:
-
-```bash
-uvx boe-insights-mcp
-```
-
-Eso funcionará en cuanto la versión 0.1.0 esté en PyPI. Mientras tanto, uv puede descargarlo y ejecutarlo directamente desde GitHub:
+El servidor habla MCP por stdio, así que normalmente no lo arrancas tú: lo hace tu cliente MCP. Hasta que la versión 0.1.0 esté en PyPI, uv lo descarga y lo ejecuta directamente desde GitHub. El comando que ejecuta tu cliente es:
 
 ```bash
 uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
 ```
+
+Cuando se publique la versión 0.1.0 bastará con `uvx boe-insights-mcp`. No uses esa forma simple antes de que la versión esté en PyPI: el nombre allí todavía no es de este proyecto, así que ejecutaría lo que haya publicado con ese nombre, si hay algo.
 
 Por ejemplo, para Claude Code:
 
@@ -428,16 +424,16 @@ Otras formas de ejecutarlo (sitio de documentación):
 
 - [Con uvx](https://davidbejar.github.io/boe-insights-mcp/es/run/uvx/): sin clonar ni instalar.
 - [Desde el código fuente](https://davidbejar.github.io/boe-insights-mcp/es/run/from-source/): con un clon del repositorio.
-- [Por HTTP](https://davidbejar.github.io/boe-insights-mcp/es/run/http/): un servidor para varias personas o equipos.
+- [Por HTTP](https://davidbejar.github.io/boe-insights-mcp/es/run/http/): un servidor para varias personas o varios ordenadores.
 - [Como contenedor](https://davidbejar.github.io/boe-insights-mcp/es/run/container/): la imagen de contenedor.
-- [Con inicio de sesión de GitHub](https://davidbejar.github.io/boe-insights-mcp/es/run/github-login/): un servidor HTTP abierto solo a las cuentas de GitHub que indiques.
+- [Con inicio de sesión con GitHub](https://davidbejar.github.io/boe-insights-mcp/es/run/github-login/): un servidor HTTP abierto solo a las cuentas de GitHub que indiques.
 - Configuración del cliente: [Claude Code](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/claude-code/), [Claude Desktop](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/claude-desktop/), [Cursor](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/cursor/), [VS Code](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/vscode/) y [cualquier otro cliente](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/generic/).
-- [Operación y seguridad](https://davidbejar.github.io/boe-insights-mcp/es/operating/): límites, control de acceso y qué vigilar si lo alojas tú.
+- [Seguridad y operación](https://davidbejar.github.io/boe-insights-mcp/es/operating/): límites, control de acceso y qué vigilar si lo alojas tú.
 - [Referencia de herramientas](https://davidbejar.github.io/boe-insights-mcp/es/reference/tools/): todas las herramientas, con sus parámetros.
 
 ## Configuración
 
-Variables de entorno opcionales. Las variables sin definir o vacías conservan su valor por defecto, y un valor no válido detiene el servidor al arrancar con un mensaje que nombra la variable. La [página de operación](https://davidbejar.github.io/boe-insights-mcp/es/operating/) explica cada una con detalle.
+Variables de entorno opcionales. Las variables sin definir o vacías conservan su valor por defecto, y un valor no válido detiene el servidor al arrancar con un mensaje que nombra la variable (`BOE_INSIGHTS_HOST` no se comprueba de antemano). La página [Seguridad y operación](https://davidbejar.github.io/boe-insights-mcp/es/operating/) explica cada una con detalle.
 
 **General**
 
@@ -453,26 +449,26 @@ Variables de entorno opcionales. Las variables sin definir o vacías conservan s
 
 | Variable | Valor por defecto | Significado |
 |---|---|---|
-| `BOE_INSIGHTS_TRANSPORT` | `stdio` | `stdio` (tu aplicación arranca el servidor) o `http` (escucha en un puerto); la opción `--transport` lo sustituye. |
-| `BOE_INSIGHTS_HOST` | `127.0.0.1` | Dirección en la que escucha; la opción `--host` lo sustituye. |
-| `BOE_INSIGHTS_PORT` | `8000` | Puerto en el que escucha (1-65535); la opción `--port` lo sustituye. |
+| `BOE_INSIGHTS_TRANSPORT` | `stdio` | `stdio` (tu aplicación arranca el servidor) o `http` (escucha en un puerto); la opción `--transport` tiene prioridad sobre ella. |
+| `BOE_INSIGHTS_HOST` | `127.0.0.1` | Dirección en la que escucha; la opción `--host` tiene prioridad sobre ella. |
+| `BOE_INSIGHTS_PORT` | `8000` | Puerto en el que escucha (1-65535); la opción `--port` tiene prioridad sobre ella. |
 | `BOE_INSIGHTS_ALLOWED_HOSTS` | vacío | Nombres de host públicos aceptados en la cabecera `Host`, separados por comas; se suman a los de loopback, que siempre se aceptan. |
-| `BOE_INSIGHTS_ALLOWED_ORIGINS` | vacío | Orígenes de navegador (`https://host[:puerto]`) aceptados, separados por comas y sin comodines. |
+| `BOE_INSIGHTS_ALLOWED_ORIGINS` | vacío | Orígenes de navegador (`http(s)://host[:puerto]`) aceptados, separados por comas y sin comodines. |
 | `BOE_INSIGHTS_CALLS_PER_MINUTE` | `60` | Llamadas que puede hacer cada usuario por minuto; `0` desactiva el límite. |
-| `BOE_INSIGHTS_CALLS_BURST` | `20` | Llamadas que puede hacer cada usuario de golpe antes de tener que esperar (entero >= 1). |
+| `BOE_INSIGHTS_CALLS_BURST` | `20` | Llamadas seguidas que puede hacer cada usuario antes de tener que esperar (entero >= 1). |
 
 **Inicio de sesión con GitHub** (las cuatro primeras van juntas: o se definen todas o ninguna)
 
 | Variable | Valor por defecto | Significado |
 |---|---|---|
-| `BOE_INSIGHTS_GITHUB_CLIENT_ID` | sin definir | Client ID de la aplicación OAuth de GitHub con la que se inicia sesión. |
-| `BOE_INSIGHTS_GITHUB_CLIENT_SECRET` | sin definir | El client secret de esa aplicación. |
+| `BOE_INSIGHTS_GITHUB_CLIENT_ID` | sin definir | ID de cliente de la aplicación OAuth de GitHub con la que se inicia sesión. |
+| `BOE_INSIGHTS_GITHUB_CLIENT_SECRET` | sin definir | El secreto de cliente de esa aplicación. |
 | `BOE_INSIGHTS_AUTH_SIGNING_KEY` | sin definir | Secreto para los tokens que emite el servidor; al menos 32 caracteres. |
 | `BOE_INSIGHTS_BASE_URL` | sin definir | URL pública del servidor (`https://host[:puerto]`, sin ruta; `http` solo para loopback). |
 | `BOE_INSIGHTS_ALLOWED_USERS` | vacío | Quién puede iniciar sesión: nombres de usuario de GitHub, `id:<número>` o `*` (todo el mundo), separados por comas. Vacío significa nadie. |
-| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | vacío | URL de redirección exactas adicionales para clientes OAuth, además de las de loopback, que siempre se aceptan. |
+| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | vacío | URI de redirección exactas adicionales para clientes OAuth, además de las de loopback, que siempre se aceptan. Un cliente que registre alguna dirección no permitida aquí se rechaza por completo; editores como Cursor y VS Code necesitan que su dirección web figure en esta lista. |
 
-Por HTTP y sin inicio de sesión no se ofrecen las herramientas de búsquedas guardadas, porque no hay nadie a quien asignárselas. Los ajustes de inicio de sesión se ignoran por stdio.
+Por HTTP y sin inicio de sesión no se ofrecen las herramientas de búsquedas guardadas, porque no hay nadie a quien asignárselas. Por stdio, una configuración de inicio de sesión completa se ignora, con una advertencia; los valores se comprueban igualmente, así que una incompleta o no válida detiene el servidor.
 
 ## Cómo funciona
 
@@ -496,13 +492,13 @@ Las herramientas de artículos añaden tres piezas: un analizador del XML de los
 - **Las tendencias se calculan sobre una copia local.** La API no tiene un endpoint de agregados, así que `catalogue.py` descarga toda la colección (unas 12.500 normas) en 3 peticiones, la conserva un día y cuenta en local. `most_amended_laws` es la excepción: necesita los datos de modificaciones de cada norma, que cuestan una petición por norma, de ahí el presupuesto `max_laws` por llamada.
 - **Caché primero.** Las respuestas se guardan en caché (las búsquedas 30 minutos; los metadatos de cada norma, su análisis de modificaciones y el índice del texto, 6 horas; el texto de los artículos, 6 horas, o 30 días cuando se conoce la fecha de actualización del índice), de modo que las preguntas repetidas no llegan al BOE.
 - **Los artículos se localizan por su título.** Los identificadores de bloque del BOE son opacos (el artículo 46 bis de la Ley 40/2015 es `a4-2`), así que el servidor lee el índice del texto de la norma y compara la denominación con los títulos de los bloques en lugar de construir un identificador.
-- **Las versiones se seleccionan por su fecha de inicio.** Cada versión de un artículo empieza en su fecha de vigencia (la de publicación si falta), y el texto vigente en una fecha es la última versión que empezó en esa fecha o antes.
+- **Las versiones se seleccionan por su fecha de inicio.** Cada versión de un artículo empieza en su fecha de entrada en vigor (la de publicación si falta), y el texto vigente en una fecha es la última versión que empezó en esa fecha o antes.
 - **Los artículos largos se devuelven por partes.** `read_article` devuelve como máximo `max_chars` caracteres, con `truncated` y `next_offset` para pedir el resto; `compare_article_versions` y `get_article_history` limitan su salida y lo indican con `changes_truncated`, `unified_truncated` y `truncated`.
 - **La comprobación de citas compara palabras y versiones.** La cita y cada versión del artículo se reducen a palabras comparables (se ignoran mayúsculas, puntuación y comillas; se conservan los acentos); el mejor pasaje alineado se clasifica como `exact`, `close`, `partial` o `none`, y se comparan también las demás versiones del artículo, que es como se reconoce una redacción anterior.
 - **Los sumarios diarios se leen como XML y los días pasados se guardan en caché.** El sumario del BOE de un día se descarga como XML; un día pasado no vuelve a cambiar, así que se conserva 30 días (el de hoy, una hora).
 - **Respetuoso por defecto.** El BOE no publica ningún límite de peticiones, así que el servidor se impone el suyo: al menos un segundo entre peticiones y un máximo de dos a la vez.
 - **Resultados tipados y estructurados.** Cada herramienta devuelve un modelo pydantic con esquema de salida declarado, no texto libre.
-- **Errores accionables.** Los fallos explican qué ha ocurrido, si tiene sentido reintentar y qué hacer a continuación (por ejemplo, "usa `resolve_reference` para encontrar el identificador correcto").
+- **Errores que indican qué hacer.** Los fallos explican qué ha ocurrido, si tiene sentido reintentar y qué hacer a continuación (por ejemplo, "usa `resolve_reference` para encontrar el identificador correcto").
 - **Procedencia en todo resultado.** Cada resultado indica su fuente, la atribución exigida, cuándo se elaboró el resultado (`generated_at`; los datos pueden proceder de la caché), la fecha de última actualización de la API y el aviso de carácter meramente informativo.
 
 ## Fuente de los datos, atribución y aviso legal
@@ -520,7 +516,7 @@ Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](
 - [x] 1. Primera versión mínima: cliente, caché, limitador de peticiones y cuatro herramientas
 - [x] 2. Lectura de artículos e historial de versiones: leer un artículo a una fecha dada, comparar versiones de un artículo, cronología de cambios, historial de modificaciones
 - [x] 3. Análisis de tendencias: legislación a lo largo del tiempo, departamentos con más normas, comparar temas, explicar un pico, normas más modificadas, y el índice de una norma
-- [x] 4. Verificación de citas, explorador de la cadena de modificaciones, rastreo del diario oficial
+- [x] 4. Verificación de citas, explorador de la cadena de modificaciones, exploración del diario oficial
 - [x] 5. Recursos y prompts MCP y búsquedas guardadas
 - [x] 6. Modo remoto: Streamable HTTP, inicio de sesión con GitHub con lista de acceso, límite de llamadas por usuario, imagen de contenedor y sitio de documentación
 - [ ] 7. Versión 0.1.0: publicación en PyPI, con la imagen de contenedor y el sitio de documentación
@@ -540,7 +536,7 @@ NO_MKDOCS_2_WARNING=1 uv run mkdocs serve    # el sitio de documentación, con r
 NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict  # la misma compilación que ejecutan las comprobaciones
 ```
 
-Las pruebas live consultan la API real del BOE: úsalas con moderación. La lógica se escribe primero con pruebas, y las pruebas unitarias nunca acceden a la red: usan [respx](https://lundberg.github.io/respx/) con respuestas reales de la API grabadas en `tests/fixtures/boe/`. El comportamiento verificado de la API está documentado en [`docs/api-notes.md`](docs/api-notes.md) (en inglés).
+Las pruebas en vivo (`-m live`) consultan la API real del BOE: úsalas con moderación. La lógica se desarrolla escribiendo primero las pruebas, y las pruebas unitarias nunca acceden a la red: usan [respx](https://lundberg.github.io/respx/) con respuestas reales de la API grabadas en `tests/fixtures/boe/`. El comportamiento verificado de la API está documentado en [`docs/api-notes.md`](docs/api-notes.md).
 
 Las páginas de referencia del sitio se generan a partir del propio servidor. Sus resúmenes en español de las herramientas se escriben a mano en `docs_build/summaries.es.toml`; cuando cambia el texto en inglés de una herramienta, vuelve a leer su resumen en español y después actualiza su hash con `uv run python -m docs_build --refresh tools.NAME` (`--hash tools.NAME` solo muestra el actual).
 

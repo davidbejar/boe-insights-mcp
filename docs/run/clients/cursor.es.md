@@ -68,11 +68,11 @@ Para un servidor en otro equipo, usa su dirección pública, por ejemplo `https:
 
 ### Con inicio de sesión con GitHub
 
-Si el servidor tiene activado el [inicio de sesión con GitHub](../github-login.md), Cursor inicia sesión por OAuth. Según la página de Cursor, descubre por sí mismo los datos de inicio de sesión del servidor y se registra como cliente público, así que no añades nada al JSON. Después Cursor abre un navegador, donde ves la página de consentimiento del servidor y, la primera vez, la página de autorización de GitHub.
+Si el servidor tiene activado el [inicio de sesión con GitHub](../github-login.md), Cursor inicia sesión por OAuth. Según la página de Cursor, descubre por sí mismo los datos de inicio de sesión del servidor y se registra como cliente público, así que no añades nada al JSON. El servidor necesita un ajuste, que se describe a continuación. Después Cursor abre un navegador, donde ves la página de consentimiento del servidor y, la primera vez, la página de autorización de GitHub.
 
-La página de Cursor dice que la aplicación de escritorio usa la dirección de redirección `http://localhost:8787/callback`. Este servidor acepta por defecto las direcciones de redirección de loopback (`localhost`, `127.0.0.1`, `[::1]`, cualquier puerto) de los clientes, así que no debería hacer falta ningún ajuste adicional. No se verificó. Si Cursor es rechazado con un error de redirección, añade la dirección a `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` en el servidor.
+La página de Cursor dice que, con el registro dinámico, la aplicación de escritorio registra dos URI de redirección, `http://localhost:8787/callback` y `https://www.cursor.com/agents/mcp/oauth/callback`, y puede enviar la web al iniciar sesión. Este servidor rechaza el registro completo salvo que todas las direcciones estén permitidas (consulta [URI de redirección](../github-login.md#uri-de-redirección)), así que el administrador del servidor debe añadir `https://www.cursor.com/agents/mcp/oauth/callback` a `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS`. Incluirla significa que los códigos de inicio de sesión de Cursor pueden entregarse a través de cursor.com. Un registro con estas dos direcciones se rechazó sin el ajuste y se aceptó con él; el inicio de sesión desde el propio Cursor no se probó.
 
-Nadie ha probado si la versión web de Cursor (Cursor Agents) puede llegar al servidor. Su inicio de sesión usa una dirección de `cursor.com` y el servidor tendría que estar en una dirección HTTPS pública.
+Nadie ha probado si la versión web de Cursor (Cursor Agents) puede llegar al servidor. El servidor tendría que estar en una dirección HTTPS pública.
 
 ## Véase también
 

@@ -1,6 +1,6 @@
 # Inicio de sesión con GitHub
 
-El inicio de sesión con GitHub es opcional. Está desactivado por defecto y por stdio no hace nada. Cuando sirves el servidor [por HTTP](http.md), obliga a las personas a iniciar sesión con una cuenta de GitHub, y solo entran las cuentas que figuran en una lista que escribes tú. La lista es cerrada: una lista vacía no deja entrar a nadie.
+El inicio de sesión con GitHub es opcional. Está desactivado por defecto y por stdio no hace nada. Cuando ofreces el servidor [por HTTP](http.md), obliga a las personas a iniciar sesión con una cuenta de GitHub, y solo entran las cuentas que figuran en una lista que escribes tú. La lista es cerrada: una lista vacía no deja entrar a nadie.
 
 Activarlo también da a cada persona sus propias búsquedas guardadas. Sin inicio de sesión, las herramientas de búsquedas guardadas no se ofrecen por HTTP.
 
@@ -30,8 +30,8 @@ GitHub tiene un ajuste, "Expire user access tokens", activado por defecto. El in
 El inicio de sesión necesita cuatro variables, todas o ninguna. Si solo se definen algunas, el servidor se niega a arrancar y nombra las que faltan. Añade la lista de acceso como quinta.
 
 ```bash
-export BOE_INSIGHTS_GITHUB_CLIENT_ID=<client id from GitHub>
-export BOE_INSIGHTS_GITHUB_CLIENT_SECRET=<client secret from GitHub>
+export BOE_INSIGHTS_GITHUB_CLIENT_ID=<ID de cliente de GitHub>
+export BOE_INSIGHTS_GITHUB_CLIENT_SECRET=<secreto de cliente de GitHub>
 export BOE_INSIGHTS_AUTH_SIGNING_KEY=$(openssl rand -hex 32)
 export BOE_INSIGHTS_BASE_URL=http://localhost:8000
 export BOE_INSIGHTS_ALLOWED_USERS=octocat,id:1234567
@@ -47,20 +47,29 @@ Conserva la clave de firma. Si generas una nueva cada vez que arrancas, las pers
 
 | Variable | Significado |
 |---|---|
-| `BOE_INSIGHTS_GITHUB_CLIENT_ID` | El client ID de la aplicación OAuth. |
-| `BOE_INSIGHTS_GITHUB_CLIENT_SECRET` | El client secret de la aplicación OAuth. |
-| `BOE_INSIGHTS_AUTH_SIGNING_KEY` | Un secreto de al menos 32 caracteres. El servidor lo usa para firmar los tokens que entrega a los clientes. Cambiarlo cierra la sesión de todo el mundo, y los registros de inicio de sesión que el servidor guardó con la clave anterior dejan de usarse. |
+| `BOE_INSIGHTS_GITHUB_CLIENT_ID` | El ID de cliente de la aplicación OAuth. |
+| `BOE_INSIGHTS_GITHUB_CLIENT_SECRET` | El secreto de cliente de la aplicación OAuth. |
+| `BOE_INSIGHTS_AUTH_SIGNING_KEY` | Un secreto de al menos 32 caracteres. El servidor lo usa para firmar los tokens que entrega a los clientes. Cambiarlo cierra la sesión de todo el mundo, y los datos de inicio de sesión que el servidor guardó con la clave anterior dejan de usarse. |
 | `BOE_INSIGHTS_BASE_URL` | La dirección pública del servidor tal como la usan los usuarios: `http(s)://host[:puerto]`, sin ruta, sin cadena de consulta y sin credenciales. La dirección MCP del servidor es esta más `/mcp`. Se exige `https` salvo que el host sea de loopback. |
-| `BOE_INSIGHTS_ALLOWED_USERS` | Lista de acceso separada por comas. Véase más abajo. Vacía significa que nadie puede iniciar sesión, y el servidor registra una advertencia. |
-| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | Opcional. Direcciones adicionales a las que se puede devolver a un cliente tras el inicio de sesión, cada una una URL `https` exacta (`http` solo para loopback), sin comodines. Las direcciones de loopback (`localhost`, `127.0.0.1`, `[::1]`, cualquier puerto) se permiten siempre, y es lo que usan los clientes de línea de comandos como Claude Code. |
+| `BOE_INSIGHTS_ALLOWED_USERS` | Lista de acceso separada por comas. Consulta [La lista de acceso](#la-lista-de-acceso). Vacía significa que nadie puede iniciar sesión, y el servidor escribe una advertencia en el log. |
+| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | Opcional. URI de redirección adicionales, a las que se puede devolver a un cliente tras el inicio de sesión, cada una de ellas una URL `https` exacta (`http` solo para loopback), sin comodines. Las direcciones de loopback (`localhost`, `127.0.0.1`, `[::1]`, cualquier puerto) se permiten siempre, y es lo que usan los clientes de línea de comandos como Claude Code. El registro de un cliente se rechaza por completo si alguna de las direcciones que registra no está permitida: consulta [URI de redirección](#uri-de-redirección). |
 
 Reglas que el servidor aplica al arrancar:
 
 - Definir `BOE_INSIGHTS_ALLOWED_USERS` o `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` sin las cuatro variables de inicio de sesión es un error. De lo contrario podrías creer que una lista protege el servidor cuando no es así.
-- Por stdio las variables de inicio de sesión se ignoran, con una advertencia. El inicio de sesión solo se aplica con `--transport http`.
+- Por stdio una configuración de inicio de sesión completa se ignora, con una advertencia. El inicio de sesión solo se aplica con `--transport http`. Los valores se comprueban igualmente, así que una configuración de inicio de sesión incompleta o no válida también detiene un servidor stdio.
 - El host de la URL base se añade automáticamente a los hosts y orígenes permitidos. Consulta [Ejecutar por HTTP](http.md#hosts-y-orígenes-permitidos).
 
-¿Usas un contenedor? Pasa las mismas variables con `-e` o `--env-file`. Consulta [Ejecutar en un contenedor](container.md). El inicio de sesión contra la imagen de contenedor no se probó.
+### URI de redirección
+
+Un cliente indica al servidor adónde se puede devolver el navegador tras el inicio de sesión, de una de estas dos formas:
+
+- **Registro.** El cliente se registra en `/register` y enumera sus direcciones. El servidor rechaza el registro completo si alguna de ellas no está permitida, aunque las demás sean direcciones de loopback.
+- **Documento de metadatos.** El cliente da como identificador de cliente la dirección `https` de un documento que lo describe, y el servidor descarga ese documento. Claude Code funciona así: en la prueba real de inicio de sesión, su identificador de cliente era `https://claude.ai/oauth/claude-code-client-metadata`. La dirección que se usa al iniciar sesión debe estar permitida.
+
+A Claude Code se le devuelve a una dirección de loopback, así que no necesita ningún ajuste. Según su documentación, algunos editores registran una dirección web además de una de loopback: Cursor registra `https://www.cursor.com/agents/mcp/oauth/callback` y VS Code usa `https://vscode.dev/redirect`. Un cliente así solo puede registrarse cuando su dirección web figura en `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS`. Incluirla significa que los códigos de inicio de sesión de ese cliente pueden entregarse a través de ese sitio. Consulta las páginas de [Cursor](clients/cursor.md#con-inicio-de-sesión-con-github) y [VS Code](clients/vscode.md#con-inicio-de-sesión-con-github).
+
+¿Usas un contenedor? Pasa las mismas variables con `-e` o `--env-file`. Consulta [Ejecutar en un contenedor](container.md). El inicio de sesión con la imagen de contenedor no se probó.
 
 ## La lista de acceso
 
@@ -74,7 +83,7 @@ Reglas que el servidor aplica al arrancar:
 
 Una entrada incorrecta detiene el servidor al arrancar con un mensaje que muestra la entrada.
 
-**Prefiere las entradas `id:`.** Una entrada con nombre de usuario deja de coincidir si la persona cambia el nombre de su cuenta, y otra persona puede quedarse después con el nombre antiguo y coincidir entonces con la entrada. El id numérico no cambia nunca. Cuando una entrada con nombre de usuario deja entrar a alguien, el servidor registra una sola vez que `id:<n>` es la forma que sobrevive a un cambio de nombre.
+**Usa preferentemente entradas `id:`.** Una entrada con nombre de usuario deja de coincidir si la persona cambia el nombre de su cuenta, y otra persona puede quedarse después con el nombre antiguo y coincidir entonces con la entrada. El id numérico no cambia nunca. Cuando una entrada con nombre de usuario deja entrar a alguien, el servidor escribe una sola vez en el log que `id:<n>` es la forma que sobrevive a un cambio de nombre.
 
 Para averiguar el id de una persona, pídele que intente iniciar sesión. Verá la página "Access not allowed" que se describe más abajo, en la que aparece el id. También puedes consultarlo en la API pública de GitHub: `curl https://api.github.com/users/<login>` devuelve un campo `id`.
 
@@ -94,19 +103,19 @@ Después de reiniciar:
 La primera vez que un cliente se conecta a `http://localhost:8000/mcp` (o a tu dirección pública):
 
 1. El servidor responde que hace falta iniciar sesión y el cliente abre una ventana del navegador. Cómo se ve depende del cliente. Consulta la [página de tu cliente](clients/claude-code.md).
-2. La página de consentimiento del propio servidor pregunta si se permite el cliente. Esta página procede del servidor, no de GitHub.
+2. La página de consentimiento del propio servidor pregunta si se permite el cliente. Esta página procede del servidor, no de GitHub. Muestra el logotipo de este proyecto y aparece en cada inicio de sesión.
 3. El navegador va a GitHub. Solo la primera vez, GitHub muestra su página de autorización para tu aplicación OAuth.
 4. GitHub devuelve el navegador al servidor y el cliente queda con la sesión iniciada.
 
-El servidor pide a GitHub únicamente el ámbito (scope) `read:user`, que es acceso de solo lectura al perfil público. El servidor no necesita más que el id numérico de la cuenta y su nombre de usuario. No pide acceso a repositorios ni a nada más.
+El servidor pide a GitHub como mucho el ámbito (scope) `read:user`, que es acceso de solo lectura al perfil público, y ningún ámbito cuando el cliente no pide ninguno. El servidor no necesita más que el id numérico de la cuenta y su nombre de usuario. No pide acceso a repositorios ni a nada más.
 
 A partir de ahí el cliente conserva su token y lo renueva por sí mismo. Las búsquedas guardadas de cada persona se almacenan bajo su id de GitHub y las demás personas no pueden verlas.
 
 ### Alguien que no está en la lista
 
-Una cuenta de GitHub que no está en la lista de acceso no pasa. El navegador muestra una página titulada "Access not allowed" con el mensaje de que la cuenta de GitHub no tiene permiso para usar este servidor y de que la persona debe pedir al administrador que añada `id:<n>` (seguido de su nombre de usuario de GitHub). La página no dice quién está en la lista. El estado es 403.
+Una cuenta de GitHub que no está en la lista de acceso no pasa. El navegador muestra una página titulada "Access not allowed" con el mensaje de que la cuenta de GitHub no tiene permiso para usar este servidor y de que la persona debe pedir al administrador del servidor que añada `id:<n>` (seguido de su nombre de usuario de GitHub). La página no dice quién está en la lista. El estado es 403.
 
-Envía el texto `id:<n>` al administrador del servidor, que lo añade a la lista como se explica más arriba.
+Envía el texto `id:<n>` al administrador, que lo añade a la lista como se explica en [Añadir o quitar a una persona](#añadir-o-quitar-a-una-persona).
 
 ## Renovación del token
 
@@ -127,15 +136,16 @@ La respuesta es `401 Unauthorized` con una cabecera `WWW-Authenticate` que apunt
 
 ## Qué se probó
 
-- El inicio de sesión desde Claude Code por HTTP en el mismo equipo, con una aplicación OAuth de GitHub, con "Expire user access tokens" activado, con una cuenta permitida y otra rechazada.
-- Las comprobaciones de arranque del servidor, la respuesta 401 y los metadatos de inicio de sesión, con credenciales de prueba.
+- El inicio de sesión desde Claude Code por HTTP en el mismo equipo (`localhost`), con una aplicación OAuth de GitHub, con "Expire user access tokens" activado, con una cuenta permitida y otra rechazada.
+- Las comprobaciones de arranque del servidor, la respuesta 401 y los metadatos de inicio de sesión, con credenciales ficticias.
 
 No se probó:
 
 - Detrás de un proxy inverso HTTPS real.
 - Clientes distintos de Claude Code.
-- El inicio de sesión contra la imagen de contenedor.
+- El inicio de sesión con la imagen de contenedor.
 - La renovación después de que el token de GitHub haya caducado de verdad.
+- Que un cliente, cualquiera que sea, vuelva a registrarse después de borrar los datos de inicio de sesión del servidor.
 
 ## Véase también
 

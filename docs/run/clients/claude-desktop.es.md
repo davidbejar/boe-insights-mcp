@@ -66,19 +66,19 @@ Para pasar ajustes, añade un bloque `env` junto a `args`, por ejemplo `"env": {
 
 - Comprueba que el JSON no tenga una coma o unas comillas que falten.
 - Revisa los logs. En macOS están en `~/Library/Logs/Claude`. `mcp.log` recoge las conexiones y `mcp-server-boe-insights.log` contiene la salida del propio servidor.
-- Ejecuta el mismo comando en una terminal para ver su error.
+- Ejecuta el mismo comando en un terminal para ver su error.
 
 ## Por HTTP
 
 La documentación de Anthropic describe dos cosas distintas.
 
 - `claude_desktop_config.json`, arriba, es para servidores locales que se ejecutan en tu equipo. Las páginas de Anthropic no dicen que acepte un servidor remoto por URL, así que no pongas en él una dirección `http://`.
-- Los servidores remotos se añaden como conectores personalizados (custom connectors): **Customize**, después **Connectors** y después **Add custom connector** (en los planes Team y Enterprise los añaden los propietarios de la organización). Consulta [la página de ayuda de Anthropic](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
+- Los servidores remotos se añaden como conectores personalizados (custom connectors): **Customize**, después **Connectors** y después **Add custom connector** (en los planes Team los añaden los roles Owner y Primary Owner en los ajustes de la organización; en los planes Enterprise, las personas con un rol que incluya gestionar el acceso a las bibliotecas). Consulta [la página de ayuda de Anthropic](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
 La misma página de ayuda dice que los conectores remotos se conectan desde la nube de Anthropic, no desde tu dispositivo, en todas las aplicaciones de Claude, Claude Desktop incluida. El servidor debe ser accesible desde internet público y debe usar el puerto HTTPS estándar, el 443. Consecuencias para este servidor:
 
 - Un servidor en `localhost`, en una red privada o detrás de una VPN no es accesible de esa manera. Esto se deduce de la descripción de Anthropic. No se probó.
-- Para usar un conector personalizado tendrías que publicar el servidor en una dirección HTTPS pública (por ejemplo, detrás de un proxy inverso). Lee antes [Seguridad y operación](../../operating.md). No se probó si el [inicio de sesión con GitHub](../github-login.md) del servidor funciona con el inicio de sesión de los conectores de Claude.
+- Para usar un conector personalizado tendrías que publicar el servidor en una dirección HTTPS pública (por ejemplo, detrás de un proxy inverso). Lee antes [Seguridad y operación](../../operating.md). No se probó si el [inicio de sesión con GitHub](../github-login.md) del servidor funciona con el inicio de sesión de los conectores de Claude. La página de ayuda de Anthropic indica `https://claude.ai/api/mcp/auth_callback` como la dirección a la que vuelve el inicio de sesión de los conectores de Claude. Si Claude usa esa dirección con este servidor, debe figurar en `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` (consulta [URI de redirección](../github-login.md#uri-de-redirección)).
 
 Si solo lo quieres en tu propio equipo, usa la configuración por stdio de arriba.
 

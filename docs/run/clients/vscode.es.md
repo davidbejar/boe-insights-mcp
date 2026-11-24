@@ -12,7 +12,7 @@ Según la referencia de configuración, los archivos que gestiona el editor son:
 - `.vscode/mcp.json` en el espacio de trabajo: solo este proyecto.
 - `mcp.json` en tu perfil de usuario de VS Code: todos tus proyectos.
 
-La clave raíz es `servers` (no `mcpServers`). También puedes ejecutar **MCP: Add Server** desde la Command Palette (paleta de comandos) y dejar que VS Code escriba la entrada por ti. Revisa el comando que genera antes de aceptarlo. VS Code te pide que confíes en un servidor antes de arrancarlo.
+La clave raíz es `servers` (no `mcpServers`). También puedes ejecutar **MCP: Add Server** desde la Command Palette (paleta de comandos). Según la documentación actual, su configuración guiada escribe en los archivos más nuevos (tu configuración global de Copilot o un archivo `.mcp.json` en la raíz del espacio de trabajo), no en los archivos de arriba, así que comprueba dónde ha quedado la entrada. Revisa el comando que genera antes de aceptarlo. VS Code te pide que confíes en un servidor antes de arrancarlo.
 
 ## En local, por stdio
 
@@ -67,7 +67,9 @@ VS Code prueba primero el HTTP en streaming (streamable HTTP) y recurre al antig
 
 ### Con inicio de sesión con GitHub
 
-La referencia de configuración dice que, para un servidor HTTP, VS Code ejecuta por sí mismo el flujo OAuth y abre una ventana del navegador la primera vez que se conecta. Con el [inicio de sesión con GitHub](../github-login.md) de este servidor verías la página de consentimiento del servidor y, la primera vez, la página de autorización de GitHub. La referencia muestra un objeto `oauth` opcional con un `clientId` para los servidores cuyos clientes están preinscritos. Este servidor registra los clientes de forma dinámica, así que no deberías necesitarlo. Nada de esto se probó.
+La referencia de configuración dice que, para un servidor HTTP, VS Code ejecuta por sí mismo el flujo OAuth y abre una ventana del navegador la primera vez que se conecta. Con el [inicio de sesión con GitHub](../github-login.md) de este servidor verías la página de consentimiento del servidor y, la primera vez, la página de autorización de GitHub. La referencia muestra un objeto `oauth` opcional con un `clientId` para los servidores cuyos clientes están registrados previamente; este servidor no tiene ninguno, así que no lo usas.
+
+La guía para desarrolladores de VS Code dice que sus URI de redirección son `http://127.0.0.1:33418` y `https://vscode.dev/redirect`. Si VS Code se registra de forma dinámica con las dos, este servidor rechaza el registro completo salvo que `https://vscode.dev/redirect` (y `https://insiders.vscode.dev/redirect` para VS Code Insiders) figure en `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` (consulta [URI de redirección](../github-login.md#uri-de-redirección)). Incluirlas significa que los códigos de inicio de sesión de VS Code pueden entregarse a través de vscode.dev. Un registro con estas direcciones se rechazó sin el ajuste y se aceptó con él. El servidor también acepta clientes que se identifican con un documento de metadatos en lugar de registrarse; no se probó si VS Code lo hace ni qué ocurre en ese caso. El inicio de sesión desde el propio VS Code no se probó.
 
 ## Véase también
 

@@ -93,7 +93,7 @@ def test_the_hook_generates_the_six_pages_once() -> None:
     }
     assert "search_legislation" in first["reference/tools.md"]
     assert "search_legislation" in first["reference/tools.es.md"]
-    assert "Busca leyes en la legislación consolidada" in first["reference/tools.es.md"]
+    assert "Busca normas de la legislación consolidada" in first["reference/tools.es.md"]
     assert "!!! note" in first["reference/tools.md"]
     assert hook._pages() is first  # cached for the rest of the build
     hook.on_pre_build(None)
@@ -141,7 +141,7 @@ def test_the_strict_build_publishes_the_reference_pages(tmp_path: Path) -> None:
     spanish = (out / "es/reference/tools/index.html").read_text(encoding="utf-8")
     assert "search_legislation" in english
     assert "search_legislation" in spanish
-    assert "Busca leyes en la legislación consolidada" in spanish
+    assert "Busca normas de la legislación consolidada" in spanish
     assert not list(out.rglob("summaries*.toml"))
     # The logo, the favicon and the stylesheet resolve from the English and the Spanish pages.
     for page in ("index.html", "es/index.html", "es/run/uvx/index.html"):

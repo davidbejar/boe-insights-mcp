@@ -197,10 +197,10 @@ _LABELS: dict[Language, dict[str, str]] = {
             "descripciones son los que recibe el modelo y se muestran tal cual; junto a cada "
             "prompt hay un resumen en español."
         ),
-        "group_finding": "Búsqueda de leyes",
+        "group_finding": "Búsqueda de normas",
         "group_articles": "Artículos y modificaciones",
         "group_trends": "Tendencias y estadísticas",
-        "group_gazette": "El BOE diario",
+        "group_gazette": "El diario oficial día a día",
         "group_citations": "Citas",
         "group_saved": "Búsquedas guardadas",
         "group_other": "Otras herramientas",

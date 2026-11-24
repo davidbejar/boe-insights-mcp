@@ -3,7 +3,7 @@
 La mayoría de los clientes MCP aceptan las mismas dos formas de configuración. Úsalas si tu cliente no tiene página propia, y consulta la documentación de tu cliente para saber el nombre del archivo y el de la clave raíz (a menudo es `mcpServers`).
 
 !!! warning "No probado por este proyecto"
-    Los fragmentos de aquí son la forma habitual. Se probaron Claude Code y Claude Desktop (stdio). En cualquier otro cliente, el formato exacto depende de ese cliente, así que lee su documentación.
+    Los fragmentos de aquí son la forma habitual. Este proyecto probó Claude Code (stdio, y HTTP con inicio de sesión con GitHub) y Claude Desktop (solo stdio). En cualquier otro cliente, el formato exacto depende de ese cliente, así que lee su documentación.
 
 ## En local, por stdio
 
@@ -79,7 +79,7 @@ Algunos clientes no pueden hablar HTTP por sí mismos. Consulta la documentació
 
 ### Con inicio de sesión con GitHub
 
-Si el servidor tiene activado el [inicio de sesión con GitHub](../github-login.md), el cliente debe admitir el inicio de sesión OAuth de MCP: encuentra los datos de inicio de sesión en las direcciones well-known del servidor, se registra y abre un navegador. Un cliente que no puede hacerlo recibe `401 Unauthorized` y no puede usar el servidor. Por defecto los clientes redirigen de vuelta a una dirección de loopback (`localhost`, `127.0.0.1` o `[::1]`), que el servidor acepta. Un cliente que use otra dirección de redirección necesita que figure en `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` en el servidor.
+Si el servidor tiene activado el [inicio de sesión con GitHub](../github-login.md), el cliente debe admitir el inicio de sesión OAuth de MCP: encuentra los datos de inicio de sesión en las direcciones well-known del servidor, se registra y abre un navegador. Un cliente que no puede hacerlo recibe `401 Unauthorized` y no puede usar el servidor. Los clientes de línea de comandos suelen redirigir de vuelta a una dirección de loopback (`localhost`, `127.0.0.1` o `[::1]`), que el servidor acepta. Los editores y los clientes web registran a menudo también una dirección web. El servidor rechaza el registro completo si alguna de las URI de redirección del cliente no está permitida, así que esa dirección debe figurar en `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` en el servidor. Consulta [URI de redirección](../github-login.md#uri-de-redirección).
 
 ### Comprobar la dirección a mano
 

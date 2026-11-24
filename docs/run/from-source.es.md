@@ -17,7 +17,7 @@ cd boe-insights-mcp
 uv sync
 ```
 
-`uv sync` crea un entorno virtual en `.venv` e instala las dependencias fijadas. Para instalar también las herramientas de pruebas y de lint, ejecuta `uv sync --all-groups`.
+`uv sync` crea un entorno virtual en `.venv` e instala las dependencias fijadas, incluidas las herramientas de pruebas y de lint (el grupo `dev`). `uv sync --all-groups` instala además las herramientas que generan el sitio de documentación.
 
 ## Ejecutarlo
 
@@ -48,7 +48,7 @@ Normalmente no lo ejecutas a mano: lo arranca tu cliente MCP. En la configuraci�
 uv run boe-insights-mcp --transport http --port 8000
 ```
 
-Por defecto escucha solo en `127.0.0.1`. Los detalles, y lo que conviene hacer antes de exponerlo a otras personas, están en [Ejecutar por HTTP](http.md).
+Por defecto escucha solo en `127.0.0.1`. Los detalles, y lo que debes hacer antes de exponerlo a otras personas, están en [Ejecutar por HTTP](http.md).
 
 ## Ajustes
 

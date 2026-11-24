@@ -2,12 +2,12 @@
 
 La imagen de contenedor ejecuta el servidor por HTTP. Se construye a partir del `Containerfile` de la raíz del repositorio. Los comandos de abajo usan Podman. Docker funciona igual: sustituye `podman` por `docker`, salvo donde se indique lo contrario.
 
-!!! note "Estado de la versión"
-    La imagen `ghcr.io/davidbejar/boe-insights-mcp` se publica junto con la versión 0.1.0. Hasta entonces, construye tú la imagen a partir de un clon (siguiente sección).
+!!! note "Estado de la publicación"
+    La imagen `ghcr.io/davidbejar/boe-insights-mcp` se publicará con la versión 0.1.0. Hasta entonces, construye tú la imagen a partir de un clon (siguiente sección).
 
 ## Obtener la imagen
 
-Cuando salga la versión:
+Cuando se publique la versión 0.1.0:
 
 ```bash
 podman pull ghcr.io/davidbejar/boe-insights-mcp:0.1.0
@@ -21,9 +21,9 @@ cd boe-insights-mcp
 podman build --format docker -t localhost/boe-insights-mcp:dev -f Containerfile .
 ```
 
-Con Docker, quita `--format docker`: `docker build -t localhost/boe-insights-mcp:dev -f Containerfile .`. Con Podman la opción es obligatoria: sin ella, Podman descarta en silencio la comprobación de estado de la imagen.
+Con Docker, quita `--format docker`: `docker build -t localhost/boe-insights-mcp:dev -f Containerfile .`. Con Podman la opción es obligatoria: el formato de imagen por defecto de Podman (OCI) no conserva la comprobación de estado.
 
-Los comandos de abajo usan el nombre `localhost/boe-insights-mcp:dev`. Cuando salga la versión, usa en su lugar `ghcr.io/davidbejar/boe-insights-mcp:0.1.0`.
+Los comandos de abajo usan el nombre `localhost/boe-insights-mcp:dev`. Cuando se publique la versión 0.1.0, usa en su lugar `ghcr.io/davidbejar/boe-insights-mcp:0.1.0`.
 
 ## Ejecutarlo
 
@@ -35,7 +35,7 @@ podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 \
 
 Qué hace cada parte:
 
-- `-p 127.0.0.1:8000:8000` publica el puerto solo en tu propio equipo. Esta es la línea que decide quién puede llegar al servidor. Dentro del contenedor el servidor escucha en `0.0.0.0`, porque de lo contrario el puerto publicado no funcionaría.
+- `-p 127.0.0.1:8000:8000` publica el puerto solo en tu propio equipo. Esta es la línea que decide quién puede llegar al servidor. Dentro del contenedor el servidor escucha en `0.0.0.0`, porque de lo contrario el puerto publicado no funcionaría. Por eso, sin inicio de sesión con GitHub, el servidor escribe en el log en cada arranque una advertencia de que se puede llegar a él desde otros equipos. Con el puerto publicado en `127.0.0.1`, como aquí, esa advertencia es la esperada.
 - `--read-only --tmpfs /tmp --cap-drop=all --security-opt no-new-privileges` blindan el contenedor. El servidor no necesita escribir en nada más que en `/data`.
 - `-v boe-insights-data:/data` guarda tus datos en un volumen con nombre que sobrevive al contenedor.
 
@@ -62,20 +62,20 @@ La imagen guarda todo su estado bajo `/data`, el único sitio en el que escribe:
 |---|---|---|
 | `/data/saved-searches` | Las búsquedas guardadas (`saved_searches.sqlite3`). No se debe borrar. | `BOE_INSIGHTS_DATA_DIR` |
 | `/data/cache` | La caché de respuestas. Se puede borrar sin riesgo. | `BOE_INSIGHTS_CACHE_DIR` |
-| `/data/fastmcp` | Con inicio de sesión con GitHub, los registros de inicio de sesión del servidor (clientes registrados y tokens, almacenados cifrados). Sin inicio de sesión se queda vacío. | `FASTMCP_HOME` |
+| `/data/fastmcp` | Con inicio de sesión con GitHub, los datos de inicio de sesión del servidor (clientes registrados y tokens, almacenados cifrados). Sin inicio de sesión se queda vacío. | `FASTMCP_HOME` |
 
-El servidor se ejecuta como usuario y grupo `10001`, no como root. Un volumen con nombre hereda el propietario correcto la primera vez que se usa. Si en su lugar usas un bind mount, la carpeta debe poder escribirla `10001`:
+El servidor se ejecuta como usuario y grupo `10001`, no como root. Un volumen con nombre hereda el propietario correcto la primera vez que se usa. Si en su lugar usas un bind mount, el usuario `10001` debe poder escribir en la carpeta:
 
 ```bash
-mkdir -p ./boe-data && podman unshare chown 10001:10001 ./boe-data
-podman run --rm -p 127.0.0.1:8000:8000 -v ./boe-data:/data localhost/boe-insights-mcp:dev
+mkdir -p "$PWD/boe-data" && podman unshare chown 10001:10001 "$PWD/boe-data"
+podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 -v "$PWD/boe-data":/data localhost/boe-insights-mcp:dev
 ```
 
-`podman unshare` es para Podman sin privilegios de root (rootless). Con Docker o con Podman como root, usa `sudo chown 10001:10001 ./boe-data`. Los comandos del bind mount no se ejecutaron para esta página.
+Indica una ruta absoluta del host para el bind mount, como hace `"$PWD/boe-data"`: algunas versiones de Docker rechazan una relativa. `podman unshare` es para Podman sin privilegios de root (rootless). Con Docker o con Podman como root, usa `sudo chown 10001:10001 "$PWD/boe-data"`. Los comandos del bind mount no se ejecutaron para esta página.
 
 ## Variables de entorno
 
-La imagen define las siguientes. Puedes sustituir cualquiera con `-e NOMBRE=valor`.
+La imagen define las siguientes. Puedes cambiar cualquiera de ellas con `-e NOMBRE=valor`.
 
 | Variable | Valor en la imagen |
 |---|---|
@@ -90,10 +90,10 @@ Todos los demás ajustes funcionan como en las otras páginas, pasados con `-e`:
 
 Si cambias `BOE_INSIGHTS_PORT`, cambia también la parte derecha de `-p` para que coincida. La comprobación de estado sigue a la variable.
 
-Pon los secretos (el client secret de GitHub y la clave de firma) en un archivo de entorno en lugar de en la línea de comandos, para que no queden en el historial de tu shell ni se vean en `ps`:
+Pon los secretos (el secreto de cliente de GitHub y la clave de firma) en un archivo de entorno en lugar de en la línea de comandos, para que no queden en el historial de tu shell ni se vean en `ps`:
 
 ```bash
-podman run --rm -p 127.0.0.1:8000:8000 --env-file boe.env -v boe-insights-data:/data localhost/boe-insights-mcp:dev
+podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 --env-file boe.env -v boe-insights-data:/data localhost/boe-insights-mcp:dev
 ```
 
 Mantén ese archivo privado (`chmod 600 boe.env`).
@@ -105,11 +105,15 @@ podman logs boe-insights     # log del servidor
 podman stop boe-insights     # apagado limpio; el servidor es el proceso principal y recibe la señal
 ```
 
+Estos comandos usan el nombre indicado con `--name boe-insights`, como en todos los comandos `podman run` de esta página.
+
 Para actualizar, descarga o construye la imagen nueva y arranca un contenedor nuevo con el mismo volumen.
 
 ## Sin probar
 
-- El inicio de sesión (con GitHub) contra la imagen de contenedor.
+La imagen se construyó para linux/arm64 y linux/amd64. La imagen arm64 se ejecutó en modo HTTP abierto. La imagen amd64 solo se construyó y se comprobó que se importa; nunca se ejecutó.
+
+- El inicio de sesión (con GitHub) con la imagen de contenedor.
 - Los comandos del bind mount de arriba.
 - Ejecutar la imagen publicada: todavía no existe.
 
