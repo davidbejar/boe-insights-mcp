@@ -1,0 +1,45 @@
+/* Site colours taken from the logo: teal #14524F and amber #E3A23B.
+ *
+ * Contrast (WCAG 2.x, computed): white on teal 8.94:1 (header, tabs); teal on white 8.94:1
+ * (links, light scheme); lightened teal #6CC3BB on the dark background #1E2029 7.85:1 (links,
+ * dark scheme); amber on the dark background 7.34:1 (hover, dark scheme). Plain amber on white
+ * is only 2.21:1, so in the light scheme the accent used for TEXT (link hover, active items) is
+ * the darker amber #8A5A00 (5.93:1 on white); the logo amber remains the accent background.
+ */
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #14524f;
+  --md-primary-fg-color--light: #2f7a76;
+  --md-primary-fg-color--dark: #0d3a38;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: rgba(255, 255, 255, 0.7);
+  --md-accent-fg-color: #8a5a00;
+  --md-accent-fg-color--transparent: rgba(138, 90, 0, 0.1);
+  --md-accent-bg-color: #e3a23b;
+  --md-accent-bg-color--light: rgba(227, 162, 59, 0.7);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #14524f;
+  --md-primary-fg-color--light: #2f7a76;
+  --md-primary-fg-color--dark: #0d3a38;
+  --md-primary-bg-color: #ffffff;
+  --md-primary-bg-color--light: rgba(255, 255, 255, 0.7);
+  --md-accent-fg-color: #e3a23b;
+  --md-accent-fg-color--transparent: rgba(227, 162, 59, 0.1);
+  --md-accent-bg-color: #e3a23b;
+  --md-accent-bg-color--light: rgba(227, 162, 59, 0.7);
+  /* Teal on the dark background is only 1.82:1, so links use a lighter tint of it. */
+  --md-typeset-a-color: #6cc3bb;
+}
+
+/* The icon is a teal disc, which vanishes on the teal header; a cream ring makes it readable. */
+.md-header__button.md-logo img,
+.md-nav__button.md-logo img {
+  box-sizing: border-box;
+  height: 1.9rem;
+  width: 1.9rem;
+  padding: 2px;
+  border-radius: 50%;
+  background: #f4efe6;
+}

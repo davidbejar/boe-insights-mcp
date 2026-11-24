@@ -24,12 +24,18 @@ _REWRITES = {
     "LICENSE": REPO_BLOB + "LICENSE",
     "docs/api-notes.md": "api-notes.md",
 }
-_HOME_PAGES = {"index.md", "index.es.md"}
+# The logo is embedded with raw HTML (<picture>, so GitHub can switch it with the reader's
+# theme), which MkDocs does not rewrite. The files are published once, at /assets/ (the i18n
+# plugin does not copy them under /es/), and the pages are served as directories: the English
+# home is "/" and the Spanish one "/es/", so the Spanish page has to climb one level.
+_ASSETS_FROM_HOME = {"index.md": "assets/", "index.es.md": "../assets/"}
+_HOME_PAGES = set(_ASSETS_FROM_HOME)
 _LINK = re.compile(r"\]\(([^)\s#]+)(#[^)\s]*)?\)")
+_ASSET_ATTRIBUTE = re.compile(r'\b(src|srcset)="docs/assets/')
 
 
 def on_page_markdown(markdown: str, page, config, files) -> str:
-    """Rewrite the READMEs' relative link targets on the home pages; leave other pages alone."""
+    """Rewrite the READMEs' relative links and image paths on the home pages; leave others alone."""
     if page.file.src_uri not in _HOME_PAGES:
         return markdown
 
@@ -40,4 +46,6 @@ def on_page_markdown(markdown: str, page, config, files) -> str:
             return match.group(0)
         return f"]({target}{match.group(2) or ''})"
 
+    assets = _ASSETS_FROM_HOME[page.file.src_uri]
+    markdown = _ASSET_ATTRIBUTE.sub(lambda m: f'{m.group(1)}="{assets}', markdown)
     return _LINK.sub(replace, markdown)

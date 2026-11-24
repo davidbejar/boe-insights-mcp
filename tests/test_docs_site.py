@@ -9,6 +9,7 @@ from __future__ import annotations
 import dataclasses
 import importlib.util
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -38,6 +39,47 @@ def load_hook() -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def load_readme_links_hook() -> ModuleType:
+    """Import ``hooks/readme_links.py`` by path, as MkDocs does, as a fresh module."""
+    spec = importlib.util.spec_from_file_location(
+        "readme_links_hook", REPO / "hooks/readme_links.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def page_at(src_uri: str) -> object:
+    """Return a stand-in for a MkDocs page whose source file is ``src_uri``."""
+    return type("Page", (), {"file": type("File", (), {"src_uri": src_uri})()})()
+
+
+_LOGO = (
+    '<source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">'
+    '<img src="docs/assets/logo.svg" alt="logo" width="420">'
+)
+
+
+@pytest.mark.parametrize(
+    ("src_uri", "prefix"), [("index.md", "assets/"), ("index.es.md", "../assets/")]
+)
+def test_the_readme_hook_points_the_logo_at_the_published_assets(src_uri: str, prefix: str) -> None:
+    hook = load_readme_links_hook()
+    out = hook.on_page_markdown(_LOGO, page_at(src_uri), None, None)
+    assert f'srcset="{prefix}logo-dark.svg"' in out
+    assert f'src="{prefix}logo.svg"' in out
+    assert "docs/assets" not in out
+
+
+def test_the_readme_hook_leaves_other_pages_and_other_text_alone() -> None:
+    hook = load_readme_links_hook()
+    assert hook.on_page_markdown(_LOGO, page_at("operating.md"), None, None) == _LOGO
+    text = 'See `src="docs/x"` and [notes](docs/api-notes.md#a) and [x](other.md).'
+    out = hook.on_page_markdown(text, page_at("index.md"), None, None)
+    assert out == 'See `src="docs/x"` and [notes](api-notes.md#a) and [x](other.md).'
 
 
 @pytest.mark.usefixtures("shared_collection")
@@ -101,3 +143,14 @@ def test_the_strict_build_publishes_the_reference_pages(tmp_path: Path) -> None:
     assert "search_legislation" in spanish
     assert "Busca leyes en la legislación consolidada" in spanish
     assert not list(out.rglob("summaries*.toml"))
+    # The logo, the favicon and the stylesheet resolve from the English and the Spanish pages.
+    for page in ("index.html", "es/index.html", "es/run/uvx/index.html"):
+        html = (out / page).read_text(encoding="utf-8")
+        for name in ("logo-icon.svg", "favicon.svg", "extra.css"):
+            ref = re.search(rf'(?:src|href)="([^"]*assets/{re.escape(name)})"', html)
+            assert ref, (page, name)
+            assert ((out / page).parent / ref.group(1)).resolve().is_file(), (page, name)
+    for page in ("index.html", "es/index.html"):
+        html = (out / page).read_text(encoding="utf-8")
+        for ref in re.findall(r'(?:src|srcset)="([^"]*assets/logo(?:-dark)?\.svg)"', html):
+            assert ((out / page).parent / ref).resolve().is_file(), (page, ref)

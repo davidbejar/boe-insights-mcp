@@ -1,3 +1,12 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+    <img src="docs/assets/logo.svg" alt="Logotipo de boe-insights-mcp" width="420">
+  </picture>
+</p>
+
+<p align="center">Proyecto independiente de código abierto. No está afiliado a la Agencia Estatal Boletín Oficial del Estado, ni cuenta con su respaldo ni tiene relación alguna con ella.</p>
+
 # boe-insights-mcp
 
 [English](README.md) | **Español** | [Sitio de documentación](https://davidbejar.github.io/boe-insights-mcp/es/)

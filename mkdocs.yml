@@ -4,7 +4,12 @@ site_url: https://davidbejar.github.io/boe-insights-mcp/
 repo_url: https://github.com/davidbejar/boe-insights-mcp
 repo_name: davidbejar/boe-insights-mcp
 edit_uri: ""
-copyright: Basado en datos de la Agencia Estatal Boletín Oficial del Estado
+# The footer carries the BOE attribution and the independence statement. The Spanish site
+# overrides it in the i18n language entry below.
+copyright: >-
+  Basado en datos de la Agencia Estatal Boletín Oficial del Estado.
+  An independent open-source project. Not affiliated with, endorsed by or connected to the
+  Agencia Estatal Boletín Oficial del Estado.
 
 docs_dir: docs
 strict: true
@@ -17,14 +22,20 @@ theme:
   name: material
   language: en
   font: false # no requests to Google Fonts; the system font stack is used
+  logo: assets/logo-icon.svg
+  favicon: assets/favicon.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
+      primary: custom # the logo's teal and amber, defined in docs/assets/extra.css
+      accent: custom
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
@@ -32,6 +43,9 @@ theme:
     - navigation.sections
     - navigation.top
     - content.code.copy
+
+extra_css:
+  - assets/extra.css
 
 hooks:
   - hooks/readme_links.py
@@ -53,6 +67,10 @@ plugins:
         - locale: es
           name: Español
           build: true
+          copyright: >-
+            Basado en datos de la Agencia Estatal Boletín Oficial del Estado.
+            Proyecto independiente de código abierto. No está afiliado a la Agencia Estatal
+            Boletín Oficial del Estado, ni cuenta con su respaldo ni tiene relación alguna con ella.
           nav_translations:
             Home: Inicio
             Ways to run it: Formas de ejecutarlo
