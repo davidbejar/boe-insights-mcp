@@ -1,0 +1,26 @@
+# Keep the build context minimal: only what `uv sync` and hatchling need
+# (pyproject.toml, uv.lock, README.md, LICENSE, src/) should be sent.
+.git
+.github
+.claude
+.venv
+.env
+.env.*
+.pytest_cache
+.ruff_cache
+.pyright
+.mypy_cache
+.cache
+**/__pycache__
+**/*.py[cod]
+*.egg-info
+build
+dist
+tests
+docs
+CLAUDE.md
+README.es.md
+Containerfile
+.containerignore
+.gitignore
+.python-version
