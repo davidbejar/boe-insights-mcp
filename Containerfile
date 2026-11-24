@@ -48,8 +48,8 @@ RUN uv sync --frozen --no-dev --no-install-project --no-editable
 
 COPY README.md LICENSE ./
 COPY src ./src
-# --no-editable installs a real copy into site-packages, so the final stage 
-# /app/.venv and not the source tree. --frozen refuses to touch uv.lock.
+# --no-editable installs a real copy into site-packages, so the final stage can copy
+# just /app/.venv and leave the source tree behind. --frozen refuses to touch uv.lock.
 RUN uv sync --frozen --no-dev --no-editable
 
 # ---------------------------------------------------------------------------------------

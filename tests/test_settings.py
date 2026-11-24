@@ -340,3 +340,40 @@ def test_invalid_transport_values_name_the_variable(variable: str, value: str) -
 def test_port_bounds_are_accepted() -> None:
     assert Settings.from_env({"BOE_INSIGHTS_PORT": "1"}).port == 1
     assert Settings.from_env({"BOE_INSIGHTS_PORT": "65535"}).port == 65535
+
+
+@pytest.mark.parametrize(
+    ("variable", "value", "message"),
+    [
+        (
+            "BOE_INSIGHTS_MAX_CONCURRENCY",
+            "0",
+            "BOE_INSIGHTS_MAX_CONCURRENCY must be an integer >= 1, got '0'",
+        ),
+        ("BOE_INSIGHTS_PORT", "x", "BOE_INSIGHTS_PORT must be an integer from 1 to 65535, got 'x'"),
+        (
+            "BOE_INSIGHTS_PORT",
+            "65536",
+            "BOE_INSIGHTS_PORT must be an integer from 1 to 65535, got '65536'",
+        ),
+        (
+            "BOE_INSIGHTS_CALLS_PER_MINUTE",
+            "-1",
+            "BOE_INSIGHTS_CALLS_PER_MINUTE must be an integer >= 0, got '-1'",
+        ),
+        (
+            "BOE_INSIGHTS_CALLS_PER_MINUTE",
+            "many",
+            "BOE_INSIGHTS_CALLS_PER_MINUTE must be an integer >= 0, got 'many'",
+        ),
+        (
+            "BOE_INSIGHTS_CALLS_BURST",
+            "0",
+            "BOE_INSIGHTS_CALLS_BURST must be an integer >= 1, got '0'",
+        ),
+    ],
+)
+def test_integer_variable_errors_read_exactly(variable: str, value: str, message: str) -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({variable: value})
+    assert str(caught.value) == message

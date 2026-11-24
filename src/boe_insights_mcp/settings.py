@@ -24,14 +24,31 @@ from platformdirs import user_data_dir
 from boe_insights_mcp.access import AllowList
 from boe_insights_mcp.cache import default_cache_dir
 
-__all__ = ["CacheBackend", "Settings", "Transport"]
+__all__ = [
+    "PORT_REQUIREMENT",
+    "TRANSPORTS",
+    "CacheBackend",
+    "Settings",
+    "Transport",
+    "port_in_range",
+]
 
 CacheBackend = Literal["disk", "memory"]
 Transport = Literal["stdio", "http"]
 
 _BACKENDS: tuple[CacheBackend, ...] = ("disk", "memory")
 
-_TRANSPORTS: tuple[Transport, ...] = ("stdio", "http")
+TRANSPORTS: tuple[Transport, ...] = ("stdio", "http")
+
+_MIN_PORT = 1
+_MAX_PORT = 65535
+PORT_REQUIREMENT = "must be an integer from 1 to 65535"
+
+
+def port_in_range(port: int) -> bool:
+    """Whether ``port`` is a valid TCP port number (shared by the variable and ``--port``)."""
+    return _MIN_PORT <= port <= _MAX_PORT
+
 
 _APP_NAME = "boe-insights-mcp"
 
@@ -216,24 +233,42 @@ def _min_interval(value: str | None, default: float) -> float:
     return seconds
 
 
-def _max_concurrency(value: str | None, default: int) -> int:
-    """Parse ``BOE_INSIGHTS_MAX_CONCURRENCY`` as an integer >= 1."""
+def _bounded_int(
+    value: str | None, default: int, *, low: int, high: int | None, message: str
+) -> int:
+    """Parse an integer from ``low`` to ``high`` (no upper bound if ``None``); empty is ``default``.
+
+    ``message`` is the start of the error, naming the variable and the accepted range; the
+    offending value is appended as ``, got '...'``. Unparseable text fails like an out-of-range
+    number.
+    """
     if not value:
         return default
     try:
-        count = int(value)
+        number = int(value)
     except ValueError:
-        count = 0
-    if count < 1:
-        raise ValueError(f"BOE_INSIGHTS_MAX_CONCURRENCY must be an integer >= 1, got {value!r}")
-    return count
+        number = low - 1
+    if number < low or (high is not None and number > high):
+        raise ValueError(f"{message}, got {value!r}")
+    return number
+
+
+def _max_concurrency(value: str | None, default: int) -> int:
+    """Parse ``BOE_INSIGHTS_MAX_CONCURRENCY`` as an integer >= 1."""
+    return _bounded_int(
+        value,
+        default,
+        low=1,
+        high=None,
+        message="BOE_INSIGHTS_MAX_CONCURRENCY must be an integer >= 1",
+    )
 
 
 def _transport(value: str | None, default: Transport) -> Transport:
     """Parse ``BOE_INSIGHTS_TRANSPORT`` (case-insensitive); unset or empty gives ``default``."""
     if not value:
         return default
-    for transport in _TRANSPORTS:
+    for transport in TRANSPORTS:
         if value.strip().lower() == transport:
             return transport
     raise ValueError(f"BOE_INSIGHTS_TRANSPORT must be 'stdio' or 'http', got {value!r}")
@@ -241,41 +276,35 @@ def _transport(value: str | None, default: Transport) -> Transport:
 
 def _port(value: str | None, default: int) -> int:
     """Parse ``BOE_INSIGHTS_PORT`` as an integer from 1 to 65535."""
-    if not value:
-        return default
-    try:
-        port = int(value)
-    except ValueError:
-        port = 0
-    if not 1 <= port <= 65535:
-        raise ValueError(f"BOE_INSIGHTS_PORT must be an integer from 1 to 65535, got {value!r}")
-    return port
+    return _bounded_int(
+        value,
+        default,
+        low=_MIN_PORT,
+        high=_MAX_PORT,
+        message=f"BOE_INSIGHTS_PORT {PORT_REQUIREMENT}",
+    )
 
 
 def _calls_per_minute(value: str | None, default: int) -> int:
     """Parse ``BOE_INSIGHTS_CALLS_PER_MINUTE`` as an integer >= 0 (0 switches the limit off)."""
-    if not value:
-        return default
-    try:
-        count = int(value)
-    except ValueError:
-        count = -1
-    if count < 0:
-        raise ValueError(f"{_CALLS_PER_MINUTE_VAR} must be an integer >= 0, got {value!r}")
-    return count
+    return _bounded_int(
+        value,
+        default,
+        low=0,
+        high=None,
+        message=f"{_CALLS_PER_MINUTE_VAR} must be an integer >= 0",
+    )
 
 
 def _calls_burst(value: str | None, default: int) -> int:
     """Parse ``BOE_INSIGHTS_CALLS_BURST`` as an integer >= 1."""
-    if not value:
-        return default
-    try:
-        count = int(value)
-    except ValueError:
-        count = 0
-    if count < 1:
-        raise ValueError(f"{_CALLS_BURST_VAR} must be an integer >= 1, got {value!r}")
-    return count
+    return _bounded_int(
+        value,
+        default,
+        low=1,
+        high=None,
+        message=f"{_CALLS_BURST_VAR} must be an integer >= 1",
+    )
 
 
 def _csv(value: str | None) -> tuple[str, ...]:

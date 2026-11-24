@@ -246,6 +246,13 @@ def _remote(ctx: Context) -> bool:
     return ctx.lifespan_context["remote"]
 
 
+async def _for_owner(ctx: Context, tool: str, use_case: Callable[[str], Awaitable[_T]]) -> _T:
+    """Run a saved-search ``use_case`` for the owner of this request, failing as ``ToolError``."""
+    # The one place that passes ``remote``: over HTTP the owner must come from a token and can
+    # never fall back to ``local``, so no saved-search tool may forget the flag.
+    return await guarded_for_owner(use_case, tool, ToolError, remote=_remote(ctx))
+
+
 def _catalogue(ctx: Context) -> CatalogueStore:
     """Return the shared catalogue store that the lifespan stored in the request context."""
     return ctx.lifespan_context["catalogue"]
@@ -1058,7 +1065,9 @@ async def save_search(
     """
     # The owner comes from the authenticated request and is never an argument: a model (or
     # anyone steering it) must not be able to name another person's searches.
-    return await guarded_for_owner(
+    return await _for_owner(
+        ctx,
+        "save_search",
         lambda who: saved_searches.save_search(
             _searches(ctx),
             _client(ctx),
@@ -1069,19 +1078,15 @@ async def save_search(
             department_code=department_code,
             law_id=law_id,
         ),
-        "save_search",
-        ToolError,
-        remote=_remote(ctx),
     )
 
 
 async def list_saved_searches(ctx: Context) -> SavedSearchList:
     """The saved searches, with their filters and when each was last checked."""
-    return await guarded_for_owner(
-        lambda who: saved_searches.list_saved_searches(_searches(ctx), who),
+    return await _for_owner(
+        ctx,
         "list_saved_searches",
-        ToolError,
-        remote=_remote(ctx),
+        lambda who: saved_searches.list_saved_searches(_searches(ctx), who),
     )
 
 
@@ -1111,7 +1116,9 @@ async def check_saved_searches(
     complete is false. since re-reads gazette searches up to 90 days back without marking
     anything.
     """
-    return await guarded_for_owner(
+    return await _for_owner(
+        ctx,
+        "check_saved_searches",
         lambda who: saved_searches.check_saved_searches(
             _searches(ctx),
             _client(ctx),
@@ -1121,9 +1128,6 @@ async def check_saved_searches(
             limit=limit,
             progress=ctx.report_progress,
         ),
-        "check_saved_searches",
-        ToolError,
-        remote=_remote(ctx),
     )
 
 
@@ -1145,7 +1149,9 @@ async def edit_saved_search(
     ] = None,
 ) -> SaveSearchResult:
     """Rename a saved search or change its gazette filters. Its last-checked point is kept."""
-    return await guarded_for_owner(
+    return await _for_owner(
+        ctx,
+        "edit_saved_search",
         lambda who: saved_searches.edit_saved_search(
             _searches(ctx),
             who,
@@ -1155,9 +1161,6 @@ async def edit_saved_search(
             section=section,
             department_code=department_code,
         ),
-        "edit_saved_search",
-        ToolError,
-        remote=_remote(ctx),
     )
 
 
@@ -1166,11 +1169,10 @@ async def delete_saved_search(
     name: Annotated[str, Field(description="Name of the saved search (see list_saved_searches).")],
 ) -> DeleteSearchResult:
     """Delete a saved search. This cannot be undone."""
-    return await guarded_for_owner(
-        lambda who: saved_searches.delete_saved_search(_searches(ctx), who, name),
+    return await _for_owner(
+        ctx,
         "delete_saved_search",
-        ToolError,
-        remote=_remote(ctx),
+        lambda who: saved_searches.delete_saved_search(_searches(ctx), who, name),
     )
 
 

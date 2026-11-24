@@ -40,6 +40,11 @@ _COUNTED: dict[str, type[Exception]] = {
 _ADMITTED = object()
 
 
+async def _admitted(context: MiddlewareContext[Any]) -> object:
+    """Stands in for the rest of the chain, which runs only after the check."""
+    return _ADMITTED
+
+
 def caller_key() -> str:
     """The bucket of the current request: ``github:<id>``, or ``UNIDENTIFIED``.
 
@@ -94,12 +99,8 @@ class CallRateLimit(RateLimitingMiddleware):
         if error_class is None:
             return await call_next(context)
 
-        async def admitted(context: MiddlewareContext[Any]) -> object:
-            """Stands in for the rest of the chain, which runs only after the check."""
-            return _ADMITTED
-
         try:
-            await super().on_request(context, admitted)
+            await super().on_request(context, _admitted)
         except RateLimitError:
             # The built-in message names the caller ("... for client: github:1001").
             raise error_class(refusal(self.calls_per_minute)) from None

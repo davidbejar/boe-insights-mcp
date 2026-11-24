@@ -25,7 +25,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from boe_insights_mcp.httplimits import BodyLimit, QueryStripFilter
-from boe_insights_mcp.settings import Settings
+from boe_insights_mcp.settings import PORT_REQUIREMENT, TRANSPORTS, Settings, port_in_range
 
 __all__ = ["build_http_app", "register_health", "resolve_settings", "run"]
 
@@ -103,7 +103,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--transport",
-        choices=["stdio", "http"],
+        choices=TRANSPORTS,
         type=str.lower,
         help="stdio (default) or http; overrides BOE_INSIGHTS_TRANSPORT",
     )
@@ -132,8 +132,8 @@ def resolve_settings(argv: Sequence[str], env: Mapping[str, str]) -> Settings:
     if args.host is not None:
         overrides["host"] = args.host
     if args.port is not None:
-        if not 1 <= args.port <= 65535:
-            parser.error(f"argument --port: must be an integer from 1 to 65535, got {args.port}")
+        if not port_in_range(args.port):
+            parser.error(f"argument --port: {PORT_REQUIREMENT}, got {args.port}")
         overrides["port"] = args.port
     return dataclasses.replace(settings, **overrides)  # type: ignore[arg-type]
 

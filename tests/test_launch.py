@@ -302,3 +302,22 @@ async def test_mcp_client_lists_the_tools_over_http(boe_client: BoeClient) -> No
         names = {tool.name for tool in await client.list_tools()}
 
     assert names == TOOL_NAMES
+
+
+def test_an_out_of_range_port_flag_reads_exactly(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        launch.resolve_settings(["--port", "99999"], {})
+
+    assert (
+        capsys.readouterr()
+        .err.strip()
+        .splitlines()[-1]
+        .endswith("error: argument --port: must be an integer from 1 to 65535, got 99999")
+    )
+
+
+def test_the_transport_choices_are_unchanged(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        launch.resolve_settings(["--transport", "sse"], {})
+
+    assert "(choose from stdio, http)" in capsys.readouterr().err
