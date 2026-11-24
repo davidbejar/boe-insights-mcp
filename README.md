@@ -543,6 +543,10 @@ Live tests hit the real BOE API; run them sparingly. Logic is written tests firs
 
 The site's reference pages are generated from the server itself. Their Spanish tool summaries are written by hand in `docs_build/summaries.es.toml`; when a tool's English text changes, re-read its Spanish summary and then refresh its hash with `uv run python -m docs_build --refresh tools.NAME` (`--hash tools.NAME` only prints the current one).
 
+### Publishing the site
+
+The documentation site is published to GitHub Pages by `.github/workflows/docs.yml`. That workflow runs only when started by hand (Actions tab, "Documentation site", "Run workflow"), and it deploys only when started from `main`; from any other branch it just builds the site. Nothing is published automatically yet: a later change will connect it to releases. Before the first run, the repository owner must set Settings, Pages, "Build and deployment", Source to "GitHub Actions" once.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

@@ -1,0 +1,72 @@
+# Publishes the documentation site (MkDocs Material) to GitHub Pages.
+#
+# MANUAL ONLY: the sole trigger is workflow_dispatch (Actions tab -> "Documentation site" ->
+# "Run workflow"). There is deliberately no push, tag or schedule trigger, so nothing is
+# published until the repository owner runs it. A later pull request will connect it to releases.
+#
+# One-time manual step before the first deployment: in the repository, open Settings -> Pages and
+# under "Build and deployment" set Source to "GitHub Actions". Without it the deploy job fails.
+#
+# A run started from any branch other than main only builds (a check that the site compiles);
+# the deploy job is skipped.
+
+name: Documentation site
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time. A run already in progress is never cancelled: a half-finished
+# deployment could leave the site in an inconsistent state, so later runs wait in the queue.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      # Same install and build as the docs job in ci.yml: the project plus the docs group only.
+      - name: Install dependencies
+        run: uv sync --no-dev --group docs
+
+      - name: Build documentation (strict)
+        env:
+          NO_MKDOCS_2_WARNING: "1"
+        run: uv run --no-sync mkdocs build --strict
+
+      # MkDocs writes to ./site (its default site_dir), not the action's default ./_site.
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    # Publish only from the default branch; a feature-branch run stops after the build.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write # deploy-pages publishes the artifact
+      id-token: write # deploy-pages verifies the deployment source via OIDC
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

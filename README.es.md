@@ -544,6 +544,10 @@ Las pruebas live consultan la API real del BOE: úsalas con moderación. La lóg
 
 Las páginas de referencia del sitio se generan a partir del propio servidor. Sus resúmenes en español de las herramientas se escriben a mano en `docs_build/summaries.es.toml`; cuando cambia el texto en inglés de una herramienta, vuelve a leer su resumen en español y después actualiza su hash con `uv run python -m docs_build --refresh tools.NAME` (`--hash tools.NAME` solo muestra el actual).
 
+### Publicar el sitio
+
+El sitio de documentación se publica en GitHub Pages con `.github/workflows/docs.yml`. Ese flujo de trabajo solo se ejecuta cuando se lanza a mano (pestaña Actions, "Documentation site", "Run workflow") y solo despliega si se lanza desde `main`; desde cualquier otra rama se limita a compilar el sitio. De momento no se publica nada automáticamente: un cambio posterior lo conectará con las versiones. Antes de la primera ejecución, el propietario del repositorio debe fijar una sola vez Settings, Pages, "Build and deployment", Source en "GitHub Actions".
+
 ## Licencia
 
 MIT. Consulta [LICENSE](LICENSE).
