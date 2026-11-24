@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -188,7 +189,7 @@ async def test_the_base_url_origin_reaches_the_consent_route_without_extra_setti
     async with (
         auth.serve(built, settings) as gateway,
         httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=gateway.app), base_url="http://boe.example.com"
+            transport=httpx.ASGITransport(app=gateway.app), base_url="https://boe.example.com"
         ) as http,
     ):
         response = await http.post("/consent", headers={"Origin": origin}, data={"a": "b"})
@@ -255,7 +256,7 @@ def oauth(tmp_path: Path, private_fastmcp_home: Path):  # type: ignore[no-untype
         async with (
             auth.serve(built, settings) as gateway,
             httpx.AsyncClient(
-                transport=httpx.ASGITransport(app=gateway.app), base_url="http://boe.example.com"
+                transport=httpx.ASGITransport(app=gateway.app), base_url="https://boe.example.com"
             ) as http,
         ):
             yield http
@@ -335,54 +336,85 @@ async def test_an_operator_entry_adds_one_more_redirect(oauth) -> None:  # type:
     assert loopback.status_code == 201
 
 
-async def test_scopes_a_client_may_send(oauth) -> None:  # type: ignore[no-untyped-def]
-    """Observed behaviour with ``required_scopes=[]`` (see the comment on ``_GITHUB_SCOPES``)."""
-    async with oauth() as http:
-        metadata = (await http.get("/.well-known/oauth-authorization-server")).json()
-        outcomes: dict[str, tuple[int, str]] = {}
-        for registered_scope in (None, "user", "read:user"):
-            extra = {} if registered_scope is None else {"scope": registered_scope}
-            registered = await register(http, LOOPBACK, **extra)
-            outcomes[f"register scope={registered_scope}"] = (registered.status_code, "")
-            if registered.status_code != 201:
-                continue
-            client_id = registered.json()["client_id"]
-            for asked in (None, "user", "read:user"):
-                extra_query = {} if asked is None else {"scope": asked}
-                response = await http.get(
-                    "/authorize", params=authorize_query(client_id, LOOPBACK, **extra_query)
-                )
-                outcomes[f"authorize scope={asked}"] = (
-                    response.status_code,
-                    response.headers.get("location", "")[:60],
-                )
+async def github_scope_for(
+    http: httpx.AsyncClient, client_id: str, **extra: str
+) -> list[str] | None:
+    """Authorize, approve consent, and return the ``scope`` of the redirect to GitHub (or None)."""
+    import re
+    from urllib.parse import parse_qs, urlsplit
 
-    assert metadata["scopes_supported"] == []
-    assert outcomes["register scope=None"][0] == 201
-    assert outcomes["register scope=user"][0] == 400
-    assert outcomes["register scope=read:user"][0] == 400
-    assert outcomes["authorize scope=None"][1].startswith("https://boe.example.com/consent")
-    assert "error=invalid_scope" in outcomes["authorize scope=user"][1] or (
-        outcomes["authorize scope=user"][0] >= 400
-    )
+    http.cookies.clear()  # the consent page's CSRF cookie of an earlier flow
+    authorize = await http.get("/authorize", params=authorize_query(client_id, LOOPBACK, **extra))
+    assert authorize.status_code == 302, authorize.headers.get("location")
+    page = await http.get(authorize.headers["location"])
+    form = dict(re.findall(r'<input[^>]*name="([^"]+)"[^>]*value="([^"]*)"', page.text))
+    form["action"] = "approve"
+    consent = await http.post("/consent", data=form, headers={"Origin": "https://boe.example.com"})
+    assert consent.status_code in (302, 303), consent.text
+    assert urlsplit(consent.headers["location"]).netloc == "github.com"
+    return parse_qs(urlsplit(consent.headers["location"]).query).get("scope")
+
+
+async def test_scopes_a_client_may_send(oauth) -> None:  # type: ignore[no-untyped-def]
+    """``read:user`` is advertised and accepted; nothing is required; write scopes are refused."""
+    async with oauth() as http:
+        authorization = (await http.get("/.well-known/oauth-authorization-server")).json()
+        resource = (await http.get("/.well-known/oauth-protected-resource/mcp")).json()
+        challenge = (
+            await http.post("/mcp", headers=auth.MCP_HEADERS, json=auth.INITIALIZE)
+        ).headers["www-authenticate"]
+        registered: dict[str | None, int] = {}
+        authorized: dict[str, int] = {}
+        for scope in (None, "", "read:user", "user", "repo"):
+            extra = {} if scope is None else {"scope": scope}
+            response = await register(http, LOOPBACK, **extra)
+            registered[scope] = response.status_code
+        plain = (await register(http, LOOPBACK)).json()["client_id"]
+        for scope in ("user", "repo"):
+            response = await http.get(
+                "/authorize", params=authorize_query(plain, LOOPBACK, scope=scope)
+            )
+            authorized[scope] = response.status_code
+            assert "error=invalid_scope" in response.headers["location"]
+        sent_none = await github_scope_for(http, plain)
+        other = (await register(http, LOOPBACK)).json()["client_id"]
+        sent_read_user = await github_scope_for(http, other, scope="read:user")
+
+    assert authorization["scopes_supported"] == ["read:user"]
+    assert resource["scopes_supported"] == ["read:user"]
+    assert 'scope="read:user"' in challenge
+    assert registered == {None: 201, "": 201, "read:user": 201, "user": 400, "repo": 400}
+    assert sent_none is None
+    assert sent_read_user == ["read:user"]
+
+
+def test_no_scope_is_required_of_tokens(tmp_path: Path, private_fastmcp_home: Path) -> None:
+    built, _ = build(login_env(tmp_path))
+    provider: Any = built.auth
+
+    assert provider.required_scopes == []
+    assert provider._token_validator.required_scopes == []
 
 
 @pytest.mark.parametrize(
     ("redirect", "accepted"),
     [
         ("https://app.example.net/oauth/done", True),
+        ("https://app.example.net/oauth/done/", False),
         ("https://example.net/oauth/done", False),
         ("https://app.example.net/elsewhere", False),
         ("https://app.example.net.evil.example/oauth/done", False),
         ("https://evil.example/oauth/https://app.example.net", False),
     ],
 )
-async def test_operator_wildcards_match_only_what_fastmcps_matcher_defines(
+async def test_an_operator_redirect_entry_matches_exactly_that_url(
     oauth,  # type: ignore[no-untyped-def]
     redirect: str,
     accepted: bool,
 ) -> None:
-    async with oauth(BOE_INSIGHTS_ALLOWED_REDIRECT_URIS="https://*.example.net/oauth/*") as http:
+    async with oauth(
+        BOE_INSIGHTS_ALLOWED_REDIRECT_URIS="https://app.example.net/oauth/done"
+    ) as http:
         response = await register(http, redirect)
 
     assert (response.status_code == 201) is accepted

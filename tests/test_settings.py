@@ -251,6 +251,12 @@ def test_an_allowed_host_is_a_bare_name_or_ip_and_ipv6_is_unbracketed(
         "-boe.example.org",
         "boe..example.org",
         "user@boe.example.org",
+        # An IPv6 zone id is not part of a Host header and FastMCP's fnmatch matcher would read the
+        # ``*`` after ``%`` as a pattern.
+        "::%*",
+        "[fe80::1%*]",
+        "fe80::1%eth0",
+        "fe80::1%25eth0",
     ],
 )
 def test_a_bad_allowed_host_is_refused_naming_the_variable_and_the_entry(bad: str) -> None:

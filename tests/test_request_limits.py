@@ -128,6 +128,113 @@ async def test_other_scopes_pass_untouched() -> None:
     assert seen == ["lifespan"]
 
 
+async def test_a_wrong_content_length_does_not_hide_a_longer_body() -> None:
+    """Both framing headers: servers frame on the chunked body, so the length is a lie."""
+    app = Recorder()
+    wrapped = BodyLimit(app, mcp_path="/mcp", mcp_limit=3 * LIMIT, other_limit=LIMIT)
+    sent = [{"type": "http.request", "body": b"z" * 60, "more_body": True}] * 5
+    sent.append({"type": "http.request", "body": b"", "more_body": False})
+    replies: list[Message] = []
+
+    async def receive() -> Message:
+        return sent.pop(0) if sent else {"type": "http.disconnect"}
+
+    async def send(message: Message) -> None:
+        replies.append(message)
+
+    scope: Scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/register",
+        "headers": [(b"content-length", b"10"), (b"transfer-encoding", b"chunked")],
+    }
+    await wrapped(scope, receive, send)
+
+    assert replies[0]["status"] == 413
+    assert app.called is False
+
+
+async def test_a_streamed_body_longer_than_declared_is_cut_and_refused() -> None:
+    """No transfer encoding, but a server that delivers more than ``Content-Length`` says."""
+    app = Recorder()
+    wrapped = BodyLimit(app, mcp_path="/mcp", mcp_limit=3 * LIMIT, other_limit=LIMIT)
+    sent = [{"type": "http.request", "body": b"z" * 60, "more_body": True}] * 5
+    sent.append({"type": "http.request", "body": b"", "more_body": False})
+    replies: list[Message] = []
+
+    async def receive() -> Message:
+        return sent.pop(0) if sent else {"type": "http.disconnect"}
+
+    async def send(message: Message) -> None:
+        replies.append(message)
+
+    scope: Scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/register",
+        "headers": [(b"content-length", b"10")],
+    }
+    await wrapped(scope, receive, send)
+
+    assert [m["status"] for m in replies if m["type"] == "http.response.start"] == [413]
+    assert len(app.body) <= LIMIT
+
+
+async def test_real_sockets_the_two_headers_do_not_get_past_the_limit(
+    tmp_path: Path, private_fastmcp_home: Path
+) -> None:
+    """Under uvicorn (h11) a body is framed as chunked when both headers are sent.
+
+    The in-process transport cannot show HTTP/1.1 framing, so this one binds 127.0.0.1 on a free
+    port. It takes well under a second.
+    """
+    import asyncio
+    import json
+    import socket
+
+    import uvicorn
+
+    built, settings = build(login_env(tmp_path))
+    app = launch.build_http_app(built, settings)
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    port = listener.getsockname()[1]
+    config = uvicorn.Config(app, log_level="warning", lifespan="on")
+    server = uvicorn.Server(config)
+    task = asyncio.create_task(server.serve(sockets=[listener]))
+    try:
+        while not server.started:
+            await asyncio.sleep(0.01)
+        body = json.dumps(registration(client_name="A" * 300_000)).encode()
+        chunked = (
+            b"".join(
+                f"{len(body[i : i + 65536]):x}\r\n".encode() + body[i : i + 65536] + b"\r\n"
+                for i in range(0, len(body), 65536)
+            )
+            + b"0\r\n\r\n"
+        )
+        head = (
+            f"POST /register HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n"
+            "Content-Type: application/json\r\nContent-Length: 10\r\n"
+            "Transfer-Encoding: chunked\r\n\r\n"
+        ).encode()
+        reader, writer = await asyncio.open_connection("127.0.0.1", port)
+        try:
+            writer.write(head + chunked)
+            await writer.drain()
+        except OSError:
+            pass  # the server may close before the whole body is sent
+        status = await asyncio.wait_for(reader.readline(), 10)
+        writer.close()
+    finally:
+        server.should_exit = True
+        await task
+        listener.close()
+
+    assert b" 413 " in status
+    assert files_under(private_fastmcp_home) == []
+
+
 # --- Through the real server --------------------------------------------------------------------
 
 

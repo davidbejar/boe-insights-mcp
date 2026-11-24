@@ -186,6 +186,13 @@ def test_a_valid_base_url_is_kept_without_its_trailing_slash(given: str, kept: s
         "https://boe.example.org/path?x=1#y",
         "//boe.example.org",
         "not a url",
+        # Its host is added to the Host/Origin guard, so a wildcard or zone id would widen it.
+        "https://*",
+        "https://*.example.com",
+        "https://boe.*.org",
+        "https://boe?.example.org",
+        "https://[fe80::1%*]",
+        "https://[::%*]",
     ],
 )
 def test_an_invalid_base_url_is_refused_by_naming_the_variable(given: str) -> None:
@@ -302,13 +309,13 @@ def test_allowed_redirect_uris_default_to_none_and_are_split_like_other_lists() 
     settings = Settings.from_env(
         {
             **LOGIN_ENV,
-            REDIRECTS_VAR: " https://app.example.org/cb , ,https://*.example.net/oauth/* ",
+            REDIRECTS_VAR: " https://app.example.org/cb , ,https://claude.example.net/oauth/done ",
         }
     )
 
     assert settings.allowed_redirect_uris == (
         "https://app.example.org/cb",
-        "https://*.example.net/oauth/*",
+        "https://claude.example.net/oauth/done",
     )
 
 
@@ -324,7 +331,15 @@ def test_allowed_redirect_uris_default_to_none_and_are_split_like_other_lists() 
         "https://user:pw@app.example.org/cb",
         "https://*/cb",
         "https://*.com/cb",
+        "https://*.co.uk/cb",
+        "https://*.example.org/cb",
         "https://app.*.org/cb",
+        "https://app.example.org/*",
+        "https://app.example.org/oauth/*",
+        "https://app.example.org/cb*",
+        "https://app.example.org:*/cb",
+        "http://localhost:*",
+        "http://127.0.0.1:*/cb",
         "https://app.example.org/cb?x=1",
         "https://app.example.org/cb#frag",
         "https://app.example.org/a b",
@@ -345,13 +360,20 @@ def test_a_bad_redirect_uri_entry_is_refused_naming_the_variable_and_the_entry(b
     [
         "https://app.example.org/cb",
         "https://app.example.org:8443/cb",
-        "https://*.example.org/oauth/*",
-        "http://localhost:*",
-        "http://127.0.0.1:*/cb",
+        "https://app.example.org",
+        "http://localhost:8080/cb",
+        "http://127.0.0.1:5555/callback",
     ],
 )
 def test_a_good_redirect_uri_entry_is_kept(good: str) -> None:
     assert Settings.from_env({**LOGIN_ENV, REDIRECTS_VAR: good}).allowed_redirect_uris == (good,)
+
+
+def test_allowed_redirect_uris_without_login_is_a_startup_error() -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({REDIRECTS_VAR: "https://app.example.org/cb"})
+
+    assert REDIRECTS_VAR in str(caught.value)
 
 
 # --- login_enabled needs all four values --------------------------------------------------------

@@ -109,9 +109,10 @@ class Settings:
     allowed_users: tuple[str, ...] = ()
     """``BOE_INSIGHTS_ALLOWED_USERS``: comma-separated allow-list entries (see ``access``)."""
     allowed_redirect_uris: tuple[str, ...] = ()
-    """``BOE_INSIGHTS_ALLOWED_REDIRECT_URIS``: extra redirect URI patterns for OAuth clients.
+    """``BOE_INSIGHTS_ALLOWED_REDIRECT_URIS``: extra redirect URIs for OAuth clients.
 
-    Added to the loopback ones that are always allowed (see ``login``).
+    Each is an exact absolute URL, without wildcards. Added to the loopback patterns that are
+    always allowed (see ``login``), which alone keep a port wildcard.
     """
 
     calls_per_minute: int = 60
@@ -150,13 +151,19 @@ class Settings:
         allowed_users = _csv(env.get(_ALLOWED_USERS_VAR))
         # Parsed only to fail at startup on a typo; ``server`` parses it again to enforce it.
         AllowList.parse(allowed_users)
-        if allowed_users and client_id is None:
-            # A list nobody enforces would leave the server open to everyone while the operator
-            # believes it is restricted, so it must stop the server rather than be ignored.
-            raise ValueError(
-                f"{_ALLOWED_USERS_VAR} is set but GitHub login is not configured, so it would "
-                "restrict nothing; set the four GitHub login variables or remove it"
-            )
+        redirects = tuple(_redirect_pattern(e) for e in _csv(env.get(_ALLOWED_REDIRECTS_VAR)))
+        for variable, given in (
+            (_ALLOWED_USERS_VAR, allowed_users),
+            (_ALLOWED_REDIRECTS_VAR, redirects),
+        ):
+            if given and client_id is None:
+                # A list nobody enforces would leave the server open to everyone while the
+                # operator believes it is restricted, so it must stop the server rather than be
+                # ignored; the same goes for redirects, which would silently never apply.
+                raise ValueError(
+                    f"{variable} is set but GitHub login is not configured, so it would "
+                    "have no effect; set the four GitHub login variables or remove it"
+                )
         return cls(
             cache_backend=_backend(env.get("BOE_INSIGHTS_CACHE"), defaults.cache_backend),
             cache_dir=Path(cache_dir) if cache_dir else default_cache_dir(env),
@@ -175,9 +182,7 @@ class Settings:
             auth_signing_key=signing_key,
             base_url=base_url,
             allowed_users=allowed_users,
-            allowed_redirect_uris=tuple(
-                _redirect_pattern(e) for e in _csv(env.get(_ALLOWED_REDIRECTS_VAR))
-            ),
+            allowed_redirect_uris=redirects,
             calls_per_minute=_calls_per_minute(
                 env.get(_CALLS_PER_MINUTE_VAR), defaults.calls_per_minute
             ),
@@ -319,6 +324,9 @@ def _base_url(value: str) -> str:
         or parts.path not in ("", "/")
         or "?" in value
         or "#" in value
+        # The host is added to the Host/Origin guard, whose matcher reads ``*`` and ``?`` as
+        # patterns (fastmcp/server/http.py, ``_host_matches``): only a plain host may pass.
+        or _bare_host(parts.hostname) is None
     ):
         raise ValueError(problem)
     if parts.scheme == "http" and not _is_loopback(parts.hostname):
@@ -352,6 +360,10 @@ def _bare_host(entry: str) -> str | None:
     """
     candidate = entry[1:-1] if entry.startswith("[") and entry.endswith("]") else entry
     if ":" in candidate:
+        if "%" in candidate:
+            # A zone id (``fe80::1%eth0``) is accepted by ``IPv6Address`` but never sent in a Host
+            # header, and the matcher would take a ``*`` after it as a pattern.
+            return None
         try:
             ipaddress.IPv6Address(candidate)
         except ValueError:
@@ -395,28 +407,25 @@ def _origin(entry: str) -> str:
 def _redirect_pattern(entry: str) -> str:
     """Validate one ``BOE_INSIGHTS_ALLOWED_REDIRECT_URIS`` entry; return it unchanged.
 
-    The entry is a pattern for FastMCP's matcher (fastmcp/server/auth/redirect_validation.py,
-    ``matches_allowed_pattern``), which understands a ``*`` as the whole port, a ``*.`` prefix on
-    the host (subdomains only) and ``*`` inside the path. Only those are accepted here, so an
-    entry cannot be made to match more than it reads like: no wildcard in the scheme or inside a
-    host label, and the host must keep at least a registrable name behind ``*.``. Outside loopback
-    the scheme must be https, because the authorisation code is carried in this redirect.
+    An entry is an exact absolute URL: ``https``, or ``http`` only for a loopback host (the
+    authorisation code travels in this redirect), with a plain host name or IPv4 address, an
+    optional numeric port, and no userinfo, query, fragment or wildcard character anywhere.
+    FastMCP's matcher (fastmcp/server/auth/redirect_validation.py, ``matches_allowed_pattern``)
+    would read ``*`` in a host or path as a pattern, so none is let through; only the built-in
+    loopback patterns in ``login`` keep a port wildcard.
     """
     problem = (
-        f"{_ALLOWED_REDIRECTS_VAR} entries must be absolute https URLs (http only for loopback) "
-        f"such as https://app.example.org/callback, got {entry!r}"
+        f"{_ALLOWED_REDIRECTS_VAR} entries must be exact absolute https URLs (http only for "
+        f"loopback), without wildcards, such as https://app.example.org/callback, got {entry!r}"
     )
-    if re.search(r"[\s?#\[\]\\@]", entry) or not re.match(r"https?://", entry):
+    if re.search(r"[\s?#\[\]\\@*]", entry) or not re.match(r"https?://", entry):
         raise ValueError(problem)
     parts = urlsplit(entry)
     host = parts.hostname
-    if host is None:
+    if host is None or not _HOSTNAME.fullmatch(host):
         raise ValueError(problem)
     port = parts.netloc.rpartition(":")[2] if ":" in parts.netloc else ""
-    if port and port != "*" and not (port.isascii() and port.isdigit() and 0 < int(port) < 65536):
-        raise ValueError(problem)
-    base = host[2:] if host.startswith("*.") else host
-    if "*" in base or (host != base and base.count(".") < 1) or not _HOSTNAME.fullmatch(base):
+    if port and not (port.isascii() and port.isdigit() and 0 < int(port) < 65536):
         raise ValueError(problem)
     if parts.scheme == "http" and not _is_loopback(host):
         raise ValueError(problem)

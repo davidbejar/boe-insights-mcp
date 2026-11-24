@@ -26,13 +26,15 @@ OTHER_BODY_LIMIT = 64 * 1024
 
 
 class BodyLimit:
-    """Pure ASGI middleware: 413 for a request body over the limit, before reading all of it.
+    """Pure ASGI middleware: 413 for a request body larger than the limit.
 
     The limit for the MCP path is ``mcp_limit``, for every other path ``other_limit``. A declared
-    ``Content-Length`` over the limit is refused without reading anything. A body with no length
-    (chunked) is read into memory up to the limit plus one byte, so at most that much is held, and
-    is replayed to the application when it fits. Bodiless requests, such as the ``GET`` that opens
-    the MCP event stream, and every response, streamed ones included, pass through untouched.
+    ``Content-Length`` over the limit is refused without reading anything (a fast path only: the
+    header is never trusted to bound the body). A request that declares a ``Transfer-Encoding`` is
+    read into memory up to the limit plus one byte, so at most that much is held, and replayed to
+    the application when it fits. Every other request has the bytes actually delivered counted as
+    the application reads them; past the limit the application is told the client went away and
+    whatever it answers is replaced by 413. Responses, streamed ones included, pass through.
     """
 
     def __init__(
@@ -58,22 +60,66 @@ class BodyLimit:
         headers = {name: value for name, value in scope["headers"]}
         declared = headers.get(b"content-length")
         if declared is not None:
-            # The ASGI server enforces a declared length, so it cannot be exceeded afterwards.
             if not (declared.isascii() and declared.isdigit()):
                 await PlainTextResponse("Bad Request", status_code=400)(scope, receive, send)
-            elif int(declared) > limit:
+                return
+            if int(declared) > limit:
                 await self._too_large(scope, receive, send)
-            else:
-                await self.app(scope, receive, send)
+                return
+        if b"transfer-encoding" in headers:
+            # uvicorn (h11) frames a request that has both headers on the chunked body and ignores
+            # the length, so the declared length proves nothing here: read what really arrives.
+            buffered = await self._read_up_to(limit, receive)
+            if buffered is None:
+                await self._too_large(scope, receive, send)
+                return
+            await self.app(scope, _replay(buffered, receive), send)
             return
-        if b"transfer-encoding" not in headers:
-            await self.app(scope, receive, send)  # no body at all
-            return
-        buffered = await self._read_up_to(limit, receive)
-        if buffered is None:
+        await self._run_counted(limit, scope, receive, send)
+
+    async def _run_counted(self, limit: int, scope: Scope, receive: Receive, send: Send) -> None:
+        """Run the app, counting the body bytes it reads; past ``limit`` answer 413 instead.
+
+        The server enforces a declared length, but this does not rely on it: whatever framing the
+        server used, the count is of delivered bytes. Once over, the over-long chunk is withheld
+        and the app sees a disconnect, so it never gets the whole body (``Request.body`` raises),
+        and anything it then sends or raises is discarded in favour of the 413.
+        """
+        size = 0
+        exceeded = False
+        started = False
+
+        async def counting_receive() -> Message:
+            """The server's next message, or a disconnect once the body is over the limit."""
+            nonlocal size, exceeded
+            if exceeded:
+                return {"type": "http.disconnect"}
+            message = await receive()
+            if message["type"] == "http.request":
+                size += len(message.get("body", b""))
+                if size > limit:
+                    exceeded = True
+                    return {"type": "http.disconnect"}
+            return message
+
+        async def guarded_send(message: Message) -> None:
+            """Forward the app's response unless the body has gone over the limit."""
+            nonlocal started
+            if exceeded:
+                return
+            if message["type"] == "http.response.start":
+                started = True
+            await send(message)
+
+        try:
+            await self.app(scope, counting_receive, guarded_send)
+        except Exception:
+            # An app that reacts to the disconnect by failing must not turn the refusal into a 500.
+            if not exceeded:
+                raise
+        # An answer already started before the limit was passed cannot be replaced; it was cut.
+        if exceeded and not started:
             await self._too_large(scope, receive, send)
-            return
-        await self.app(scope, _replay(buffered, receive), send)
 
     @staticmethod
     async def _read_up_to(limit: int, receive: Receive) -> list[Message] | None:
