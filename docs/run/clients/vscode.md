@@ -1,3 +1,75 @@
 # VS Code
 
-Coming soon: this page is a stub.
+Visual Studio Code can use MCP servers through its AI chat features.
+
+!!! warning "Not tested by this project"
+    This page was written from the current VS Code documentation and was not tried in VS Code. The pages used are [Use MCP servers](https://code.visualstudio.com/docs/copilot/customization/mcp-servers) and the [MCP configuration reference](https://code.visualstudio.com/docs/copilot/reference/mcp-configuration). Those pages state that the editor-managed `mcp.json` described here belongs to the "Local" setup, which is deprecated and will be removed in February 2027, and that newer setups use other files. Check the documentation for what your version expects.
+
+## Where the configuration goes
+
+According to the configuration reference, the editor-managed files are:
+
+- `.vscode/mcp.json` in the workspace: this project only.
+- `mcp.json` in your VS Code user profile: all your projects.
+
+The root key is `servers` (not `mcpServers`). You can also run **MCP: Add Server** from the Command Palette and let VS Code write the entry for you. Review the command it generates before you accept it. VS Code asks you to trust a server before it starts.
+
+## Local, over stdio
+
+You need [uv](https://docs.astral.sh/uv/).
+
+```json
+{
+  "servers": {
+    "boe-insights": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["boe-insights-mcp"]
+    }
+  }
+}
+```
+
+Before release 0.1.0, use the repository form, which works today:
+
+```json
+{
+  "servers": {
+    "boe-insights": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/davidbejar/boe-insights-mcp", "boe-insights-mcp"]
+    }
+  }
+}
+```
+
+From a clone, use `"command": "uv"` and `"args": ["--directory", "/absolute/path/to/boe-insights-mcp", "run", "boe-insights-mcp"]`.
+
+To pass settings, add an `env` object next to `args`. They are listed in [Run with uvx](../uvx.md#settings).
+
+## Over HTTP
+
+Start the server first: [Run over HTTP](../http.md) or [Run in a container](../container.md). Then:
+
+```json
+{
+  "servers": {
+    "boe-insights": {
+      "type": "http",
+      "url": "http://localhost:8000/mcp"
+    }
+  }
+}
+```
+
+VS Code tries streamable HTTP first and falls back to the older SSE transport. This server speaks streamable HTTP.
+
+### With GitHub login
+
+The configuration reference says that for an HTTP server VS Code runs the OAuth flow by itself and opens a browser window the first time it connects. With this server's [GitHub login](../github-login.md) you would see the server's consent page and then, the first time, GitHub's authorize page. The reference shows an optional `oauth` object with a `clientId` for servers whose clients are pre-registered. This server registers clients dynamically, so you should not need it. None of this was tested.
+
+## See also
+
+- [Generic client](generic.md)
+- [Security and operations](../../operating.md)
