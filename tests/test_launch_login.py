@@ -91,10 +91,21 @@ def test_stdio_without_login_variables_logs_no_warning(caplog: pytest.LogCapture
     assert warnings == []
 
 
-def test_an_allow_list_alone_with_stdio_logs_no_warning(caplog: pytest.LogCaptureFixture) -> None:
-    _, warnings = run([], {USERS_VAR: "alice"}, caplog)
+@pytest.mark.parametrize("argv", [[], ["--transport", "http"]])
+def test_an_allow_list_without_login_stops_the_server_whatever_the_transport(
+    argv: list[str], caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # It used to start (and over HTTP, open to everybody); it must not silently do so.
+    recorder = _Recorder()
 
-    assert warnings == []
+    with pytest.raises(SystemExit) as exit_info:
+        launch.run(argv, {USERS_VAR: "alice"}, lambda settings: recorder)  # type: ignore[arg-type,return-value]
+
+    assert exit_info.value.code == 2
+    message = capsys.readouterr().err.strip().splitlines()[-1]
+    assert USERS_VAR in message
+    assert "login is not configured" in message
+    assert recorder.calls == []
 
 
 # --- Login over HTTP -----------------------------------------------------------------------------

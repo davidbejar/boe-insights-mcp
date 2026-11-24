@@ -87,6 +87,15 @@ class AllowList:
         # letters, which would let a look-alike login pass.
         return isinstance(login, str) and login.isascii() and login.lower() in self.names
 
+    def admitted_by_name_only(self, sub: Any, login: Any) -> bool:
+        """Whether the user is allowed solely because their login is listed.
+
+        Such an entry stops matching if the person renames their account (and could in time match
+        whoever takes the old name); ``id:<n>`` does not have that problem. The caller uses this
+        to say so once in the log.
+        """
+        return self.allows(sub, login) and not self.everyone and sub not in self.ids
+
 
 def allow_check(allow_list: AllowList) -> AuthCheck:
     """The ``AuthMiddleware`` check that admits only the users ``allow_list`` allows."""

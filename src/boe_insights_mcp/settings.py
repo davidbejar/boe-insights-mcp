@@ -9,8 +9,10 @@ the allow-list entries with the parser of ``access``, so a mistake stops the ser
 
 from __future__ import annotations
 
+import ipaddress
 import math
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -38,6 +40,9 @@ _CLIENT_SECRET_VAR = "BOE_INSIGHTS_GITHUB_CLIENT_SECRET"
 _SIGNING_KEY_VAR = "BOE_INSIGHTS_AUTH_SIGNING_KEY"
 _BASE_URL_VAR = "BOE_INSIGHTS_BASE_URL"
 _ALLOWED_USERS_VAR = "BOE_INSIGHTS_ALLOWED_USERS"
+_ALLOWED_HOSTS_VAR = "BOE_INSIGHTS_ALLOWED_HOSTS"
+_ALLOWED_ORIGINS_VAR = "BOE_INSIGHTS_ALLOWED_ORIGINS"
+_ALLOWED_REDIRECTS_VAR = "BOE_INSIGHTS_ALLOWED_REDIRECT_URIS"
 _CALLS_PER_MINUTE_VAR = "BOE_INSIGHTS_CALLS_PER_MINUTE"
 _CALLS_BURST_VAR = "BOE_INSIGHTS_CALLS_BURST"
 _MIN_SIGNING_KEY_LENGTH = 32
@@ -81,11 +86,16 @@ class Settings:
     allowed_hosts: tuple[str, ...] = ()
     """``BOE_INSIGHTS_ALLOWED_HOSTS``: comma-separated public host names accepted over HTTP.
 
-    Added to the loopback names, which are always accepted; there is no way to switch the
-    Host check off.
+    Each entry is a bare host name or IP literal: no scheme, port, path or wildcard. Added to the
+    loopback names, which are always accepted (and, with login on, to the host of
+    ``base_url``); there is no way to switch the Host check off.
     """
     allowed_origins: tuple[str, ...] = ()
-    """``BOE_INSIGHTS_ALLOWED_ORIGINS``: comma-separated browser origins accepted over HTTP."""
+    """``BOE_INSIGHTS_ALLOWED_ORIGINS``: comma-separated browser origins accepted over HTTP.
+
+    Each entry is exactly ``http(s)://host[:port]``, without wildcards. With login on, the origin
+    of ``base_url`` is accepted too.
+    """
 
     github_client_id: str | None = None
     """``BOE_INSIGHTS_GITHUB_CLIENT_ID``: the GitHub OAuth app that signs people in."""
@@ -98,6 +108,11 @@ class Settings:
     """``BOE_INSIGHTS_BASE_URL``: the server's public URL, without path or trailing slash."""
     allowed_users: tuple[str, ...] = ()
     """``BOE_INSIGHTS_ALLOWED_USERS``: comma-separated allow-list entries (see ``access``)."""
+    allowed_redirect_uris: tuple[str, ...] = ()
+    """``BOE_INSIGHTS_ALLOWED_REDIRECT_URIS``: extra redirect URI patterns for OAuth clients.
+
+    Added to the loopback ones that are always allowed (see ``login``).
+    """
 
     calls_per_minute: int = 60
     """``BOE_INSIGHTS_CALLS_PER_MINUTE``: calls per caller per minute over HTTP; 0 is no limit."""
@@ -135,6 +150,13 @@ class Settings:
         allowed_users = _csv(env.get(_ALLOWED_USERS_VAR))
         # Parsed only to fail at startup on a typo; ``server`` parses it again to enforce it.
         AllowList.parse(allowed_users)
+        if allowed_users and client_id is None:
+            # A list nobody enforces would leave the server open to everyone while the operator
+            # believes it is restricted, so it must stop the server rather than be ignored.
+            raise ValueError(
+                f"{_ALLOWED_USERS_VAR} is set but GitHub login is not configured, so it would "
+                "restrict nothing; set the four GitHub login variables or remove it"
+            )
         return cls(
             cache_backend=_backend(env.get("BOE_INSIGHTS_CACHE"), defaults.cache_backend),
             cache_dir=Path(cache_dir) if cache_dir else default_cache_dir(env),
@@ -146,13 +168,16 @@ class Settings:
             transport=_transport(env.get("BOE_INSIGHTS_TRANSPORT"), defaults.transport),
             host=(env.get("BOE_INSIGHTS_HOST") or "").strip() or defaults.host,
             port=_port(env.get("BOE_INSIGHTS_PORT"), defaults.port),
-            allowed_hosts=_csv(env.get("BOE_INSIGHTS_ALLOWED_HOSTS")),
-            allowed_origins=_csv(env.get("BOE_INSIGHTS_ALLOWED_ORIGINS")),
+            allowed_hosts=tuple(_host(e) for e in _csv(env.get(_ALLOWED_HOSTS_VAR))),
+            allowed_origins=tuple(_origin(e) for e in _csv(env.get(_ALLOWED_ORIGINS_VAR))),
             github_client_id=client_id,
             github_client_secret=client_secret,
             auth_signing_key=signing_key,
             base_url=base_url,
             allowed_users=allowed_users,
+            allowed_redirect_uris=tuple(
+                _redirect_pattern(e) for e in _csv(env.get(_ALLOWED_REDIRECTS_VAR))
+            ),
             calls_per_minute=_calls_per_minute(
                 env.get(_CALLS_PER_MINUTE_VAR), defaults.calls_per_minute
             ),
@@ -296,4 +321,103 @@ def _base_url(value: str) -> str:
         or "#" in value
     ):
         raise ValueError(problem)
+    if parts.scheme == "http" and not _is_loopback(parts.hostname):
+        # Sign-in codes and tokens travel over this URL's redirects; they must not cross a
+        # network in clear text. A TLS-terminating proxy still gives the public https URL.
+        raise ValueError(f"{_BASE_URL_VAR} must use https unless its host is loopback")
     return value.removesuffix("/")
+
+
+def _is_loopback(host: str) -> bool:
+    """Whether ``host`` is ``localhost`` or a loopback IP literal (127.0.0.0/8 or ::1)."""
+    if host.lower() == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+_HOST_LABEL = r"[A-Za-z0-9_](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?"
+_HOSTNAME = re.compile(rf"{_HOST_LABEL}(?:\.{_HOST_LABEL})*")
+
+
+def _bare_host(entry: str) -> str | None:
+    """The host of ``entry`` if it is a bare host name or IP literal, else ``None``.
+
+    IPv6 is returned without brackets, the form that FastMCP's matcher compares with: it strips
+    the brackets of both the ``Host`` header and the configured pattern
+    (fastmcp/server/http.py, ``_normalize_host`` and ``_host_matches``), but would read an
+    unbracketed ``::1`` or a bracketed one with a port differently, so only these two forms pass.
+    """
+    candidate = entry[1:-1] if entry.startswith("[") and entry.endswith("]") else entry
+    if ":" in candidate:
+        try:
+            ipaddress.IPv6Address(candidate)
+        except ValueError:
+            return None
+        return candidate
+    return entry if _HOSTNAME.fullmatch(entry) else None
+
+
+def _host(entry: str) -> str:
+    """Validate one ``BOE_INSIGHTS_ALLOWED_HOSTS`` entry; return it (IPv6 without brackets)."""
+    host = _bare_host(entry)
+    if host is None:
+        raise ValueError(
+            f"{_ALLOWED_HOSTS_VAR} entries must be a bare host name or IP address "
+            f"(no scheme, port, path or wildcard), got {entry!r}"
+        )
+    return host
+
+
+def _origin(entry: str) -> str:
+    """Validate one ``BOE_INSIGHTS_ALLOWED_ORIGINS`` entry: exactly ``http(s)://host[:port]``."""
+    problem = f"{_ALLOWED_ORIGINS_VAR} entries must look like https://host[:port], got {entry!r}"
+    if not re.fullmatch(r"https?://[^/?#@\s*\[\]]+|https?://\[[0-9A-Fa-f:]+\](?::[0-9]+)?", entry):
+        # Anything else is a path, query, userinfo, whitespace or a wildcard.
+        raise ValueError(problem)
+    parts = urlsplit(entry)
+    try:
+        port = parts.port
+    except ValueError:
+        raise ValueError(problem) from None
+    if (
+        parts.hostname is None
+        or _bare_host(parts.hostname) is None
+        or (port is not None and not 0 < port < 65536)
+        or entry.endswith(":")
+    ):
+        raise ValueError(problem)
+    return entry
+
+
+def _redirect_pattern(entry: str) -> str:
+    """Validate one ``BOE_INSIGHTS_ALLOWED_REDIRECT_URIS`` entry; return it unchanged.
+
+    The entry is a pattern for FastMCP's matcher (fastmcp/server/auth/redirect_validation.py,
+    ``matches_allowed_pattern``), which understands a ``*`` as the whole port, a ``*.`` prefix on
+    the host (subdomains only) and ``*`` inside the path. Only those are accepted here, so an
+    entry cannot be made to match more than it reads like: no wildcard in the scheme or inside a
+    host label, and the host must keep at least a registrable name behind ``*.``. Outside loopback
+    the scheme must be https, because the authorisation code is carried in this redirect.
+    """
+    problem = (
+        f"{_ALLOWED_REDIRECTS_VAR} entries must be absolute https URLs (http only for loopback) "
+        f"such as https://app.example.org/callback, got {entry!r}"
+    )
+    if re.search(r"[\s?#\[\]\\@]", entry) or not re.match(r"https?://", entry):
+        raise ValueError(problem)
+    parts = urlsplit(entry)
+    host = parts.hostname
+    if host is None:
+        raise ValueError(problem)
+    port = parts.netloc.rpartition(":")[2] if ":" in parts.netloc else ""
+    if port and port != "*" and not (port.isascii() and port.isdigit() and 0 < int(port) < 65536):
+        raise ValueError(problem)
+    base = host[2:] if host.startswith("*.") else host
+    if "*" in base or (host != base and base.count(".") < 1) or not _HOSTNAME.fullmatch(base):
+        raise ValueError(problem)
+    if parts.scheme == "http" and not _is_loopback(host):
+        raise ValueError(problem)
+    return entry

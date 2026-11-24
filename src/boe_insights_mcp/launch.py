@@ -4,8 +4,9 @@
 command line and ``BOE_INSIGHTS_*`` variables into :class:`~boe_insights_mcp.settings.Settings`,
 builds the server through a factory it is given (so it never imports ``server``; the factory
 decides about authentication), and then starts it over stdio or HTTP, warning about login
-settings that do nothing or let nobody in. For HTTP it also owns the ``/health`` route and the
-Host/Origin guard configuration.
+settings that do nothing or let nobody in. For HTTP it also owns the ``/health`` route, the
+Host/Origin guard configuration and the wiring of ``httplimits`` (request body limit, access log
+without query strings).
 """
 
 from __future__ import annotations
@@ -15,12 +16,15 @@ import dataclasses
 import logging
 import sys
 from collections.abc import Callable, Mapping, Sequence
+from urllib.parse import urlsplit
 
 from fastmcp import FastMCP
 from fastmcp.server.http import StarletteWithLifespan
+from starlette.middleware import Middleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from boe_insights_mcp.httplimits import BodyLimit, QueryStripFilter
 from boe_insights_mcp.settings import Settings
 
 __all__ = ["build_http_app", "register_health", "resolve_settings", "run"]
@@ -48,25 +52,44 @@ def register_health(server: FastMCP) -> None:
         return JSONResponse({"status": "ok"})
 
 
-def _guard_options(settings: Settings) -> dict[str, object]:
-    """The Host/Origin guard options, identical for ``build_http_app`` and ``run``."""
+def _unique(items: Sequence[str]) -> list[str]:
+    """``items`` without repeats, in order."""
+    return list(dict.fromkeys(items))
+
+
+def _http_options(settings: Settings) -> dict[str, object]:
+    """The Host/Origin guard and middleware options, the same for ``build_http_app`` and ``run``."""
+    hosts, origins = list(settings.allowed_hosts), list(settings.allowed_origins)
+    if settings.login_enabled and settings.base_url:
+        # The OAuth routes are reached under the public URL, usually behind a proxy that
+        # terminates TLS: the app then sees http, so the guard's same-origin fallback does not
+        # apply and the browser's ``Origin: https://...`` of the consent form would get 403.
+        # Whoever sets the public URL means to be served there, so it is trusted without a
+        # second setting.
+        public = urlsplit(settings.base_url)
+        if public.hostname:
+            hosts.append(public.hostname)
+        origins.append(f"{public.scheme}://{public.netloc}")
     return {
         # True, not "auto": "auto" only validates when bound to loopback, so binding 0.0.0.0
         # (needed in a container) would switch the check off. True validates every request
         # (fastmcp/server/http.py, HostOriginGuardMiddleware). Loopback names are always
         # allowed; matching strips any :port, so entries are plain host names.
         "host_origin_protection": True,
-        "allowed_hosts": list(settings.allowed_hosts),
-        "allowed_origins": list(settings.allowed_origins),
+        "allowed_hosts": _unique(hosts),
+        "allowed_origins": _unique(origins),
         # Stateful sessions are the default; pinned so a FASTMCP_STATELESS_HTTP variable cannot
         # change behaviour behind the operator's back.
         "stateless_http": False,
+        # Added after FastMCP's guard and authentication middleware, which do not read bodies
+        # (fastmcp/server/http.py:605-609); anything that does read one runs inside this.
+        "middleware": [Middleware(BodyLimit, mcp_path=MCP_PATH)],
     }
 
 
 def build_http_app(server: FastMCP, settings: Settings) -> StarletteWithLifespan:
     """Return the ASGI app serving ``server`` over HTTP with the Host/Origin guard on."""
-    return server.http_app(path=MCP_PATH, **_guard_options(settings))  # type: ignore[arg-type]
+    return server.http_app(path=MCP_PATH, **_http_options(settings))  # type: ignore[arg-type]
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -142,6 +165,12 @@ def run(argv: Sequence[str], env: Mapping[str, str], factory: ServerFactory) -> 
     if settings.transport == "stdio":
         server.run(show_banner=False)
         return
+    # uvicorn logs every request line, query string included, and the OAuth routes carry one-time
+    # codes there. The filter is on the logger, which uvicorn's logging setup leaves in place
+    # (it replaces handlers, not filters); a duplicate would only repeat a harmless rewrite.
+    access_log = logging.getLogger("uvicorn.access")
+    if not any(isinstance(f, QueryStripFilter) for f in access_log.filters):
+        access_log.addFilter(QueryStripFilter())
     logger.info(
         "Serving MCP over HTTP on host %s, port %d, path %s",
         settings.host,
@@ -154,5 +183,5 @@ def run(argv: Sequence[str], env: Mapping[str, str], factory: ServerFactory) -> 
         host=settings.host,
         port=settings.port,
         path=MCP_PATH,
-        **_guard_options(settings),  # type: ignore[arg-type]
+        **_http_options(settings),  # type: ignore[arg-type]
     )

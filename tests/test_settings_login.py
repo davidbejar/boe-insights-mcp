@@ -78,10 +78,18 @@ def test_empty_login_variables_count_as_unset() -> None:
     assert settings.github_client_id is None
 
 
-def test_allowed_users_alone_does_not_turn_login_on() -> None:
-    settings = Settings.from_env({USERS_VAR: "alice"})
+def test_allowed_users_alone_is_a_startup_error_not_an_open_server() -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({USERS_VAR: "alice"})
 
-    assert settings.login_enabled is False
+    assert USERS_VAR in str(caught.value)
+    assert "login is not configured" in str(caught.value)
+
+
+def test_allowed_users_with_login_on_is_kept() -> None:
+    settings = Settings.from_env({**LOGIN_ENV, USERS_VAR: "alice"})
+
+    assert settings.login_enabled is True
     assert settings.allowed_users == ("alice",)
 
 
@@ -154,6 +162,8 @@ def test_a_signing_key_of_31_characters_is_refused_by_naming_the_variable() -> N
         ("https://boe.example.org/", "https://boe.example.org"),
         ("http://localhost:8000", "http://localhost:8000"),
         ("http://localhost:8000/", "http://localhost:8000"),
+        ("http://127.0.0.1:8000", "http://127.0.0.1:8000"),
+        ("http://[::1]:8000", "http://[::1]:8000"),
         ("https://boe.example.org:8443/", "https://boe.example.org:8443"),
     ],
 )
@@ -190,10 +200,11 @@ def test_allowed_users_default_to_nobody() -> None:
     assert Settings.from_env({}).allowed_users == ()
     assert Settings.from_env({USERS_VAR: ""}).allowed_users == ()
     assert Settings.from_env({USERS_VAR: " , ,, "}).allowed_users == ()
+    assert Settings.from_env({**LOGIN_ENV, USERS_VAR: ""}).allowed_users == ()
 
 
 def test_allowed_users_are_split_on_commas_trimmed_and_blanks_dropped() -> None:
-    settings = Settings.from_env({USERS_VAR: " alice , bob,, id:12 ,*, "})
+    settings = Settings.from_env({**LOGIN_ENV, USERS_VAR: " alice , bob,, id:12 ,*, "})
 
     assert settings.allowed_users == ("alice", "bob", "id:12", "*")
 
@@ -204,7 +215,7 @@ def test_allowed_users_are_split_on_commas_trimmed_and_blanks_dropped() -> None:
 )
 def test_a_bad_allowed_user_is_refused_naming_the_variable_and_the_entry(bad: str) -> None:
     with pytest.raises(ValueError) as caught:
-        Settings.from_env({USERS_VAR: f"alice,{bad},bob"})
+        Settings.from_env({**LOGIN_ENV, USERS_VAR: f"alice,{bad},bob"})
 
     assert USERS_VAR in str(caught.value)
     assert bad in str(caught.value)
@@ -260,3 +271,117 @@ def test_no_error_text_contains_a_secret(env: dict[str, str]) -> None:
     for secret in (*SECRETS, env.get(KEY_VAR, "")):
         if secret:
             assert secret not in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "given",
+    [
+        "http://boe.example.org",
+        "http://boe.example.org:8000",
+        "http://192.0.2.10",
+        "http://localhost.example.org",
+        "http://127.0.0.1.example.org",
+    ],
+)
+def test_a_plain_http_base_url_is_refused_unless_it_is_loopback(given: str) -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({**LOGIN_ENV, URL_VAR: given})
+
+    assert URL_VAR in str(caught.value)
+    assert "https" in str(caught.value)
+
+
+# --- Redirect URIs of OAuth clients -------------------------------------------------------------
+
+REDIRECTS_VAR = "BOE_INSIGHTS_ALLOWED_REDIRECT_URIS"
+
+
+def test_allowed_redirect_uris_default_to_none_and_are_split_like_other_lists() -> None:
+    assert Settings.from_env(LOGIN_ENV).allowed_redirect_uris == ()
+
+    settings = Settings.from_env(
+        {
+            **LOGIN_ENV,
+            REDIRECTS_VAR: " https://app.example.org/cb , ,https://*.example.net/oauth/* ",
+        }
+    )
+
+    assert settings.allowed_redirect_uris == (
+        "https://app.example.org/cb",
+        "https://*.example.net/oauth/*",
+    )
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "*",
+        "app.example.org/cb",
+        "ftp://app.example.org/cb",
+        "javascript:alert(1)",
+        "http://app.example.org/cb",
+        "https://",
+        "https://user:pw@app.example.org/cb",
+        "https://*/cb",
+        "https://*.com/cb",
+        "https://app.*.org/cb",
+        "https://app.example.org/cb?x=1",
+        "https://app.example.org/cb#frag",
+        "https://app.example.org/a b",
+        "https://app.example.org/[a]",
+        "*://app.example.org/cb",
+    ],
+)
+def test_a_bad_redirect_uri_entry_is_refused_naming_the_variable_and_the_entry(bad: str) -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({**LOGIN_ENV, REDIRECTS_VAR: f"https://ok.example.org/cb,{bad}"})
+
+    assert REDIRECTS_VAR in str(caught.value)
+    assert bad in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "good",
+    [
+        "https://app.example.org/cb",
+        "https://app.example.org:8443/cb",
+        "https://*.example.org/oauth/*",
+        "http://localhost:*",
+        "http://127.0.0.1:*/cb",
+    ],
+)
+def test_a_good_redirect_uri_entry_is_kept(good: str) -> None:
+    assert Settings.from_env({**LOGIN_ENV, REDIRECTS_VAR: good}).allowed_redirect_uris == (good,)
+
+
+# --- login_enabled needs all four values --------------------------------------------------------
+
+
+@pytest.mark.parametrize("present", _PROPER_SUBSETS, ids=lambda subset: "+".join(subset))
+def test_a_settings_with_only_some_login_values_is_not_login_enabled(
+    present: tuple[str, ...],
+) -> None:
+    fields = {
+        ID_VAR: "github_client_id",
+        SECRET_VAR: "github_client_secret",
+        KEY_VAR: "auth_signing_key",
+        URL_VAR: "base_url",
+    }
+    given = {fields[name]: LOGIN_ENV[name] for name in present}
+
+    assert Settings(**given).login_enabled is False  # type: ignore[arg-type]
+
+
+def test_a_settings_with_all_four_login_values_is_login_enabled() -> None:
+    settings = Settings(
+        github_client_id=CLIENT_ID,
+        github_client_secret=CLIENT_SECRET,
+        auth_signing_key=SIGNING_KEY,
+        base_url=BASE_URL,
+    )
+
+    assert settings.login_enabled is True
+
+
+def test_the_client_id_alone_does_not_enable_login() -> None:
+    assert Settings(github_client_id="x").login_enabled is False

@@ -768,9 +768,9 @@ def build_settings(tmp_path: Path, **changes: Any) -> Settings:
 
 @pytest.fixture
 def fake_provider(monkeypatch: pytest.MonkeyPatch, keys: RSAKeyPair) -> FakeGitHubProvider:
-    """Replace the ``GitHubProvider`` that ``server`` uses (no network, no stored state)."""
+    """Replace the GitHub provider that ``server`` uses (no network, no stored state)."""
     fake = FakeGitHubProvider(keys)
-    monkeypatch.setattr(server, "GitHubProvider", fake)
+    monkeypatch.setattr(server, "AllowListedGitHubProvider", fake)
     return fake
 
 
@@ -908,3 +908,64 @@ async def test_a_built_stdio_server_is_local_with_everything(
 
     async with Client(built) as client:
         assert await visible(client) == EVERYTHING
+
+
+# --- A server built without settings but served over HTTP ---------------------------------------
+
+
+async def test_a_server_built_without_settings_never_uses_the_local_owner_over_http(
+    boe_client: BoeClient, store: RecordingStore
+) -> None:
+    # What ``fastmcp run module:create_server`` over HTTP would do: no settings, so the server
+    # believes it is local and exposes the saved-search tools, yet every request is remote.
+    built = create_server(client=boe_client, store=store)
+
+    async with auth.session(built, Settings(transport="http")) as client:
+        listing_error = None
+        try:
+            await client.call_tool("list_saved_searches", {})
+        except ToolError as error:
+            listing_error = str(error)
+        save_error = None
+        try:
+            await client.call_tool("save_search", {"name": "mia", "words": "vivienda"})
+        except ToolError as error:
+            save_error = str(error)
+
+    expected = (
+        "Not signed in (unauthorized, not retryable): saved searches need an identified user."
+    )
+    assert listing_error == expected
+    assert save_error == expected
+    assert store.owners_seen == set()
+    assert await store.list("local") == []
+
+
+async def test_the_local_owner_still_works_over_stdio_and_in_memory(
+    boe_client: BoeClient, store: RecordingStore
+) -> None:
+    async with Client(local_server(boe_client, store)) as client:
+        await structured(client, "save_search", name="mia", words="vivienda")
+        assert await names_of_saved_searches(client) == ["mia"]
+
+    assert store.owners_seen == {"local"}
+
+
+# --- An authentication provider means nothing over stdio ----------------------------------------
+
+
+@pytest.mark.parametrize("settings", [Settings(transport="stdio"), None])
+async def test_a_provider_is_ignored_when_the_server_is_not_served_over_http(
+    boe_client: BoeClient, store: RecordingStore, keys: RSAKeyPair, settings: Settings | None
+) -> None:
+    built = create_server(
+        client=boe_client, settings=settings, store=store, auth=auth.verifier_for(keys)
+    )
+
+    # No authentication on the server and no allow-list middleware: a client that presents no
+    # token still sees every component, saved searches included, and owns ``local`` rows.
+    assert built.auth is None
+    async with Client(built) as client:
+        assert await visible(client) == EVERYTHING
+        await structured(client, "save_search", name="mia", words="vivienda")
+    assert store.owners_seen == {"local"}

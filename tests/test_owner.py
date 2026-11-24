@@ -154,3 +154,26 @@ def test_the_old_user_prefix_is_gone(monkeypatch: pytest.MonkeyPatch) -> None:
     with_token(monkeypatch, SimpleNamespace(claims={"sub": "1001"}))
 
     assert not owner.current_owner(remote=True).startswith("user:")
+
+
+# --- Never local inside an HTTP request ---------------------------------------------------------
+
+
+def test_inside_an_http_request_the_owner_is_never_local_whatever_remote_says(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Defence in depth: a server built without settings but served over HTTP says remote=False.
+    monkeypatch.setattr("boe_insights_mcp.owner.get_http_request", lambda: SimpleNamespace())
+    with_token(monkeypatch, None)
+
+    with pytest.raises(owner.NotSignedInError):
+        owner.current_owner(remote=False)
+
+
+def test_inside_an_http_request_with_a_token_the_owner_is_that_user_not_local(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("boe_insights_mcp.owner.get_http_request", lambda: SimpleNamespace())
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "1001"}))
+
+    assert owner.current_owner(remote=False) == "github:1001"

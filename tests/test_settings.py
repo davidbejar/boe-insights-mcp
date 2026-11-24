@@ -209,6 +209,101 @@ def test_transport_variables_are_read() -> None:
     assert settings.allowed_origins == ("https://boe.example.org",)
 
 
+@pytest.mark.parametrize(
+    ("given", "kept"),
+    [
+        ("boe.example.org", "boe.example.org"),
+        ("192.0.2.10", "192.0.2.10"),
+        ("localhost", "localhost"),
+        ("my_host", "my_host"),
+        ("::1", "::1"),
+        ("[::1]", "::1"),
+        ("[2001:DB8::5]", "2001:DB8::5"),
+    ],
+)
+def test_an_allowed_host_is_a_bare_name_or_ip_and_ipv6_is_unbracketed(
+    given: str, kept: str
+) -> None:
+    # FastMCP's matcher strips the brackets of a Host header and of a pattern alike
+    # (fastmcp/server/http.py, ``_normalize_host``), so the bare form is the one that matches.
+    settings = Settings.from_env({"BOE_INSIGHTS_ALLOWED_HOSTS": f"a.example.org,{given}"})
+
+    assert settings.allowed_hosts == ("a.example.org", kept)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "*",
+        "*.example.org",
+        "boe.*",
+        "boe?.example.org",
+        "boe[1].example.org",
+        "https://boe.example.org",
+        "boe.example.org:8000",
+        "boe.example.org/",
+        "boe.example.org/path",
+        "boe example.org",
+        "[::1]:8000",
+        "[::1",
+        "[boe.example.org]",
+        "1:2",
+        "-boe.example.org",
+        "boe..example.org",
+        "user@boe.example.org",
+    ],
+)
+def test_a_bad_allowed_host_is_refused_naming_the_variable_and_the_entry(bad: str) -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({"BOE_INSIGHTS_ALLOWED_HOSTS": f"ok.example.org,{bad}"})
+
+    assert "BOE_INSIGHTS_ALLOWED_HOSTS" in str(caught.value)
+    assert bad in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "good",
+    [
+        "https://boe.example.org",
+        "http://boe.example.org:8080",
+        "https://192.0.2.10",
+        "http://[::1]:3000",
+    ],
+)
+def test_an_allowed_origin_is_a_scheme_host_and_optional_port(good: str) -> None:
+    settings = Settings.from_env({"BOE_INSIGHTS_ALLOWED_ORIGINS": good})
+
+    assert settings.allowed_origins == (good,)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "*",
+        "https://*.example.org",
+        "https://boe.example.org/",
+        "https://boe.example.org/path",
+        "https://boe.example.org?x=1",
+        "https://boe.example.org#x",
+        "https://user@boe.example.org",
+        "boe.example.org",
+        "ftp://boe.example.org",
+        "https://",
+        "https://boe.example.org:99999",
+        "https://boe.example.org:abc",
+        "https://boe example.org",
+        "https://boe.example.org:",
+        "https://boe?.example.org",
+    ],
+)
+def test_a_bad_allowed_origin_is_refused_naming_the_variable_and_the_entry(bad: str) -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({"BOE_INSIGHTS_ALLOWED_ORIGINS": f"https://ok.example.org,{bad}"})
+
+    assert "BOE_INSIGHTS_ALLOWED_ORIGINS" in str(caught.value)
+    assert bad in str(caught.value)
+
+
 def test_empty_transport_variables_keep_the_defaults() -> None:
     env = {
         "BOE_INSIGHTS_TRANSPORT": "",

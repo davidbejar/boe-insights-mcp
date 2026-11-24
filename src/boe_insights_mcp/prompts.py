@@ -88,6 +88,18 @@ _GAZETTE_CLOSING: dict[Lang, str] = {
     ),
 }
 
+# The last step of the gazette briefing. It is a placeholder in the body, filled from here, so
+# that the prompt is one text whether or not the server has saved searches: on a server open over
+# HTTP there is no ``save_search`` and a prompt that mentions it would send the model to a tool
+# that does not exist.
+_SAVE_STEP: dict[Lang, str] = {
+    "en": "3. Mention that save_search can keep this search to re-check it later.\n",
+    "es": (
+        "3. Menciona que save_search puede guardar esta búsqueda para volver a comprobarla más "
+        "tarde.\n"
+    ),
+}
+
 _EXPLAIN_LAW = _Definition(
     en=_Text(
         name="explain_law",
@@ -268,8 +280,7 @@ read). If has_more is true, ask for the next page with next_offset. The search m
 words of titles only; if it finds nothing, retry with fewer or related words.
 2. Group what was found by section and department, most relevant first, with the date and a \
 line on each item.
-3. Mention that save_search can keep this search to re-check it later.
-
+{save_step}
 """,
     ),
     es=_Text(
@@ -293,8 +304,7 @@ solo compara palabras completas de los títulos; si no encuentra nada, repite co
 con otras relacionadas.
 2. Agrupa lo encontrado por sección y departamento, lo más relevante primero, con la fecha y una \
 línea sobre cada elemento.
-3. Menciona que save_search puede guardar esta búsqueda para volver a comprobarla más tarde.
-
+{save_step}
 """,
     ),
 )
@@ -313,9 +323,13 @@ def _finish(template: _Text, lang: Lang, **fields: str) -> str:
     return template.body.format(**fields) + _CLOSING[lang]
 
 
-def _finish_gazette(template: _Text, lang: Lang, **fields: str) -> str:
-    """Like ``_finish``, with the closing lines of the gazette prompts."""
-    return template.body.format(**fields) + _GAZETTE_CLOSING[lang]
+def _finish_gazette(template: _Text, lang: Lang, saved_searches: bool, **fields: str) -> str:
+    """Like ``_finish``, with the closing lines of the gazette prompts.
+
+    The step about saving the search (``_SAVE_STEP``) is left out when ``saved_searches`` is false.
+    """
+    save_step = _SAVE_STEP[lang] if saved_searches else ""
+    return template.body.format(save_step=save_step, **fields) + _GAZETTE_CLOSING[lang]
 
 
 def _window(days: int) -> tuple[str, str]:
@@ -374,7 +388,7 @@ def _check_citations(lang: Lang, text_to_check: str) -> str:
     return _finish(text, lang, **{key: _quote(text_to_check)})
 
 
-def _gazette_briefing(lang: Lang, topic: str, days: int) -> str:
+def _gazette_briefing(lang: Lang, topic: str, days: int, saved_searches: bool) -> str:
     """Text of ``gazette_briefing`` / ``resumen_boe``."""
     text = _GAZETTE_BRIEFING.en if lang == "en" else _GAZETTE_BRIEFING.es
     start, end = _window(days)
@@ -382,6 +396,7 @@ def _gazette_briefing(lang: Lang, topic: str, days: int) -> str:
     return _finish_gazette(
         text,
         lang,
+        saved_searches,
         start=start,
         end=end,
         days=str(days),
@@ -394,8 +409,12 @@ def _add(server: FastMCP, function: Callable[..., str], text: _Text) -> None:
     server.prompt(function, name=text.name, title=text.title, description=text.description)
 
 
-def register(server: FastMCP) -> None:
-    """Register the eight prompts (four, each in English and Spanish) on ``server``."""
+def register(server: FastMCP, *, with_saved_searches: bool = True) -> None:
+    """Register the eight prompts (four, each in English and Spanish) on ``server``.
+
+    ``with_saved_searches`` is whether the server has the saved-search tools; the gazette briefing
+    only suggests saving the search when it does.
+    """
     # Argument names differ per language (they are what the person sees), so each registration
     # needs its own signature; the bodies only forward to the shared renderers above, which is
     # what keeps a pair from drifting apart. The docstrings are for readers of this code: the
@@ -454,14 +473,14 @@ def register(server: FastMCP) -> None:
         days: Annotated[int, Field(ge=1, le=_MAX_DAYS, description=e.arguments[1])] = _DEFAULT_DAYS,
     ) -> str:
         """The English prompt that briefs on what the BOE published on a topic."""
-        return _gazette_briefing("en", topic, days)
+        return _gazette_briefing("en", topic, days, with_saved_searches)
 
     def resumen_boe(
         tema: Annotated[str, Field(description=s.arguments[0])],
         dias: Annotated[int, Field(ge=1, le=_MAX_DAYS, description=s.arguments[1])] = _DEFAULT_DAYS,
     ) -> str:
         """The Spanish prompt that briefs on what the BOE published on a topic."""
-        return _gazette_briefing("es", tema, dias)
+        return _gazette_briefing("es", tema, dias, with_saved_searches)
 
     _add(server, gazette_briefing, e)
     _add(server, resumen_boe, s)

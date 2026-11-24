@@ -35,7 +35,6 @@ from typing import Annotated, Any, Literal, TypeVar
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
 from fastmcp.server.auth import AuthProvider
-from fastmcp.server.auth.providers.github import GitHubProvider
 from fastmcp.server.lifespan import lifespan
 from fastmcp.server.middleware.authorization import AuthMiddleware
 from mcp.types import ToolAnnotations
@@ -68,6 +67,7 @@ from boe_insights_mcp.legislation import (
     RankFilter,
     ScopeFilter,
 )
+from boe_insights_mcp.login import AllowListedGitHubProvider, redirect_patterns
 from boe_insights_mcp.query import SortField
 from boe_insights_mcp.ratelimit import RateLimiter
 from boe_insights_mcp.schemas import (
@@ -1219,8 +1219,13 @@ _ANNOTATIONS: dict[Callable[..., Awaitable[Any]], ToolAnnotations] = {
 # public profile included. GitHubTokenVerifier checks the required scopes against the
 # X-OAuth-Scopes header of /user/repos and, with none required, skips that check
 # (fastmcp/server/auth/providers/github.py:236); the OAuth proxy then sends no ``scope`` to
-# GitHub (oauth_proxy/proxy.py:953). Only a real sign-in can confirm that GitHub and the MCP
-# clients accept this; ["read:user"] is the next narrowest value to try if they do not.
+# GitHub (oauth_proxy/proxy.py:953). Only a real sign-in can confirm that GitHub accepts this.
+# Consequence for MCP clients, observed in ``tests/test_login_door.py``: the server advertises no
+# scopes (metadata ``scopes_supported`` is empty, the 401 challenge names none), so a client that
+# follows the MCP authorization spec sends none and works; a client that registers or authorizes
+# with any scope (``user``, ``read:user``) is refused ("Requested scopes are not valid", or
+# ``invalid_scope`` on /authorize). ["read:user"] would make such clients work, at the price of
+# asking GitHub for that scope and checking it on every token.
 _GITHUB_SCOPES: list[str] = []
 # How long FastMCP remembers that a token passed GitHub's check, so that a burst of calls does
 # not repeat its two requests to api.github.com (the account of a revoked token stays usable
@@ -1300,7 +1305,7 @@ def create_server(
         server.tool(function, title=title, annotations=_ANNOTATIONS.get(function, _READ_ONLY))
     launch.register_health(server)
     resources.register(server, with_saved_searches=mode.saved_searches)
-    prompts.register(server)
+    prompts.register(server, with_saved_searches=mode.saved_searches)
     return server
 
 
@@ -1311,17 +1316,23 @@ def main(argv: Sequence[str] | None = None) -> None:
 
 def _build(settings: Settings) -> FastMCP:
     """Build the server for ``settings``, with GitHub login when HTTP and login are configured."""
-    auth: GitHubProvider | None = None
+    auth: AllowListedGitHubProvider | None = None
     if settings.transport == "http" and settings.login_enabled:
         client_id, client_secret = settings.github_client_id, settings.github_client_secret
         signing_key, base_url = settings.auth_signing_key, settings.base_url
         assert client_id and client_secret and signing_key and base_url  # login_enabled
-        auth = GitHubProvider(
+        auth = AllowListedGitHubProvider(
+            allow_list=AllowList.parse(settings.allowed_users),
             client_id=client_id,
             client_secret=client_secret,
             base_url=base_url,
             jwt_signing_key=signing_key,
             required_scopes=_GITHUB_SCOPES,
             cache_ttl_seconds=_GITHUB_CACHE_SECONDS,
+            # Without this FastMCP accepts any redirect URI at registration and at /authorize
+            # (fastmcp/server/auth/redirect_validation.py:536-573, ``None`` means "any safe
+            # scheme"), so a page of the attacker's choosing could be handed a sign-in code.
+            # Loopback plus what the operator names; see ``login.redirect_patterns``.
+            allowed_client_redirect_uris=redirect_patterns(settings.allowed_redirect_uris),
         )
     return create_server(settings=settings, auth=auth)
