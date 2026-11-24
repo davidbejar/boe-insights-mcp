@@ -16,10 +16,10 @@ The mode is decided once, when the server starts.
 | Mode | How you get it | What it exposes |
 | --- | --- | --- |
 | Local (stdio) | The default. No flags. | All analysis tools, for one person. No network port. Saved searches belong to the owner `local`. |
-| Open HTTP | `BOE_INSIGHTS_TRANSPORT=http` (or `--transport http`), no login settings. | The analysis tools, to anyone who can reach the port. The five saved-search tools, the saved-search resource and prompt step are not registered at all, because nobody can own a search. |
-| HTTP with GitHub sign-in | HTTP plus the four login settings and a non-empty allow-list. | Everything, but only to GitHub accounts on the allow-list. Saved searches are owned by `github:<numeric id>`. |
+| Open HTTP | `BOE_INSIGHTS_TRANSPORT=http` (or `--transport http`), no login settings. | The analysis tools, to anyone who can reach the port. The five saved-search tools and the saved-search resource are not registered at all, because nobody can own a search, and the gazette briefing prompts leave out their suggestion to save the search. |
+| HTTP with GitHub sign-in | HTTP plus the four login settings. An empty allow-list lets nobody in. | Everything, but only to GitHub accounts on the allow-list. Saved searches are owned by `github:<numeric id>`. |
 
-Login settings over stdio are ignored, and the server logs a warning.
+A complete login configuration is ignored over stdio, and the server logs a warning. The values are still checked, so a partial or invalid login configuration stops a stdio server too.
 
 Open HTTP has no authentication of any kind. That is acceptable for public BOE data on a private
 network, or behind something else that authenticates. It is not a good idea on the open internet:
@@ -41,6 +41,11 @@ What it does not do:
   it is trusted to use your quota and to store up to 20 small saved searches.
 - The BOE data is public. The server does not hide it and does not need to.
 - It does not terminate TLS, and it does not filter by IP address.
+- With sign-in on, anyone who can reach the server can make it fetch an `https` address of their
+  choosing: a client may give the address of a metadata document as its client id, and the server
+  fetches it (see [Client registrations and metadata documents](#client-registrations-and-metadata-documents)).
+  FastMCP applies protection against server-side request forgery to that fetch. Put a request
+  rate limit on `/authorize` and `/register` at the proxy.
 - It has had two independent security reviews and a mutation check of the login code. That is
   evidence, not a guarantee.
 
@@ -48,7 +53,7 @@ What it does not do:
 
 All settings are environment variables. Command-line flags `--transport`, `--host` and `--port`
 override their variables. An invalid value stops the server at startup with a message that names
-the variable.
+the variable. `BOE_INSIGHTS_HOST` is the exception: it is not checked in advance.
 
 ### What the server refuses to start without
 
@@ -70,13 +75,13 @@ and nobody can sign in. The list is closed by default.
 | --- | --- | --- |
 | `BOE_INSIGHTS_TRANSPORT` | `stdio` | `stdio` or `http`. |
 | `BOE_INSIGHTS_HOST` | `127.0.0.1` | Address the HTTP server binds to. The container image sets `0.0.0.0`. |
-| `BOE_INSIGHTS_PORT` | `8000` | HTTP port. MCP is served at `/mcp`. `GET /health` returns a constant `{"status": "ok"}` without a login. |
+| `BOE_INSIGHTS_PORT` | `8000` | HTTP port. MCP is served at `/mcp`. `GET /health` returns a constant `{"status":"ok"}` without a login. |
 | `BOE_INSIGHTS_BASE_URL` | none | The public URL clients reach, as `https://host[:port]`, with no path, query or credentials. Required for login. |
 | `BOE_INSIGHTS_ALLOWED_HOSTS` | none | Comma-separated host names accepted in the `Host` header. Bare names or IP addresses only: no scheme, port, path or wildcard. Loopback is always accepted; with login, the host of the base URL is added. |
 | `BOE_INSIGHTS_ALLOWED_ORIGINS` | none | Comma-separated browser origins, each `http(s)://host[:port]`. With login, the origin of the base URL is added. |
-| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | none | Extra redirect URIs that OAuth clients may register. Exact absolute URLs, no wildcards; `https`, or `http` only for loopback. Loopback redirects on any port are always allowed. |
+| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | none | Extra redirect URIs that OAuth clients may register. Exact absolute URLs, no wildcards; `https`, or `http` only for loopback. Loopback redirects on any port are always allowed. A registration is refused as a whole if any one of its redirect URIs is not allowed. |
 | `BOE_INSIGHTS_GITHUB_CLIENT_ID` | none | Client id of your GitHub OAuth app. |
-| `BOE_INSIGHTS_GITHUB_CLIENT_SECRET` | none | Its secret. A secret: see below. |
+| `BOE_INSIGHTS_GITHUB_CLIENT_SECRET` | none | Its secret. A secret: see [Secrets](#secrets). |
 | `BOE_INSIGHTS_AUTH_SIGNING_KEY` | none | Signs the tokens the server issues and encrypts its token store. At least 32 characters. A secret. |
 | `BOE_INSIGHTS_ALLOWED_USERS` | none (nobody) | Comma-separated: GitHub logins, `id:<number>`, or `*` for every GitHub account. Read once at startup. |
 | `BOE_INSIGHTS_CALLS_PER_MINUTE` | `60` | Sustained calls per caller per minute over HTTP. `0` switches the limit off. |
@@ -86,7 +91,7 @@ and nobody can sign in. The list is closed by default.
 | `BOE_INSIGHTS_DATA_DIR` | platform data dir; the container uses `/data/saved-searches` | Where the saved-searches database lives. Not safe to delete. |
 | `BOE_INSIGHTS_CACHE` | `disk` | `disk` or `memory`. With `memory` and no data dir, saved searches are also kept in memory only. |
 | `BOE_INSIGHTS_CACHE_DIR` | platform cache dir; the container uses `/data/cache` | Where the response cache lives. Safe to delete. |
-| `FASTMCP_HOME` | FastMCP's platform data dir; the container uses `/data/fastmcp` | Read by FastMCP, not by this project. Holds the sign-in token store. See below. |
+| `FASTMCP_HOME` | FastMCP's platform data dir; the container uses `/data/fastmcp` | Read by FastMCP, not by this project. Holds the sign-in token store. See [Token store](#token-store). |
 
 `*` in the allow-list means any GitHub account can sign in. Use it only if you really mean that.
 
@@ -100,39 +105,51 @@ keep the server itself on loopback or on a private network. Then:
 - Set `BOE_INSIGHTS_BASE_URL` to the public `https` address that clients use. The server refuses an
   `http` base URL unless it is loopback, because sign-in codes and tokens travel over those
   redirects.
-- The proxy must pass the original `Host` header, or you must list the public name in
-  `BOE_INSIGHTS_ALLOWED_HOSTS`. With login, the host of the base URL is accepted automatically.
+- If the proxy passes the original `Host` header (the public name), list that name in
+  `BOE_INSIGHTS_ALLOWED_HOSTS`; with login, the host of the base URL is accepted automatically. A
+  proxy that sends the upstream loopback address (for example `127.0.0.1:8000`) as `Host` is
+  accepted as it is.
 - Do not publish the port directly. The container image binds `0.0.0.0` inside the container; what
-  matters is how you publish the port (for example `-p 127.0.0.1:8000:8000`).
+  matters is how you publish the port (for example `-p 127.0.0.1:8000:8000`). Because of that
+  binding, a container in open HTTP mode logs a warning at every start; see
+  [Host and Origin check](#host-and-origin-check).
 - Put a network-level rate limit at the proxy. The server's own limit counts only MCP calls that do
-  work (see below). It does not cover the sign-in routes (`/register`, `/authorize`, `/token`,
-  `/consent`), `/health`, or connection floods.
+  work (see [The call limit](#the-call-limit)). It does not cover the routes that need no sign-in
+  (`/register`, `/authorize`, `/token`, `/consent`, `/auth/callback`,
+  `/.well-known/oauth-authorization-server`, `/.well-known/oauth-protected-resource/mcp`),
+  `/health`, or connection floods.
 
 ### Host and Origin check
 
 Every HTTP request is checked, on every route including `/health`, and there is no setting that
-turns this off. A request whose `Host` is not on the list gets an error. This is protection against
-DNS rebinding: a web page that tricks a browser into talking to a server on your network. A request
-with an `Origin` header must have an allowed origin. Loopback names are always allowed.
+turns this off. A request whose `Host` is not on the list gets `421`. The list is the loopback
+names, `BOE_INSIGHTS_ALLOWED_HOSTS`, the host of the base URL with login, and the address the server
+is bound to unless that is `0.0.0.0` or `::`. This is protection against DNS rebinding: a web page
+that tricks a browser into talking to a server on your network. A request with an `Origin` header
+must come from an allowed origin, from the server's own address, or, when the server is reached on
+a loopback name, from a loopback address; any other origin gets `403`.
 
-The server does not warn you if you bind a non-loopback address in open HTTP mode. You are
-responsible for not exposing it.
+In open HTTP mode, the server logs a warning at start when it is bound to anything other than a
+loopback address. It still starts: you are responsible for not exposing it. The container image
+always binds `0.0.0.0`, so in open mode the warning appears at every start; with the port published
+on `127.0.0.1` it is expected.
 
 ### Size and time limits
 
 - A request body to `/mcp` may be at most 1 MiB. Any other route (sign-in forms, client
-  registration) at most 64 KiB. Larger bodies get `413`. The count is of bytes actually received,
-  not of what the `Content-Length` header claims.
-- Tool calls have a time budget: the long ones (gazette scans, saved-search checks) stop starting
-  uncached BOE requests near 40 seconds and return a partial result with `complete: false`, which the model
-  repeats.
+  registration) at most 64 KiB. Larger bodies get `413`. A declared `Content-Length` over the limit
+  is refused at once; otherwise the bytes actually received are counted, whatever the header says.
+- Long tool calls (gazette scans, saved-search checks, the amendment-chain explorer and the
+  most-amended ranking) have a budget of about 40 seconds. They start no uncached BOE request in the
+  last 5 seconds and return what they have with `complete: false`; the server instructions tell the
+  model to call again.
 - There is no request timeout in front of the server. Set one at the proxy.
 
 ## Sign-in
 
-The server uses FastMCP's GitHub provider with the scope `read:user` only. It asks GitHub for no
-write access and no repository access. It needs only the numeric id and login that GitHub returns
-for any valid token. Clients that ask for `user` or `repo` are refused.
+The server uses FastMCP's GitHub provider. It asks GitHub for at most the scope `read:user`, and for
+no scope at all when the client asks for none: no write access and no repository access. It needs
+only the numeric id and login that GitHub returns for any valid token. Clients that ask for `user` or `repo` are refused.
 
 ### Allow-list entries
 
@@ -158,8 +175,9 @@ There are four places, so a mistake in one does not let someone in:
 2. At the code exchange. If the callback was somehow passed, the exchange fails with
    `invalid_grant` and stores nothing.
 3. On token renewal. A refresh for an account that is no longer admitted fails with
-   `invalid_grant`, and the stored refresh token, token mapping and GitHub token of that account are
-   deleted. If GitHub cannot say who a token belongs to (revoked or unreachable), the renewal is
+   `invalid_grant`, and the refresh token presented, its token mapping and the GitHub token behind
+   it are deleted. Other clients of the same account are refused in the same way when they next
+   renew. If GitHub cannot say who a token belongs to (revoked or unreachable), the renewal is
    refused but the records stay, since that is not a decision about the list.
 4. On every request. Each request to `/mcp` re-checks the identity against the list, and every tool,
    resource and prompt is checked again on listing and use.
@@ -169,7 +187,7 @@ There are four places, so a mistake in one does not let someone in:
 The allow-list is read once, at startup. Changing `BOE_INSIGHTS_ALLOWED_USERS` has no effect on a
 running server: **restart it**. After the restart, a removed account is refused on its next request
 (`401`) and on its next token renewal. Its saved searches stay in the database until you delete
-them (see Data).
+them (see [Data](#data)).
 
 The server remembers for up to 5 minutes that a GitHub token passed the check, so the load on
 GitHub stays low. That cache only affects the question "does GitHub still accept this token?"; the
@@ -183,14 +201,32 @@ command-line clients such as Claude Code use. A web-based client needs its exact
 `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS`. Without a restriction a page of an attacker's choosing could
 be handed a sign-in code; that is why the restriction exists.
 
-Client registrations are open to anyone who can reach the server: registering does not need an
-account. The allow-list is applied at sign-in, not at registration.
+A registration is refused as a whole if any one of the redirect URIs it lists is not allowed, even
+when the others are loopback addresses. According to their documentation, Cursor and VS Code
+register a web address besides a loopback one (`https://www.cursor.com/agents/mcp/oauth/callback`,
+`https://vscode.dev/redirect`), so they can only register once that address is listed. Listing it
+means that sign-in codes for that client may be delivered through that site. See
+[Redirect addresses](run/github-login.md#redirect-addresses).
+
+### Client registrations and metadata documents
+
+A client identifies itself in one of two ways, and neither needs an account: the allow-list is
+applied at sign-in, not here.
+
+- **Registration.** The client registers at `/register`. Registrations are open to anyone who can
+  reach the server.
+- **Metadata document.** The client gives, as its client id, the `https` address of a document that
+  describes it, and the server fetches that document. Claude Code works this way: in the real
+  sign-in test its client id was `https://claude.ai/oauth/claude-code-client-metadata`. The address
+  is chosen by the client, so anyone who can reach the server can make it fetch an `https` address
+  of their choosing. FastMCP applies protection against server-side request forgery to that fetch.
+
+Put a request rate limit on `/authorize` and `/register` at the proxy.
 
 ### Secrets
 
 - The signing key signs the tokens the server issues and is the key under which the token store is
-  encrypted. Generate a random one, for example
-  `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+  encrypted. Generate a random one, for example with `openssl rand -hex 32`.
 - The GitHub client secret comes from your OAuth app's page.
 - Keep both outside the image and the repository: a secrets manager, or an environment file with
   mode 0600 that is not committed. The server never prints either, and no startup error repeats
@@ -201,11 +237,16 @@ account. The allow-list is applied at sign-in, not at registration.
 ### Token store
 
 FastMCP keeps client registrations, sign-in transactions and issued tokens as encrypted files under
-`$FASTMCP_HOME/oauth-proxy/<key fingerprint>/`. If you do not set `FASTMCP_HOME`, it is FastMCP's
-per-user data directory, which is a poor choice for a service. The folder must:
+`$FASTMCP_HOME/oauth-proxy/<key fingerprint>/`. They are encrypted with a key derived from the
+signing key. If you do not set `FASTMCP_HOME`, it is FastMCP's per-user data directory, which is a
+poor choice for a service. The folder must:
 
 - persist across restarts (otherwise everybody signs in again after each deploy);
-- be private to the account that runs the server;
+- be private to the account that runs the server. FastMCP does not restrict it: it creates the
+  folder with the default permissions (seen as `drwxr-xr-x`, readable by other accounts), so make
+  it private yourself, for example with `chmod 700` on `$FASTMCP_HOME`. The container image
+  creates `/data` with mode 0700 for the server's user; a bind-mounted folder keeps the
+  permissions you give it;
 - be backed up only if you accept that a copy holds encrypted GitHub tokens (they are useless
   without the signing key).
 
@@ -213,13 +254,13 @@ The container image sets `FASTMCP_HOME=/data/fastmcp`, on the volume.
 
 #### Client registrations are kept without expiry
 
-Every client that signs in registers itself first. FastMCP stores that registration with no expiry
-and never removes it, even when you restart. Each is small, but they accumulate, and registration
-needs no account. To clear them: stop the server, delete the
-`$FASTMCP_HOME/oauth-proxy/<key fingerprint>/` folder, and start it again. This also signs everyone
-out. Clients that are well behaved register again by themselves; that is untested for clients other
-than Claude Code. There is no command to remove a single registration. Putting a request limit on
-`/register` at the proxy keeps their number down.
+FastMCP stores every registration made at `/register` with no expiry and never removes it, even
+when you restart. Each is small, but they accumulate, and registration needs no account. To clear
+them: stop the server, delete the `$FASTMCP_HOME/oauth-proxy/<key fingerprint>/` folder, and start
+it again. This also signs everyone out. A client is then expected to register again, or fetch its
+metadata document again, and ask the person to sign in; this has not been tested for any client,
+Claude Code included. There is no command to remove a single registration. Putting a request limit
+on `/register` at the proxy keeps their number down.
 
 ## Limits and abuse
 
@@ -241,7 +282,8 @@ The server does not use IP addresses at all, so putting it behind a proxy does n
 bucket a call falls into. For per-address limits, use the proxy.
 
 The call limit is not a limit on the cost of a call. One call to a gazette scan or a trend tool can
-cause many requests to boe.es. That is held down by the shared limiter below.
+cause many requests to boe.es. That is held down by the shared limiter described in
+[The shared BOE budget](#the-shared-boe-budget).
 
 ### The shared BOE budget
 
@@ -255,8 +297,9 @@ and no rate-limit signal has ever been seen from it (see `api-notes.md` in the r
 
 ### Saved searches
 
-At most 20 per owner. A name is unique per owner. The words filter is at most 200 characters, a
-check returns at most 50 items per search and 60 in total, and it can look back at most 90 days.
+At most 20 per owner. A name is unique per owner. The words filter is at most 200 characters. A
+check shows at most `limit` items per search (default 20, maximum 50) and at most 60 items over all
+searches in one call, and it can look back at most 90 days.
 There is no limit on the number of owners other than your allow-list.
 
 ## Data
@@ -265,10 +308,11 @@ There is no limit on the number of owners other than your allow-list.
 | --- | --- | --- | --- |
 | Saved searches | `saved_searches.sqlite3` in `BOE_INSIGHTS_DATA_DIR` (file mode 0600, folders 0700) | The owner `github:<numeric id>` on each row, plus the filters the person chose. The login is not stored there. | No: that deletes people's searches. |
 | Response cache | `BOE_INSIGHTS_CACHE_DIR` | None. Public BOE responses. | Yes. |
-| Token store | `$FASTMCP_HOME/oauth-proxy/...` | Encrypted GitHub access tokens (and refresh tokens, if GitHub issued them) and the ids they belong to. | Yes, but everybody signs in again. |
-| Logs | stderr, and the access log | See below. | |
+| Token store | `$FASTMCP_HOME/oauth-proxy/...` | Encrypted GitHub access tokens (and refresh tokens, if GitHub issued them), each with the id of the MCP client it was issued to. No GitHub id or login is stored there. | Yes, but everybody signs in again. |
+| Logs | stderr, and the access log | See [Logs](#logs). | Yes: the server never reads them back. Keep them only as long as your retention rule says. |
 
-Over open HTTP and stdio no personal data is stored. Over stdio the owner is `local`.
+Over open HTTP and stdio no accounts or tokens are stored. Over open HTTP the access log still
+holds client addresses (see [Logs](#logs)). Over stdio the owner is `local`.
 
 **Backup.** Back up the saved-searches folder. SQLite is a single file; stop the server, or use the
 `sqlite3 .backup` command, for a consistent copy. The cache needs no backup.
@@ -276,15 +320,25 @@ Over open HTTP and stdio no personal data is stored. Over stdio the owner is `lo
 **Deletion of a person's data.** There is no command for it. Stop the server and delete the rows
 whose `owner` is `github:<id>` from the `saved_searches` table, or ask the person to delete their
 searches with the `delete_saved_search` tool. Removing someone from the allow-list does not delete
-their rows. If a person asks you to erase their data, also clear the token store (see above), which
-holds their GitHub token.
+their rows. If a person asks you to erase their data, also clear the token store (see [Token store](#token-store)), which
+holds their GitHub token. The token store does not record whose token is whose, so clearing it
+means clearing it for everybody.
 
-**What the access log contains.** Uvicorn's access log shows the method, path and status of each
-request and the client address. The server removes the query string from every line before it is
-written, because the sign-in routes carry one-time codes and transaction ids there. Tokens travel in headers and bodies, which uvicorn's access log does not show. The server's own
-code does not log a token or a secret (not verified for FastMCP's own log lines). It contains the login and id of a user admitted by a login entry (once per process), and
-startup warnings. The client address is the address the server sees, which behind a proxy is the
-proxy's unless you configure forwarding.
+### Logs
+
+The server writes two logs, both to the process output.
+
+**The access log** (uvicorn) shows the method, path and status of each request and the client
+address. The server removes the query string from every line before it is written, because the
+sign-in routes carry one-time codes and transaction ids there. Tokens travel in headers and bodies,
+which the access log does not show. The client address is the address the server sees, which behind
+a proxy is the proxy's unless you configure forwarding.
+
+**The server log** (stderr) holds the startup warnings, one INFO line per user admitted by a login
+entry of the allow-list (with their login and id, once per process), and FastMCP's own messages.
+The server's own code does not log a token or a secret. FastMCP's messages can name a sign-in
+transaction id, which is short-lived (seen: `IdP callback with invalid transaction ID: …`). No
+one-time code or token was seen in them.
 
 ## Things you will see and should not worry about
 
@@ -292,19 +346,27 @@ proxy's unless you configure forwarding.
   `read:user` is granted. The second call is how FastMCP reads the scopes of a token. The server
   does not use the answer and asks for no repository access; this page cannot say exactly what GitHub
   returns to the second call. These checks are cached for 5 minutes.
-- The consent page, which the person sees once per client, shows the FastMCP logo and name. It comes
-  from FastMCP, and this project does not change it.
-- Registrations that accumulate (see above).
+- The consent page, shown at each sign-in, comes from FastMCP. It shows this project's logo and the
+  server name `boe-insights`, linked to the project repository. Its "Why am I seeing this?" note
+  still mentions FastMCP and links to gofastmcp.com. FastMCP's error pages, including the 403
+  "Access not allowed" page, keep the FastMCP logo, which the browser loads from gofastmcp.com.
+- Registrations that accumulate (see
+  [Client registrations are kept without expiry](#client-registrations-are-kept-without-expiry)).
 - With a login entry in the allow-list, one INFO line per person suggesting `id:<n>`.
+- In the container in open HTTP mode, a warning at every start that the server is reachable from
+  other machines. It comes from the `0.0.0.0` binding inside the container; with the port published
+  on `127.0.0.1` it is expected.
+- With an `http://localhost` base URL, FastMCP's warning "Using non-secure cookies for development;
+  deploy with HTTPS for production." at every start.
 
 ## Upgrades
 
 `login.py` overrides private parts of FastMCP: `_handle_idp_callback`, `exchange_authorization_code`
 and `exchange_refresh_token`, and reads the private stores `_code_store`, `_refresh_token_store`,
-`_jti_mapping_store`, `_upstream_token_store` and the `_token_validator`. FastMCP does not promise
-that these stay the same.
+`_jti_mapping_store`, `_upstream_token_store` and the `_token_validator`, and imports the private
+function `_hash_token`. FastMCP does not promise that these stay the same.
 
-For that reason the dependency is limited to `fastmcp>=4.2,<5` and the exact version is fixed by
+For that reason the dependency is limited to `fastmcp>=4.2.4,<4.3` and the exact version is fixed by
 `uv.lock`; the container builds from that lock file. Do not upgrade FastMCP on your own deployment
 by hand. When a new version of this project moves to a new FastMCP, it has been through the sign-in
 tests (`tests/test_login_flow.py` and the other `test_login_*` and `test_launch_login.py` files). If
@@ -317,8 +379,9 @@ of the four places above, and the tests are what show it.
   is your base URL followed by `/auth/callback`; see [GitHub sign-in](run/github-login.md) for the
   exact steps.
 - "Expire user access tokens" is on by default for new apps. Sign-in works with it on. Token
-  renewal after a real expiry has not been tested (see below).
-- Create the OAuth app under the account that should own it, and keep its secret as described above.
+  renewal after a real expiry has not been tested (see [Not tested](#not-tested)).
+- Create the OAuth app under the account that should own it, and keep its secret as described in
+  [Secrets](#secrets).
 
 ## Not tested
 
@@ -331,19 +394,22 @@ Say so plainly: these have not been tried, and you may be the first.
 - Clients other than Claude Code in the sign-in flow, including how they show the 403 "Access not
   allowed" page.
 - Sign-in against the container image. The image was built for linux/amd64 and linux/arm64; only
-  the arm64 one was run, and in open HTTP mode.
+  the arm64 one was run, and in open HTTP mode. The amd64 one was only built and checked to import.
+- A client registering again after the token store was deleted, for any client, Claude Code
+  included.
 - Load with many users. The limits above are by design, not measured.
 
 The author did a real sign-in against GitHub during development (it found the two gaps fixed in
-commit `e1dbc6d`). The result was not recorded for any client other than the one used.
+commit `e1dbc6d`). It was done with Claude Code only, on `localhost`, not behind a proxy and not
+against the container.
 
 ## Your duties towards the BOE
 
 The data is the BOE's, and its reuse conditions apply to your instance:
 
 - Show the attribution "Basado en datos de la Agencia Estatal Boletín Oficial del Estado" with a
-  link to <https://www.boe.es>. The server instructions and the prompts tell the model to pass it on; do not strip it
-  from what you show to people.
+  link to <https://www.boe.es>. The server instructions and the prompts tell the model to pass it
+  on; do not strip it from what you show to people.
 - Consolidated texts are informational and have no official legal value. Do not remove that label.
 - Do not present your instance as an official service, or as the BOE's. Do not alter the meaning of
   legal text.
@@ -355,13 +421,18 @@ The data is the BOE's, and its reuse conditions apply to your instance:
 
 - [ ] The server is behind a reverse proxy with TLS, and the port is not published directly.
 - [ ] `BOE_INSIGHTS_BASE_URL` is the public `https` address.
-- [ ] If the proxy changes the `Host` header, the public name is in `BOE_INSIGHTS_ALLOWED_HOSTS`.
-- [ ] The proxy has a request rate limit and a request timeout, including for `/register`.
+- [ ] If the proxy passes the public `Host` header and sign-in is off, the public name is in
+  `BOE_INSIGHTS_ALLOWED_HOSTS`.
+- [ ] The proxy has a request rate limit and a request timeout, including for `/register` and
+  `/authorize`.
+- [ ] If clients such as Cursor or VS Code will sign in, their web redirect addresses are in
+  `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS`.
 - [ ] Sign-in is on, unless the instance is private. The allow-list uses `id:<n>` entries.
 - [ ] The signing key is random, at least 32 characters, and kept outside the image and the repo.
 - [ ] The GitHub client secret is kept the same way.
 - [ ] `FASTMCP_HOME` and `BOE_INSIGHTS_DATA_DIR` are on persistent storage, private to the server
-  account. The saved-searches folder is backed up.
+  account (FastMCP does not make `FASTMCP_HOME` private: `chmod 700` it). The saved-searches folder
+  is backed up.
 - [ ] You know that allow-list changes need a restart.
 - [ ] Logs are kept for a limited time. You have decided who may read them.
 - [ ] The attribution and the "informational, not official" label are intact, and your instance does

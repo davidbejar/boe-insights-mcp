@@ -27,7 +27,7 @@ uvx boe-insights-mcp --help
 ## Run from the repository before the release
 
 !!! note "Release status"
-    The package is published on PyPI together with release 0.1.0. Until then, `uvx boe-insights-mcp` finds nothing to run. Use the repository form below, which works today:
+    The package will be published on PyPI with release 0.1.0. Until it is there, do not run the plain `uvx boe-insights-mcp` form: the name on PyPI is not this project's yet, so the command would run whatever is published under it, if anything. Use the repository form below, which works today:
 
 ```bash
 uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
@@ -67,7 +67,7 @@ Unset or empty variables keep their default. An invalid value stops the server a
 
 With `BOE_INSIGHTS_CACHE=memory` and no `BOE_INSIGHTS_DATA_DIR`, saved searches are kept in memory too and are lost when the server stops.
 
-The HTTP settings are described in [Run over HTTP](http.md). They do nothing over stdio.
+The HTTP settings are described in [Run over HTTP](http.md). Over stdio they have no effect, but they are still checked: an invalid value, a partial GitHub login, or an allow-list without GitHub login stops the server at start-up.
 
 ## See also
 

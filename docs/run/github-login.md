@@ -51,14 +51,23 @@ Keep the signing key. If you generate a new one every time you start, people hav
 | `BOE_INSIGHTS_GITHUB_CLIENT_SECRET` | The OAuth app's client secret. |
 | `BOE_INSIGHTS_AUTH_SIGNING_KEY` | A secret of at least 32 characters. The server uses it to sign the tokens it hands to clients. Changing it signs everybody out, and the sign-in records the server kept under the old key are no longer used. |
 | `BOE_INSIGHTS_BASE_URL` | The server's public address as users reach it: `http(s)://host[:port]`, with no path, no query and no credentials. The server's address for MCP is this plus `/mcp`. `https` is required unless the host is loopback. |
-| `BOE_INSIGHTS_ALLOWED_USERS` | Comma-separated allow-list. See below. Empty means nobody can sign in, and the server logs a warning. |
-| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | Optional. Extra addresses a client may be sent back to after sign-in, each an exact `https` URL (`http` only for loopback), with no wildcard. Loopback addresses (`localhost`, `127.0.0.1`, `[::1]`, any port) are always allowed, which is what command-line clients such as Claude Code use. |
+| `BOE_INSIGHTS_ALLOWED_USERS` | Comma-separated allow-list. See [The allow-list](#the-allow-list). Empty means nobody can sign in, and the server logs a warning. |
+| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | Optional. Extra addresses a client may be sent back to after sign-in, each an exact `https` URL (`http` only for loopback), with no wildcard. Loopback addresses (`localhost`, `127.0.0.1`, `[::1]`, any port) are always allowed, which is what command-line clients such as Claude Code use. A client's registration is refused as a whole if any one of the addresses it registers is not allowed: see [Redirect addresses](#redirect-addresses). |
 
 Rules the server enforces at start-up:
 
 - Setting `BOE_INSIGHTS_ALLOWED_USERS` or `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` without the four login variables is an error. Otherwise you could believe a list was protecting the server when it was not.
-- Over stdio the login variables are ignored, with a warning. Login only applies to `--transport http`.
+- Over stdio a complete login configuration is ignored, with a warning. Login only applies to `--transport http`. The values are still checked, so a partial or invalid login configuration stops a stdio server too.
 - The host of the base URL is added to the allowed hosts and origins automatically. See [Run over HTTP](http.md#allowed-hosts-and-origins).
+
+### Redirect addresses
+
+A client tells the server where the browser may be sent back to after sign-in, in one of two ways:
+
+- **Registration.** The client registers at `/register` and lists its addresses. The server refuses the whole registration if any one of them is not allowed, even when the others are loopback addresses.
+- **Metadata document.** The client gives, as its client id, the `https` address of a document that describes it, and the server fetches that document. Claude Code works this way: in the real sign-in test its client id was `https://claude.ai/oauth/claude-code-client-metadata`. The address used at sign-in must be allowed.
+
+Claude Code is sent back to a loopback address, so it needs no setting. According to their documentation, some editors register a web address besides a loopback one: Cursor registers `https://www.cursor.com/agents/mcp/oauth/callback`, and VS Code uses `https://vscode.dev/redirect`. Such a client can only register once its web address is listed in `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS`. Listing it means that sign-in codes for that client may be delivered through that site. See the [Cursor](clients/cursor.md#with-github-login) and [VS Code](clients/vscode.md#with-github-login) pages.
 
 Using a container? Pass the same variables with `-e` or `--env-file`. See [Run in a container](container.md). Sign-in against the container image was not tested.
 
@@ -94,11 +103,11 @@ After a restart:
 The first time a client connects to `http://localhost:8000/mcp` (or your public address):
 
 1. The server answers that sign-in is needed, and the client opens a browser window. How this looks depends on the client. See your [client page](clients/claude-code.md).
-2. The server's own consent page asks whether to allow the client. This page comes from the server, not from GitHub.
+2. The server's own consent page asks whether to allow the client. This page comes from the server, not from GitHub. It shows this project's logo, and it appears at every sign-in.
 3. The browser goes to GitHub. The first time only, GitHub shows its authorize page for your OAuth app.
 4. GitHub sends the browser back to the server, and the client is signed in.
 
-The server asks GitHub only for the `read:user` scope, which is read-only access to the public profile. The server needs nothing but the account's numeric id and login name. It does not ask for access to repositories or to anything else.
+The server asks GitHub for at most the `read:user` scope, which is read-only access to the public profile, and for no scope at all when the client asks for none. The server needs nothing but the account's numeric id and login name. It does not ask for access to repositories or to anything else.
 
 After that the client keeps its token and renews it by itself. Each person's saved searches are stored under their GitHub id, and other people cannot see them.
 
@@ -106,7 +115,7 @@ After that the client keeps its token and renews it by itself. Each person's sav
 
 A GitHub account that is not on the allow-list does not get through. The browser shows a page titled "Access not allowed" with the message that the GitHub account is not allowed to use this server, and that the person should ask the operator to add `id:<n>` (followed by their GitHub login). The page does not say who is on the list. The status is 403.
 
-Send the `id:<n>` text to the operator, who adds it to the list as described above.
+Send the `id:<n>` text to the operator, who adds it to the list as described in [Add or remove a person](#add-or-remove-a-person).
 
 ## Token renewal
 
@@ -127,7 +136,7 @@ The answer is `401 Unauthorized` with a `WWW-Authenticate` header that points to
 
 ## What was tested
 
-- Sign-in from Claude Code over HTTP on the same machine, with an OAuth app from GitHub, "Expire user access tokens" on, an allowed account and a refused one.
+- Sign-in from Claude Code over HTTP on the same machine (`localhost`), with an OAuth app from GitHub, "Expire user access tokens" on, an allowed account and a refused one.
 - The server's start-up checks, the 401 answer and the sign-in metadata, with placeholder credentials.
 
 Not tested:
@@ -136,6 +145,7 @@ Not tested:
 - Clients other than Claude Code.
 - Sign-in against the container image.
 - Renewal after GitHub's token has really expired.
+- A client registering again after the server's sign-in records were deleted, for any client.
 
 ## See also
 

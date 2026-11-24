@@ -406,17 +406,13 @@ In Claude Code, prompts appear as slash commands, for example `/mcp__boe-insight
 
 Prerequisites: Python 3.11+ and [uv](https://docs.astral.sh/uv/). No API key is needed: the BOE open data API is public.
 
-The server speaks MCP over stdio, so you normally do not start it by hand: your MCP client does. The command it runs is:
-
-```bash
-uvx boe-insights-mcp
-```
-
-That works once release 0.1.0 is on PyPI. Until then, uv can fetch and run it straight from GitHub:
+The server speaks MCP over stdio, so you normally do not start it by hand: your MCP client does. Until release 0.1.0 is on PyPI, uv fetches and runs it straight from GitHub. The command your client runs is:
 
 ```bash
 uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
 ```
+
+After release 0.1.0 it will be just `uvx boe-insights-mcp`. Do not use that plain form before the release is on PyPI: the name there is not this project's yet, so it would run whatever is published under it, if anything.
 
 For Claude Code, for example:
 
@@ -432,12 +428,12 @@ Other ways to run it (documentation site):
 - [As a container](https://davidbejar.github.io/boe-insights-mcp/run/container/): the container image.
 - [With GitHub sign-in](https://davidbejar.github.io/boe-insights-mcp/run/github-login/): an HTTP server open only to the GitHub accounts you list.
 - Client setup: [Claude Code](https://davidbejar.github.io/boe-insights-mcp/run/clients/claude-code/), [Claude Desktop](https://davidbejar.github.io/boe-insights-mcp/run/clients/claude-desktop/), [Cursor](https://davidbejar.github.io/boe-insights-mcp/run/clients/cursor/), [VS Code](https://davidbejar.github.io/boe-insights-mcp/run/clients/vscode/) and [any other client](https://davidbejar.github.io/boe-insights-mcp/run/clients/generic/).
-- [Operating and security](https://davidbejar.github.io/boe-insights-mcp/operating/): limits, access control and what to watch when you host it.
+- [Security and operations](https://davidbejar.github.io/boe-insights-mcp/operating/): limits, access control and what to watch when you host it.
 - [Tool reference](https://davidbejar.github.io/boe-insights-mcp/reference/tools/): every tool, with its parameters.
 
 ## Configuration
 
-Optional environment variables; unset or empty variables keep their defaults, and invalid values stop the server at startup with a message naming the variable. The [operating page](https://davidbejar.github.io/boe-insights-mcp/operating/) explains each one in detail.
+Optional environment variables; unset or empty variables keep their defaults, and invalid values stop the server at startup with a message naming the variable (`BOE_INSIGHTS_HOST` is not checked in advance). The [Security and operations](https://davidbejar.github.io/boe-insights-mcp/operating/) page explains each one in detail.
 
 **General**
 
@@ -457,7 +453,7 @@ Optional environment variables; unset or empty variables keep their defaults, an
 | `BOE_INSIGHTS_HOST` | `127.0.0.1` | Address to bind to; the `--host` flag overrides it. |
 | `BOE_INSIGHTS_PORT` | `8000` | Port to listen on (1-65535); the `--port` flag overrides it. |
 | `BOE_INSIGHTS_ALLOWED_HOSTS` | empty | Comma-separated public host names accepted in the `Host` header, added to the loopback names, which are always accepted. |
-| `BOE_INSIGHTS_ALLOWED_ORIGINS` | empty | Comma-separated browser origins (`https://host[:port]`) accepted, without wildcards. |
+| `BOE_INSIGHTS_ALLOWED_ORIGINS` | empty | Comma-separated browser origins (`http(s)://host[:port]`) accepted, without wildcards. |
 | `BOE_INSIGHTS_CALLS_PER_MINUTE` | `60` | Calls one caller may make per minute; `0` switches the limit off. |
 | `BOE_INSIGHTS_CALLS_BURST` | `20` | Calls one caller may make at once before having to wait (integer >= 1). |
 
@@ -470,9 +466,9 @@ Optional environment variables; unset or empty variables keep their defaults, an
 | `BOE_INSIGHTS_AUTH_SIGNING_KEY` | unset | Secret for the tokens the server issues; at least 32 characters. |
 | `BOE_INSIGHTS_BASE_URL` | unset | The server's public URL (`https://host[:port]`, no path; `http` only for loopback). |
 | `BOE_INSIGHTS_ALLOWED_USERS` | empty | Who may sign in: GitHub usernames, `id:<number>` or `*` (everyone), comma-separated. Empty means nobody. |
-| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | empty | Extra exact redirect URLs for OAuth clients, beyond the loopback ones that are always accepted. |
+| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | empty | Extra exact redirect URLs for OAuth clients, beyond the loopback ones that are always accepted. A client that registers any address not allowed here is refused as a whole; editors such as Cursor and VS Code need their web address listed. |
 
-Over HTTP without sign-in the saved-search tools are not offered, because there is no one to own a saved search. The sign-in settings are ignored over stdio.
+Over HTTP without sign-in the saved-search tools are not offered, because there is no one to own a saved search. Over stdio a complete sign-in configuration is ignored, with a warning; the values are still checked, so a partial or invalid one stops the server.
 
 ## How it works
 

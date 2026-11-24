@@ -68,11 +68,11 @@ For a server on another machine, use its public address, for example `https://bo
 
 ### With GitHub login
 
-If the server has [GitHub login](../github-login.md) on, Cursor signs in by OAuth. According to Cursor's page, it discovers the server's sign-in details by itself and registers as a public client, so you add nothing to the JSON. Cursor then opens a browser, where you see the server's consent page and, the first time, GitHub's authorize page.
+If the server has [GitHub login](../github-login.md) on, Cursor signs in by OAuth. According to Cursor's page, it discovers the server's sign-in details by itself and registers as a public client, so you add nothing to the JSON. The server needs one setting, described below. Cursor then opens a browser, where you see the server's consent page and, the first time, GitHub's authorize page.
 
-Cursor's page says the desktop app uses the redirect address `http://localhost:8787/callback`. This server accepts loopback redirect addresses (`localhost`, `127.0.0.1`, `[::1]`, any port) from clients by default, so no extra setting should be needed. This was not verified. If Cursor is refused with a redirect error, add the address to `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` on the server.
+Cursor's page says that with dynamic registration the desktop app registers two redirect addresses, `http://localhost:8787/callback` and `https://www.cursor.com/agents/mcp/oauth/callback`, and may send the web one at sign-in. This server refuses the whole registration unless every address is allowed (see [Redirect addresses](../github-login.md#redirect-addresses)), so the operator must add `https://www.cursor.com/agents/mcp/oauth/callback` to `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS`. Listing it means that sign-in codes for Cursor may be delivered through cursor.com. A registration with these two addresses was refused without the setting and accepted with it; signing in from Cursor itself was not tested.
 
-Nobody tested whether the web version of Cursor (Cursor Agents) can reach the server. Its sign-in uses an address on `cursor.com`, and the server would need to be on a public HTTPS address.
+Nobody tested whether the web version of Cursor (Cursor Agents) can reach the server. The server would need to be on a public HTTPS address.
 
 ## See also
 

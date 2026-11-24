@@ -17,7 +17,7 @@ cd boe-insights-mcp
 uv sync
 ```
 
-`uv sync` creates a virtual environment in `.venv` and installs the locked dependencies. To also install the test and lint tools, run `uv sync --all-groups`.
+`uv sync` creates a virtual environment in `.venv` and installs the locked dependencies, including the test and lint tools (the `dev` group). `uv sync --all-groups` also installs the tools that build the documentation site.
 
 ## Run it
 

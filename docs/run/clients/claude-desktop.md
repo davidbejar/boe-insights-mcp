@@ -73,12 +73,12 @@ To pass settings, add an `env` block next to `args`, for example `"env": { "BOE_
 Anthropic's documentation describes two separate things.
 
 - `claude_desktop_config.json`, above, is for local servers that run on your computer. Anthropic's pages do not say that it accepts a remote server by URL, so do not put an `http://` address in it.
-- Remote servers are added as custom connectors: **Customize**, then **Connectors**, then **Add custom connector** (organisation owners add them for Team and Enterprise plans). See [Anthropic's help page](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
+- Remote servers are added as custom connectors: **Customize**, then **Connectors**, then **Add custom connector** (on Team plans, Owners and Primary Owners add them under the organisation settings; on Enterprise plans, people with a role that includes managing access to Libraries). See [Anthropic's help page](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
 The same help page says that remote connectors connect from Anthropic's cloud, not from your device, in every Claude app including Claude Desktop. The server must be reachable from the public internet, and it must use the standard HTTPS port 443. Consequences for this server:
 
 - A server on `localhost`, on a private network or behind a VPN is not reachable that way. This follows from Anthropic's description. It was not tried.
-- To use a custom connector you would need to publish the server on a public HTTPS address (for example behind a reverse proxy). See [Security and operations](../../operating.md) first. Whether the server's [GitHub login](../github-login.md) works with Claude's connector sign-in was not tested.
+- To use a custom connector you would need to publish the server on a public HTTPS address (for example behind a reverse proxy). See [Security and operations](../../operating.md) first. Whether the server's [GitHub login](../github-login.md) works with Claude's connector sign-in was not tested. Anthropic's help page gives `https://claude.ai/api/mcp/auth_callback` as the address Claude's connector sign-in returns to. If Claude uses that address with this server, it must be listed in `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` (see [Redirect addresses](../github-login.md#redirect-addresses)).
 
 If you only want it on your own computer, use the stdio setup above.
 

@@ -3,7 +3,7 @@
 Most MCP clients accept the same two shapes of configuration. Use these if your client is not covered by a page of its own, and check your client's documentation for the file name and the name of the root key (it is often `mcpServers`).
 
 !!! warning "Not tested by this project"
-    The snippets here are the common form. Claude Code and Claude Desktop (stdio) were tested. For every other client the exact format is up to that client, so read its documentation.
+    The snippets here are the common form. This project tested Claude Code (stdio, and HTTP with GitHub login) and Claude Desktop (stdio only). For every other client the exact format is up to that client, so read its documentation.
 
 ## Local, over stdio
 
@@ -79,7 +79,7 @@ Some clients cannot speak HTTP themselves. Check the client's documentation, or 
 
 ### With GitHub login
 
-If the server has [GitHub login](../github-login.md) on, the client must support the MCP OAuth sign-in: it finds the sign-in details at the server's well-known addresses, registers itself, and opens a browser. A client that cannot do this gets `401 Unauthorized` and cannot use the server. Clients redirect back to a loopback address (`localhost`, `127.0.0.1` or `[::1]`) by default, which the server accepts. A client that uses another redirect address needs it listed in `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` on the server.
+If the server has [GitHub login](../github-login.md) on, the client must support the MCP OAuth sign-in: it finds the sign-in details at the server's well-known addresses, registers itself, and opens a browser. A client that cannot do this gets `401 Unauthorized` and cannot use the server. Command-line clients usually redirect back to a loopback address (`localhost`, `127.0.0.1` or `[::1]`), which the server accepts. Editors and web clients often register a web address as well. The server refuses the whole registration if any one of the client's redirect addresses is not allowed, so that address must be listed in `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` on the server. See [Redirect addresses](../github-login.md#redirect-addresses).
 
 ### Check the address by hand
 

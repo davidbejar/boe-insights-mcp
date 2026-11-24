@@ -25,7 +25,7 @@ The path `/mcp` is fixed. Check that the process is up:
 curl http://127.0.0.1:8000/health
 ```
 
-The answer is always `{"status":"ok"}`. It does not call boe.es and reveals nothing else.
+The answer is always `{"status":"ok"}`, unless the [host and origin checks](#allowed-hosts-and-origins) refuse the request. It does not call boe.es and reveals nothing else.
 
 Connect a client to the MCP address: see the [client pages](clients/generic.md).
 
@@ -52,20 +52,20 @@ For example, `BOE_INSIGHTS_TRANSPORT=http BOE_INSIGHTS_PORT=9000 uvx boe-insight
 
 The GitHub login variables are on [their own page](github-login.md). The cache and data variables are the same as in [uvx](uvx.md#settings).
 
-Invalid values stop the server at start-up with a message that names the variable. The HTTP settings are ignored over stdio.
+Invalid values stop the server at start-up with a message that names the variable. `BOE_INSIGHTS_HOST` is the exception: it is not checked in advance. Over stdio the HTTP settings have no effect, but they are still checked, so an invalid value stops a stdio server too.
 
 ## Binding and who can reach the server
 
 - `127.0.0.1` (the default) accepts connections only from the same machine.
-- `0.0.0.0` accepts connections on every network interface. Use it only inside a container or behind something that controls access. A server bound this way with no login is open to every machine that can reach it.
+- `0.0.0.0` accepts connections on every network interface. Use it only inside a container or behind something that controls access. A server bound this way with no login is open to every machine that can reach it. Without GitHub login, the server logs a warning at start whenever it is bound to an address other than a loopback one.
 - Behind a reverse proxy, keep the server on `127.0.0.1` and let the proxy face the network.
 
 ## Allowed hosts and origins
 
 Two checks run on every HTTP request, always, and cannot be turned off.
 
-- **Host check.** The `Host` header must be a loopback name (`localhost`, `127.0.0.1`, `[::1]`) or an entry of `BOE_INSIGHTS_ALLOWED_HOSTS`. Any other host is refused. When tested, a request with `Host: evil.example` got status 421. The check protects against DNS rebinding, where a web page tricks a browser into talking to a local server.
-- **Origin check.** A request that carries an `Origin` header (browsers send one) must come from an allowed origin. Command-line MCP clients send none and are not affected.
+- **Host check.** The `Host` header must be a loopback name (`localhost`, `127.0.0.1`, `[::1]`) or an entry of `BOE_INSIGHTS_ALLOWED_HOSTS`. The address the server is bound to (`--host`) is accepted too, unless it is `0.0.0.0` or `::`. Any other host is refused. When tested, a request with `Host: evil.example` got status 421. The check protects against DNS rebinding, where a web page tricks a browser into talking to a local server.
+- **Origin check.** A request that carries an `Origin` header (browsers send one) must come from an entry of `BOE_INSIGHTS_ALLOWED_ORIGINS`, from the server's own address, or, when the server is reached on a loopback name, from a loopback address. Any other origin gets status 403. Command-line MCP clients send none and are not affected.
 
 If you reach the server under a name other than `localhost` (for example `boe.example.org`), add it:
 
@@ -79,7 +79,7 @@ With GitHub login on, the host and origin of `BOE_INSIGHTS_BASE_URL` are accepte
 
 Open HTTP means HTTP without GitHub login. Every analytical tool is there: law search, article reading and history, amendments, citation checks, the daily gazette and the trend tools. There are 18 tools, and listing them on a running open server confirmed that.
 
-The five saved-search tools are **not** there: `save_search`, `list_saved_searches`, `check_saved_searches`, `edit_saved_search` and `delete_saved_search`. The matching resource and prompts, and the sentence about saved searches in the server instructions, are left out too. Reason: a saved search belongs to a person, and without a sign-in the server cannot tell people apart. Rather than let strangers share one list, it offers none.
+The five saved-search tools are **not** there: `save_search`, `list_saved_searches`, `check_saved_searches`, `edit_saved_search` and `delete_saved_search`. The saved-searches resource and the sentence about saved searches in the server instructions are left out too, and the gazette briefing prompts no longer suggest saving the search. The eight prompts themselves stay. Reason: a saved search belongs to a person, and without a sign-in the server cannot tell people apart. Rather than let strangers share one list, it offers none.
 
 To get saved searches over HTTP, turn on [GitHub login](github-login.md). Over stdio they always work, because there is one person.
 
@@ -95,7 +95,7 @@ Each caller may make `BOE_INSIGHTS_CALLS_PER_MINUTE` calls per minute (default 6
 
 ## Request size
 
-The MCP address accepts request bodies up to 1 MiB. Every other address, including the sign-in routes, accepts up to 64 KiB. Larger requests get status 413. The server's access log leaves out query strings, so one-time sign-in codes never reach it.
+The MCP address accepts request bodies up to 1 MiB. Every other address, including the sign-in routes, accepts up to 64 KiB. Larger requests get status 413. The server's access log leaves out query strings, so the one-time sign-in codes and transaction ids carried there never reach it. FastMCP's own warnings can still name a sign-in transaction id: see [Logs](../operating.md#logs).
 
 ## Sessions
 

@@ -12,7 +12,7 @@ According to the configuration reference, the editor-managed files are:
 - `.vscode/mcp.json` in the workspace: this project only.
 - `mcp.json` in your VS Code user profile: all your projects.
 
-The root key is `servers` (not `mcpServers`). You can also run **MCP: Add Server** from the Command Palette and let VS Code write the entry for you. Review the command it generates before you accept it. VS Code asks you to trust a server before it starts.
+The root key is `servers` (not `mcpServers`). You can also run **MCP: Add Server** from the Command Palette. According to the current documentation, its guided setup writes to the newer files (your Copilot Global configuration, or a `.mcp.json` file at the workspace root), not to the files above, so check where the entry went. Review the command it generates before you accept it. VS Code asks you to trust a server before it starts.
 
 ## Local, over stdio
 
@@ -67,7 +67,9 @@ VS Code tries streamable HTTP first and falls back to the older SSE transport. T
 
 ### With GitHub login
 
-The configuration reference says that for an HTTP server VS Code runs the OAuth flow by itself and opens a browser window the first time it connects. With this server's [GitHub login](../github-login.md) you would see the server's consent page and then, the first time, GitHub's authorize page. The reference shows an optional `oauth` object with a `clientId` for servers whose clients are pre-registered. This server registers clients dynamically, so you should not need it. None of this was tested.
+The configuration reference says that for an HTTP server VS Code runs the OAuth flow by itself and opens a browser window the first time it connects. With this server's [GitHub login](../github-login.md) you would see the server's consent page and then, the first time, GitHub's authorize page. The reference shows an optional `oauth` object with a `clientId` for servers whose clients are pre-registered; this server has none, so you do not use it.
+
+VS Code's developer guide says its redirect addresses are `http://127.0.0.1:33418` and `https://vscode.dev/redirect`. If VS Code registers dynamically with both, this server refuses the whole registration unless `https://vscode.dev/redirect` (and `https://insiders.vscode.dev/redirect` for VS Code Insiders) is listed in `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` (see [Redirect addresses](../github-login.md#redirect-addresses)). Listing them means that sign-in codes for VS Code may be delivered through vscode.dev. A registration with these addresses was refused without the setting and accepted with it. The server also accepts clients that identify themselves with a metadata document instead of registering; whether VS Code does that, and what happens then, was not tested. Signing in from VS Code itself was not tested.
 
 ## See also
 

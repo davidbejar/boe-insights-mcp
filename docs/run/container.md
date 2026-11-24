@@ -3,7 +3,7 @@
 The container image runs the server over HTTP. It is built from the `Containerfile` in the repository root. The commands below use Podman. Docker works the same way: replace `podman` with `docker`, except where noted.
 
 !!! note "Release status"
-    The image `ghcr.io/davidbejar/boe-insights-mcp` is published together with release 0.1.0. Until then, build the image yourself from a clone (next section).
+    The image `ghcr.io/davidbejar/boe-insights-mcp` will be published with release 0.1.0. Until then, build the image yourself from a clone (next section).
 
 ## Get the image
 
@@ -21,7 +21,7 @@ cd boe-insights-mcp
 podman build --format docker -t localhost/boe-insights-mcp:dev -f Containerfile .
 ```
 
-With Docker, drop `--format docker`: `docker build -t localhost/boe-insights-mcp:dev -f Containerfile .`. With Podman the flag is required. Without it Podman drops the image's health check silently.
+With Docker, drop `--format docker`: `docker build -t localhost/boe-insights-mcp:dev -f Containerfile .`. With Podman the flag is required: Podman's default image format (OCI) does not keep the health check.
 
 The commands below use the name `localhost/boe-insights-mcp:dev`. After the release, use `ghcr.io/davidbejar/boe-insights-mcp:0.1.0` instead.
 
@@ -35,7 +35,7 @@ podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 \
 
 What each part does:
 
-- `-p 127.0.0.1:8000:8000` publishes the port on your own machine only. This is the line that decides who can reach the server. Inside the container the server listens on `0.0.0.0`, because otherwise the published port would not work.
+- `-p 127.0.0.1:8000:8000` publishes the port on your own machine only. This is the line that decides who can reach the server. Inside the container the server listens on `0.0.0.0`, because otherwise the published port would not work. For that reason, without GitHub login, the server logs a warning at every start saying it is reachable from other machines. With the port published on `127.0.0.1` as here, the warning is expected.
 - `--read-only --tmpfs /tmp --cap-drop=all --security-opt no-new-privileges` lock the container down. The server needs nothing more than `/data` to write to.
 - `-v boe-insights-data:/data` keeps your data in a named volume that survives the container.
 
@@ -67,11 +67,11 @@ The image keeps all its state under `/data`, the only place it writes:
 The server runs as user and group `10001`, not root. A named volume inherits the right owner the first time it is used. If you use a bind mount instead, the folder must be writable by `10001`:
 
 ```bash
-mkdir -p ./boe-data && podman unshare chown 10001:10001 ./boe-data
-podman run --rm -p 127.0.0.1:8000:8000 -v ./boe-data:/data localhost/boe-insights-mcp:dev
+mkdir -p "$PWD/boe-data" && podman unshare chown 10001:10001 "$PWD/boe-data"
+podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 -v "$PWD/boe-data":/data localhost/boe-insights-mcp:dev
 ```
 
-`podman unshare` is for rootless Podman. With Docker or rootful Podman, use `sudo chown 10001:10001 ./boe-data`. The bind-mount commands were not run for this page.
+Give the bind mount an absolute host path, as `"$PWD/boe-data"` does: some Docker versions refuse a relative one. `podman unshare` is for rootless Podman. With Docker or rootful Podman, use `sudo chown 10001:10001 "$PWD/boe-data"`. The bind-mount commands were not run for this page.
 
 ## Environment variables
 
@@ -93,7 +93,7 @@ If you change `BOE_INSIGHTS_PORT`, change the right side of `-p` to match. The h
 Put secrets (the GitHub client secret and the signing key) in an environment file rather than on the command line, so they do not appear in your shell history or in `ps`:
 
 ```bash
-podman run --rm -p 127.0.0.1:8000:8000 --env-file boe.env -v boe-insights-data:/data localhost/boe-insights-mcp:dev
+podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 --env-file boe.env -v boe-insights-data:/data localhost/boe-insights-mcp:dev
 ```
 
 Keep that file private (`chmod 600 boe.env`).
@@ -105,9 +105,13 @@ podman logs boe-insights     # server log
 podman stop boe-insights     # clean shutdown; the server is the main process and gets the signal
 ```
 
+These commands use the name given with `--name boe-insights`, as in every `podman run` command on this page.
+
 To update, pull or build the new image and start a new container with the same volume.
 
 ## Not tested
+
+The image was built for linux/arm64 and linux/amd64. The arm64 image was run in open HTTP mode. The amd64 image was only built and checked to import, never run.
 
 - Sign-in (GitHub login) against the container image.
 - The bind-mount commands above.
