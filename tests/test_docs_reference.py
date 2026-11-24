@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 from docs_build import __main__ as cli
 from docs_build import reference
 from docs_build.reference import Component, Parameter, ReferenceBuildError, Summary
@@ -25,7 +24,9 @@ REPO = Path(__file__).resolve().parent.parent
 SUMMARIES = REPO / "docs" / "reference" / "summaries.es.toml"
 
 
-def tool(name: str = "demo_tool", description: str = "Does the demo thing.", *parameters: Parameter) -> Component:
+def tool(
+    name: str = "demo_tool", description: str = "Does the demo thing.", *parameters: Parameter
+) -> Component:
     """A synthetic tool."""
     return Component("tools", name, description, parameters)
 
@@ -217,9 +218,9 @@ def test_refreshing_the_last_table_of_the_file_works(tmp_path: Path) -> None:
 def test_refreshing_an_unknown_entry_is_an_error_and_writes_nothing(tmp_path: Path) -> None:
     path = tmp_path / "s.toml"
     path.write_text(TOML, encoding="utf-8")
-    with pytest.raises(ReferenceBuildError, match="tools.nope"):
+    with pytest.raises(ReferenceBuildError, match=r"tools\.nope"):
         reference.refresh_summary_hash("tools.nope", [tool("one")], path)
-    with pytest.raises(ReferenceBuildError, match="tools.one"):
+    with pytest.raises(ReferenceBuildError, match=r"tools\.one"):
         reference.refresh_summary_hash("tools.one", [], path)  # not on the server
     assert path.read_text(encoding="utf-8") == TOML
 
@@ -259,7 +260,7 @@ def test_a_table_cell_stays_on_one_row_with_the_right_number_of_cells() -> None:
     page = reference.render_pages(
         "en", components=[tool("t", "D.", param("p|q", NASTY, type="string"))], summaries={}
     )["tools"]
-    rows = [line for line in page.splitlines() if line.startswith("| ") and "script" in line]
+    rows = [line for line in page.splitlines() if line.startswith("| ") and "alert" in line]
     assert len(rows) == 1
     assert len(cells(rows[0])) == 4
     assert "<script>" not in page

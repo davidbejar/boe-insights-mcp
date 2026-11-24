@@ -80,7 +80,7 @@ known-first-party = ["boe_insights_mcp", "tests"]
 [tool.ruff.format]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "docs_build"]
 typeCheckingMode = "standard"
 pythonVersion = "3.11"
 
