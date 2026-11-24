@@ -176,3 +176,66 @@ def test_the_memory_backend_without_any_data_dir_keeps_searches_in_memory(
     monkeypatch.delenv("BOE_INSIGHTS_DATA_DIR", raising=False)
 
     assert Settings(cache_backend="memory").saved_searches_dir is None
+
+
+# --- Transport settings -----------------------------------------------------------------------
+
+
+def test_transport_defaults_are_stdio_on_loopback() -> None:
+    settings = Settings.from_env({})
+
+    assert settings.transport == "stdio"
+    assert settings.host == "127.0.0.1"
+    assert settings.port == 8000
+    assert settings.allowed_hosts == ()
+    assert settings.allowed_origins == ()
+
+
+def test_transport_variables_are_read() -> None:
+    settings = Settings.from_env(
+        {
+            "BOE_INSIGHTS_TRANSPORT": " HTTP ",
+            "BOE_INSIGHTS_HOST": "0.0.0.0",
+            "BOE_INSIGHTS_PORT": "9001",
+            "BOE_INSIGHTS_ALLOWED_HOSTS": "boe.example.org, ,other.example.org,",
+            "BOE_INSIGHTS_ALLOWED_ORIGINS": "https://boe.example.org",
+        }
+    )
+
+    assert settings.transport == "http"
+    assert settings.host == "0.0.0.0"
+    assert settings.port == 9001
+    assert settings.allowed_hosts == ("boe.example.org", "other.example.org")
+    assert settings.allowed_origins == ("https://boe.example.org",)
+
+
+def test_empty_transport_variables_keep_the_defaults() -> None:
+    env = {
+        "BOE_INSIGHTS_TRANSPORT": "",
+        "BOE_INSIGHTS_HOST": "",
+        "BOE_INSIGHTS_PORT": "",
+        "BOE_INSIGHTS_ALLOWED_HOSTS": "",
+        "BOE_INSIGHTS_ALLOWED_ORIGINS": " , ",
+    }
+
+    assert Settings.from_env(env) == Settings.from_env({})
+
+
+@pytest.mark.parametrize(
+    ("variable", "value"),
+    [
+        ("BOE_INSIGHTS_TRANSPORT", "sse"),
+        ("BOE_INSIGHTS_PORT", "0"),
+        ("BOE_INSIGHTS_PORT", "65536"),
+        ("BOE_INSIGHTS_PORT", "http"),
+        ("BOE_INSIGHTS_PORT", "80.5"),
+    ],
+)
+def test_invalid_transport_values_name_the_variable(variable: str, value: str) -> None:
+    with pytest.raises(ValueError, match=variable):
+        Settings.from_env({variable: value})
+
+
+def test_port_bounds_are_accepted() -> None:
+    assert Settings.from_env({"BOE_INSIGHTS_PORT": "1"}).port == 1
+    assert Settings.from_env({"BOE_INSIGHTS_PORT": "65535"}).port == 65535

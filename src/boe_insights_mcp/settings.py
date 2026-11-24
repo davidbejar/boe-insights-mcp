@@ -19,11 +19,14 @@ from platformdirs import user_data_dir
 
 from boe_insights_mcp.cache import default_cache_dir
 
-__all__ = ["CacheBackend", "Settings"]
+__all__ = ["CacheBackend", "Settings", "Transport"]
 
 CacheBackend = Literal["disk", "memory"]
+Transport = Literal["stdio", "http"]
 
 _BACKENDS: tuple[CacheBackend, ...] = ("disk", "memory")
+
+_TRANSPORTS: tuple[Transport, ...] = ("stdio", "http")
 
 _APP_NAME = "boe-insights-mcp"
 
@@ -57,6 +60,21 @@ class Settings:
     max_concurrency: int = 2
     """``BOE_INSIGHTS_MAX_CONCURRENCY``: maximum simultaneous requests to boe.es."""
 
+    transport: Transport = "stdio"
+    """``BOE_INSIGHTS_TRANSPORT``: ``stdio`` (default) or ``http``."""
+    host: str = "127.0.0.1"
+    """``BOE_INSIGHTS_HOST``: the address the HTTP transport binds to."""
+    port: int = 8000
+    """``BOE_INSIGHTS_PORT``: the port the HTTP transport listens on (1-65535)."""
+    allowed_hosts: tuple[str, ...] = ()
+    """``BOE_INSIGHTS_ALLOWED_HOSTS``: comma-separated public host names accepted over HTTP.
+
+    Added to the loopback names, which are always accepted; there is no way to switch the
+    Host check off.
+    """
+    allowed_origins: tuple[str, ...] = ()
+    """``BOE_INSIGHTS_ALLOWED_ORIGINS``: comma-separated browser origins accepted over HTTP."""
+
     @property
     def saved_searches_dir(self) -> Path | None:
         """The directory the saved searches live in; ``None`` means keep them in memory."""
@@ -82,6 +100,11 @@ class Settings:
             max_concurrency=_max_concurrency(
                 env.get("BOE_INSIGHTS_MAX_CONCURRENCY"), defaults.max_concurrency
             ),
+            transport=_transport(env.get("BOE_INSIGHTS_TRANSPORT"), defaults.transport),
+            host=(env.get("BOE_INSIGHTS_HOST") or "").strip() or defaults.host,
+            port=_port(env.get("BOE_INSIGHTS_PORT"), defaults.port),
+            allowed_hosts=_csv(env.get("BOE_INSIGHTS_ALLOWED_HOSTS")),
+            allowed_origins=_csv(env.get("BOE_INSIGHTS_ALLOWED_ORIGINS")),
         )
 
 
@@ -122,3 +145,31 @@ def _max_concurrency(value: str | None, default: int) -> int:
     if count < 1:
         raise ValueError(f"BOE_INSIGHTS_MAX_CONCURRENCY must be an integer >= 1, got {value!r}")
     return count
+
+
+def _transport(value: str | None, default: Transport) -> Transport:
+    """Parse ``BOE_INSIGHTS_TRANSPORT`` (case-insensitive); unset or empty gives ``default``."""
+    if not value:
+        return default
+    for transport in _TRANSPORTS:
+        if value.strip().lower() == transport:
+            return transport
+    raise ValueError(f"BOE_INSIGHTS_TRANSPORT must be 'stdio' or 'http', got {value!r}")
+
+
+def _port(value: str | None, default: int) -> int:
+    """Parse ``BOE_INSIGHTS_PORT`` as an integer from 1 to 65535."""
+    if not value:
+        return default
+    try:
+        port = int(value)
+    except ValueError:
+        port = 0
+    if not 1 <= port <= 65535:
+        raise ValueError(f"BOE_INSIGHTS_PORT must be an integer from 1 to 65535, got {value!r}")
+    return port
+
+
+def _csv(value: str | None) -> tuple[str, ...]:
+    """Split a comma-separated list, dropping blank entries; unset or empty gives ``()``."""
+    return tuple(item for item in (part.strip() for part in (value or "").split(",")) if item)

@@ -12,7 +12,7 @@ gazette tools ``get_daily_summary`` and ``scan_gazette``, ``verify_citation``,
 ``explore_amendment_chain`` and the five saved-search tools ``save_search``,
 ``list_saved_searches``, ``check_saved_searches``, ``edit_saved_search`` and
 ``delete_saved_search``); it also registers the resources and prompts of ``resources`` and
-``prompts``. ``main`` runs it over stdio.
+``prompts``. ``main`` starts it over stdio, or over HTTP when asked (see ``launch``).
 Layering: tool functions here -> use cases in ``legislation``, ``articles``, ``trends``,
 ``gazette``, ``citations``, ``amendment_chains`` and ``saved_searches`` -> ``client`` (and
 ``catalogue`` for the trend tools and the chain explorer, ``searchstore`` for saved searches).
@@ -24,9 +24,9 @@ are model-facing text; explanations for human readers live in ``#`` comments.
 
 from __future__ import annotations
 
-import logging
+import os
 import sys
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from datetime import date
 from typing import Annotated, Any, Literal, TypeVar
 
@@ -40,6 +40,7 @@ from boe_insights_mcp import (
     amendment_chains,
     articles,
     gazette,
+    launch,
     legislation,
     prompts,
     resources,
@@ -1199,16 +1200,17 @@ def create_server(
     )
     for function, title in _TOOLS:
         server.tool(function, title=title, annotations=_ANNOTATIONS.get(function, _READ_ONLY))
+    launch.register_health(server)
     resources.register(server)
     prompts.register(server)
     return server
 
 
-def main() -> None:
-    """Run the server over stdio. Logs go to stderr, so stdout carries only the protocol."""
-    logging.basicConfig(
-        level=logging.INFO,
-        stream=sys.stderr,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
-    create_server().run(show_banner=False)
+def main(argv: Sequence[str] | None = None) -> None:
+    """Console-script entry point: stdio by default, HTTP with ``--transport http``."""
+    launch.run(sys.argv[1:] if argv is None else argv, os.environ, _build)
+
+
+def _build(settings: Settings) -> FastMCP:
+    """Build the server for ``settings``; the one place a later package adds auth or middleware."""
+    return create_server(settings=settings)
