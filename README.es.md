@@ -1,13 +1,13 @@
 # boe-insights-mcp
 
-[English](README.md) | **Español**
+[English](README.md) | **Español** | [Sitio de documentación](https://davidbejar.github.io/boe-insights-mcp/es/)
 
 [![CI](https://github.com/davidbejar/boe-insights-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/davidbejar/boe-insights-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Servidor [MCP](https://modelcontextprotocol.io) (Model Context Protocol) que ofrece a asistentes de IA como Claude herramientas analíticas sobre los datos abiertos del BOE (Boletín Oficial del Estado). En lugar de una herramienta por cada endpoint de la API, las herramientas se diseñan en torno a las preguntas que la gente se hace de verdad: "¿sigue vigente esta ley?", "¿qué ha cambiado en este artículo?", "¿cómo ha evolucionado la legislación sobre X?".
 
-**Estado:** desarrollo temprano. Hoy hay veintitrés herramientas disponibles (localizar una norma, buscar, consultar su situación de vigencia y buscar códigos; historial y cadenas de modificaciones; leer, comparar y consultar el historial de cada artículo; comprobar citas contra el texto; el índice de una norma; análisis de tendencias sobre toda la colección consolidada; el diario oficial día a día; y búsquedas guardadas), además de cinco [recursos](#recursos-y-prompts) y ocho prompts (cuatro, cada uno en español y en inglés); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). Todavía no está publicado en PyPI: se ejecuta desde el código fuente.
+**Estado:** desarrollo temprano. Hoy hay veintitrés herramientas disponibles (localizar una norma, buscar, consultar su situación de vigencia y buscar códigos; historial y cadenas de modificaciones; leer, comparar y consultar el historial de cada artículo; comprobar citas contra el texto; el índice de una norma; análisis de tendencias sobre toda la colección consolidada; el diario oficial día a día; y búsquedas guardadas), además de cinco [recursos](#recursos-y-prompts) y ocho prompts (cuatro, cada uno en español y en inglés); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). Todavía no está en PyPI (la versión 0.1.0 es la siguiente): se ejecuta con `uvx` directamente desde GitHub o desde el código fuente, mira el [inicio rápido](#inicio-rápido).
 
 ## Qué puedes preguntar
 
@@ -327,7 +327,7 @@ Cada resultado incluye un bloque `provenance`. Salida abreviada de `compare_arti
 
 ## Cómo funcionan las búsquedas guardadas
 
-Una búsqueda guardada es una búsqueda almacenada en tu equipo más un marcador de hasta dónde se revisó por última vez. Sirve para preguntar, una semana después, "¿hay algo nuevo?" sin repetir los filtros y sin ver dos veces lo mismo.
+Una búsqueda guardada es una búsqueda almacenada por el servidor (en tu equipo cuando lo ejecutas tú) más un marcador de hasta dónde se revisó por última vez. Sirve para preguntar, una semana después, "¿hay algo nuevo?" sin repetir los filtros y sin ver dos veces lo mismo.
 
 **El servidor no puede avisar a nadie.** Solo funciona mientras tu aplicación lo está usando y no tiene manera de enviar un mensaje. No ocurre nada hasta que preguntas ("¿hay algo nuevo?"); entonces el asistente llama a `check_saved_searches`. Una búsqueda que nunca revisas simplemente espera.
 
@@ -347,6 +347,8 @@ Guardar una búsqueda del diario lee el número de hoy una vez y recuerda lo que
 **Límite.** 20 búsquedas guardadas. Guardar la 21.ª falla con un mensaje que pide borrar una antes.
 
 **Dónde se guardan los datos.** En un pequeño archivo SQLite, `saved_searches.sqlite3`, dentro del directorio de datos de tu usuario (en macOS `~/Library/Application Support/boe-insights-mcp/`, en Linux `~/.local/share/boe-insights-mcp/`). El archivo es privado para tu usuario, se queda en tu equipo y no se envía a ninguna parte; una comprobación solo envía las peticiones al BOE que necesita. Para llevarte tus búsquedas a otro equipo, copia el archivo a la misma ubicación allí, o define `BOE_INSIGHTS_DATA_DIR` ([Configuración](#configuración)). Para borrarlo todo, borra el archivo. Es independiente de la caché de respuestas, que se puede borrar en cualquier momento: vaciar la caché nunca hace perder una búsqueda guardada. Con `BOE_INSIGHTS_CACHE=memory` y sin `BOE_INSIGHTS_DATA_DIR`, las búsquedas solo se guardan en memoria y se pierden al detener el servidor.
+
+En un servidor compartido por HTTP con inicio de sesión de GitHub, el archivo está en la máquina del servidor y cada búsqueda pertenece a la cuenta que la guardó (se almacena como `github:<id>`; en local, el propietario es `local`): nadie más puede verla, revisarla, editarla ni borrarla, y el límite de 20 búsquedas se aplica por cuenta. Sin inicio de sesión, un servidor abierto por HTTP no ofrece búsquedas guardadas.
 
 **Son las únicas herramientas que cambian algo**, y solo en ese archivo. `edit_saved_search` y `delete_saved_search` están marcadas como destructivas, así que algunas aplicaciones piden confirmación antes de ejecutarlas; una búsqueda borrada no se puede recuperar. `check_saved_searches` también cambia algo (anota lo que ha mostrado), salvo que pases `since`.
 
@@ -395,67 +397,73 @@ En Claude Code los prompts aparecen como comandos con barra, por ejemplo `/mcp__
 
 Requisitos previos: Python 3.11 o superior y [uv](https://docs.astral.sh/uv/). No hace falta clave de API: la API de datos abiertos del BOE es pública.
 
-Ejecución desde el código fuente:
+El servidor habla MCP por stdio, así que normalmente no lo arrancas tú: lo hace tu cliente MCP. El comando que ejecuta es:
 
 ```bash
-git clone https://github.com/davidbejar/boe-insights-mcp.git
-cd boe-insights-mcp
-uv sync
+uvx boe-insights-mcp
 ```
 
-El servidor habla MCP por stdio, así que normalmente no lo arrancas a mano: lo hace tu cliente MCP.
-
-**Claude Desktop.** Añade esto a `claude_desktop_config.json` y reinicia la aplicación (usa la ruta absoluta de tu copia del repositorio):
-
-```json
-{
-  "mcpServers": {
-    "boe-insights": {
-      "command": "uv",
-      "args": ["--directory", "/absolute/path/to/boe-insights-mcp", "run", "boe-insights-mcp"]
-    }
-  }
-}
-```
-
-**Claude Code:**
-
-```bash
-claude mcp add boe-insights -- uv --directory /absolute/path/to/boe-insights-mcp run boe-insights-mcp
-```
-
-O bien incluye la misma definición del servidor en un `.mcp.json` a nivel de proyecto:
-
-```json
-{
-  "mcpServers": {
-    "boe-insights": {
-      "command": "uv",
-      "args": ["--directory", "/absolute/path/to/boe-insights-mcp", "run", "boe-insights-mcp"]
-    }
-  }
-}
-```
-
-**Sin clonar el repositorio**, uv puede descargarlo y ejecutarlo directamente desde GitHub:
+Eso funcionará en cuanto la versión 0.1.0 esté en PyPI. Mientras tanto, uv puede descargarlo y ejecutarlo directamente desde GitHub:
 
 ```bash
 uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
 ```
 
-En la configuración de un cliente, usa `"command": "uvx"` con `"args": ["--from", "git+https://github.com/davidbejar/boe-insights-mcp", "boe-insights-mcp"]`.
+Por ejemplo, para Claude Code:
+
+```bash
+claude mcp add boe-insights -- uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
+```
+
+Otras formas de ejecutarlo (sitio de documentación):
+
+- [Con uvx](https://davidbejar.github.io/boe-insights-mcp/es/run/uvx/): sin clonar ni instalar.
+- [Desde el código fuente](https://davidbejar.github.io/boe-insights-mcp/es/run/from-source/): con un clon del repositorio.
+- [Por HTTP](https://davidbejar.github.io/boe-insights-mcp/es/run/http/): un servidor para varias personas o equipos.
+- [Como contenedor](https://davidbejar.github.io/boe-insights-mcp/es/run/container/): la imagen de contenedor.
+- [Con inicio de sesión de GitHub](https://davidbejar.github.io/boe-insights-mcp/es/run/github-login/): un servidor HTTP abierto solo a las cuentas de GitHub que indiques.
+- Configuración del cliente: [Claude Code](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/claude-code/), [Claude Desktop](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/claude-desktop/), [Cursor](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/cursor/), [VS Code](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/vscode/) y [cualquier otro cliente](https://davidbejar.github.io/boe-insights-mcp/es/run/clients/generic/).
+- [Operación y seguridad](https://davidbejar.github.io/boe-insights-mcp/es/operating/): límites, control de acceso y qué vigilar si lo alojas tú.
+- [Referencia de herramientas](https://davidbejar.github.io/boe-insights-mcp/es/reference/tools/): todas las herramientas, con sus parámetros.
 
 ## Configuración
 
-Variables de entorno opcionales. Las variables sin definir o vacías conservan su valor por defecto, y un valor no válido detiene el servidor al arrancar con un mensaje que nombra la variable.
+Variables de entorno opcionales. Las variables sin definir o vacías conservan su valor por defecto, y un valor no válido detiene el servidor al arrancar con un mensaje que nombra la variable. La [página de operación](https://davidbejar.github.io/boe-insights-mcp/es/operating/) explica cada una con detalle.
+
+**General**
 
 | Variable | Valor por defecto | Significado |
 |---|---|---|
 | `BOE_INSIGHTS_CACHE` | `disk` | Tipo de caché: `disk` (persistente) o `memory` (solo durante el proceso). |
 | `BOE_INSIGHTS_CACHE_DIR` | directorio de caché de la plataforma | Dónde se guarda la caché en disco. |
-| `BOE_INSIGHTS_DATA_DIR` | directorio de datos de usuario de la plataforma | Dónde se guardan las búsquedas guardadas (`saved_searches.sqlite3`). Es independiente de la caché a propósito: la caché se puede borrar, tus búsquedas guardadas no deberían perderse. |
+| `BOE_INSIGHTS_DATA_DIR` | directorio de datos de usuario de la plataforma | Dónde se guardan las búsquedas guardadas (`saved_searches.sqlite3`); está separado de la caché a propósito, porque la caché se puede borrar y tus búsquedas guardadas no deberían perderse. |
 | `BOE_INSIGHTS_MIN_INTERVAL` | `1.0` | Segundos mínimos entre peticiones a boe.es (número >= 0). |
 | `BOE_INSIGHTS_MAX_CONCURRENCY` | `2` | Máximo de peticiones simultáneas a boe.es (entero >= 1). |
+
+**HTTP** (solo con `--transport http`)
+
+| Variable | Valor por defecto | Significado |
+|---|---|---|
+| `BOE_INSIGHTS_TRANSPORT` | `stdio` | `stdio` (tu aplicación arranca el servidor) o `http` (escucha en un puerto); la opción `--transport` lo sustituye. |
+| `BOE_INSIGHTS_HOST` | `127.0.0.1` | Dirección en la que escucha; la opción `--host` lo sustituye. |
+| `BOE_INSIGHTS_PORT` | `8000` | Puerto en el que escucha (1-65535); la opción `--port` lo sustituye. |
+| `BOE_INSIGHTS_ALLOWED_HOSTS` | vacío | Nombres de host públicos aceptados en la cabecera `Host`, separados por comas; se suman a los de loopback, que siempre se aceptan. |
+| `BOE_INSIGHTS_ALLOWED_ORIGINS` | vacío | Orígenes de navegador (`https://host[:puerto]`) aceptados, separados por comas y sin comodines. |
+| `BOE_INSIGHTS_CALLS_PER_MINUTE` | `60` | Llamadas que puede hacer cada usuario por minuto; `0` desactiva el límite. |
+| `BOE_INSIGHTS_CALLS_BURST` | `20` | Llamadas que puede hacer cada usuario de golpe antes de tener que esperar (entero >= 1). |
+
+**Inicio de sesión con GitHub** (las cuatro primeras van juntas: o se definen todas o ninguna)
+
+| Variable | Valor por defecto | Significado |
+|---|---|---|
+| `BOE_INSIGHTS_GITHUB_CLIENT_ID` | sin definir | Client ID de la aplicación OAuth de GitHub con la que se inicia sesión. |
+| `BOE_INSIGHTS_GITHUB_CLIENT_SECRET` | sin definir | El client secret de esa aplicación. |
+| `BOE_INSIGHTS_AUTH_SIGNING_KEY` | sin definir | Secreto para los tokens que emite el servidor; al menos 32 caracteres. |
+| `BOE_INSIGHTS_BASE_URL` | sin definir | URL pública del servidor (`https://host[:puerto]`, sin ruta; `http` solo para loopback). |
+| `BOE_INSIGHTS_ALLOWED_USERS` | vacío | Quién puede iniciar sesión: nombres de usuario de GitHub, `id:<número>` o `*` (todo el mundo), separados por comas. Vacío significa nadie. |
+| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | vacío | URL de redirección exactas adicionales para clientes OAuth, además de las de loopback, que siempre se aceptan. |
+
+Por HTTP y sin inicio de sesión no se ofrecen las herramientas de búsquedas guardadas, porque no hay nadie a quien asignárselas. Los ajustes de inicio de sesión se ignoran por stdio.
 
 ## Cómo funciona
 
@@ -505,20 +513,27 @@ Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](
 - [x] 3. Análisis de tendencias: legislación a lo largo del tiempo, departamentos con más normas, comparar temas, explicar un pico, normas más modificadas, y el índice de una norma
 - [x] 4. Verificación de citas, explorador de la cadena de modificaciones, rastreo del diario oficial
 - [x] 5. Recursos y prompts MCP y búsquedas guardadas
-- [ ] 6. Modo remoto: Streamable HTTP, OAuth con GitHub, contenedor Podman
-- [ ] 7. Batería de evaluación, sitio de documentación y publicación en PyPI
+- [x] 6. Modo remoto: Streamable HTTP, inicio de sesión con GitHub con lista de acceso, límite de llamadas por usuario, imagen de contenedor y sitio de documentación
+- [ ] 7. Versión 0.1.0: publicación en PyPI, con la imagen de contenedor y el sitio de documentación
+- [ ] Inclusión en el MCP Registry
+- [ ] Batería de evaluación
+- [ ] Pasar el sitio de documentación de Material for MkDocs a Zensical antes del fin de vida de Material, en mayo de 2027
 
 ## Desarrollo
 
 ```bash
-uv sync --all-groups                         # instalar, incluidas las herramientas de desarrollo
+uv sync --all-groups                         # instalar, incluidas las herramientas de desarrollo y de documentación
 uv run pytest                                # pruebas; sin red
 uv run pytest -m live                        # pruebas contra la API real del BOE
 uv run ruff check . && uv run ruff format .  # análisis estático y formato
 uv run pyright                               # comprobación de tipos
+NO_MKDOCS_2_WARNING=1 uv run mkdocs serve    # el sitio de documentación, con recarga automática
+NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict  # la misma compilación que ejecutan las comprobaciones
 ```
 
 Las pruebas live consultan la API real del BOE: úsalas con moderación. La lógica se escribe primero con pruebas, y las pruebas unitarias nunca acceden a la red: usan [respx](https://lundberg.github.io/respx/) con respuestas reales de la API grabadas en `tests/fixtures/boe/`. El comportamiento verificado de la API está documentado en [`docs/api-notes.md`](docs/api-notes.md) (en inglés).
+
+Las páginas de referencia del sitio se generan a partir del propio servidor. Sus resúmenes en español de las herramientas se escriben a mano en `docs/reference/summaries.es.toml`; cuando cambia el texto en inglés de una herramienta, vuelve a leer su resumen en español y después actualiza su hash con `uv run python -m docs_build --refresh tools.NAME` (`--hash tools.NAME` solo muestra el actual).
 
 ## Licencia
 
