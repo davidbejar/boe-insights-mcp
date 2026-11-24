@@ -1,0 +1,105 @@
+site_name: BOE Insights MCP
+site_description: MCP server with analytical tools over Spain's BOE open data.
+site_url: https://davidbejar.github.io/boe-insights-mcp/
+repo_url: https://github.com/davidbejar/boe-insights-mcp
+repo_name: davidbejar/boe-insights-mcp
+edit_uri: ""
+copyright: Basado en datos de la Agencia Estatal Boletín Oficial del Estado
+
+docs_dir: docs
+strict: true
+
+validation:
+  links:
+    anchors: warn # the READMEs are full of in-page anchors; a broken one must fail the build
+
+theme:
+  name: material
+  language: en
+  font: false # no requests to Google Fonts; the system font stack is used
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+hooks:
+  - hooks/readme_links.py
+
+plugins:
+  - search
+  - include-markdown
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: es
+          name: Español
+          build: true
+          nav_translations:
+            Home: Inicio
+            Ways to run it: Formas de ejecutarlo
+            Run with uvx: Ejecutar con uvx
+            Run from source: Ejecutar desde el código fuente
+            Run over HTTP: Ejecutar por HTTP
+            Run in a container: Ejecutar en un contenedor
+            GitHub login: Inicio de sesión con GitHub
+            Clients: Clientes
+            Generic MCP client: Cliente MCP genérico
+            Operating a server: Operar un servidor
+            Security and operations: Seguridad y operación
+            Reference: Referencia
+            Tools: Herramientas
+            Resources: Recursos
+            Development: Desarrollo
+            BOE API notes (English only): Notas de la API del BOE (solo en inglés)
+
+markdown_extensions:
+  - toc:
+      # Keep accents in heading ids so the READMEs' GitHub-style anchors (#cómo-funciona)
+      # resolve on the site.
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - tables
+  - admonition
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Ways to run it:
+      - Run with uvx: run/uvx.md
+      - Run from source: run/from-source.md
+      - Run over HTTP: run/http.md
+      - Run in a container: run/container.md
+      - GitHub login: run/github-login.md
+      - Clients:
+          - Claude Code: run/clients/claude-code.md
+          - Claude Desktop: run/clients/claude-desktop.md
+          - Cursor: run/clients/cursor.md
+          - VS Code: run/clients/vscode.md
+          - Generic MCP client: run/clients/generic.md
+  - Operating a server:
+      - Security and operations: operating.md
+  - Reference:
+      - Tools: reference/tools.md
+      - Resources: reference/resources.md
+      - Prompts: reference/prompts.md
+  - Development:
+      - BOE API notes (English only): api-notes.md
