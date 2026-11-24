@@ -61,9 +61,16 @@ async def guarded(call: Awaitable[_T], tool: str, error_class: type[Exception]) 
 
 
 async def guarded_for_owner(
-    use_case: Callable[[str], Awaitable[_T]], tool: str, error_class: type[Exception]
+    use_case: Callable[[str], Awaitable[_T]],
+    tool: str,
+    error_class: type[Exception],
+    *,
+    remote: bool = False,
 ) -> _T:
     """Run ``use_case`` for the owner of the current request under the guard of ``guarded``.
+
+    ``remote`` is true over HTTP, where the owner comes from the access token and is never
+    ``local`` (see ``owner.current_owner``).
 
     The owner is looked up inside the guarded call, so that a request without a usable identity
     raises ``NotSignedInError`` there and reaches the model as a curated message, not as a masked
@@ -72,6 +79,6 @@ async def guarded_for_owner(
 
     async def run() -> _T:
         """The use case, run for the current owner."""
-        return await use_case(current_owner())
+        return await use_case(current_owner(remote=remote))
 
     return await guarded(run(), tool, error_class)

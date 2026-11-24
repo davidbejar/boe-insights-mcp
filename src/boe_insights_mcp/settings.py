@@ -3,7 +3,8 @@
 ``Settings`` is a frozen dataclass; ``Settings.from_env`` builds it from ``BOE_INSIGHTS_*``
 variables and validates them, failing at startup with a message naming the bad variable. It is
 consumed by ``server`` when the lifespan creates the cache, rate limiter and client, and it
-takes its default cache directory from ``cache``.
+takes its default cache directory from ``cache``. The login variables are validated here, and
+the allow-list entries with the parser of ``access``, so a mistake stops the server at startup.
 """
 
 from __future__ import annotations
@@ -14,9 +15,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from platformdirs import user_data_dir
 
+from boe_insights_mcp.access import AllowList
 from boe_insights_mcp.cache import default_cache_dir
 
 __all__ = ["CacheBackend", "Settings", "Transport"]
@@ -29,6 +32,13 @@ _BACKENDS: tuple[CacheBackend, ...] = ("disk", "memory")
 _TRANSPORTS: tuple[Transport, ...] = ("stdio", "http")
 
 _APP_NAME = "boe-insights-mcp"
+
+_CLIENT_ID_VAR = "BOE_INSIGHTS_GITHUB_CLIENT_ID"
+_CLIENT_SECRET_VAR = "BOE_INSIGHTS_GITHUB_CLIENT_SECRET"
+_SIGNING_KEY_VAR = "BOE_INSIGHTS_AUTH_SIGNING_KEY"
+_BASE_URL_VAR = "BOE_INSIGHTS_BASE_URL"
+_ALLOWED_USERS_VAR = "BOE_INSIGHTS_ALLOWED_USERS"
+_MIN_SIGNING_KEY_LENGTH = 32
 
 
 def platform_data_dir() -> Path:
@@ -75,6 +85,28 @@ class Settings:
     allowed_origins: tuple[str, ...] = ()
     """``BOE_INSIGHTS_ALLOWED_ORIGINS``: comma-separated browser origins accepted over HTTP."""
 
+    github_client_id: str | None = None
+    """``BOE_INSIGHTS_GITHUB_CLIENT_ID``: the GitHub OAuth app that signs people in."""
+    github_client_secret: str | None = field(default=None, repr=False)
+    """``BOE_INSIGHTS_GITHUB_CLIENT_SECRET``: that app's secret (never shown in ``repr``)."""
+    auth_signing_key: str | None = field(default=None, repr=False)
+    """``BOE_INSIGHTS_AUTH_SIGNING_KEY``: key for the tokens the server issues (>= 32 characters;
+    never shown in ``repr``)."""
+    base_url: str | None = None
+    """``BOE_INSIGHTS_BASE_URL``: the server's public URL, without path or trailing slash."""
+    allowed_users: tuple[str, ...] = ()
+    """``BOE_INSIGHTS_ALLOWED_USERS``: comma-separated allow-list entries (see ``access``)."""
+
+    @property
+    def login_enabled(self) -> bool:
+        """Whether GitHub login is configured (all four variables; ``from_env`` allows no less)."""
+        return None not in (
+            self.github_client_id,
+            self.github_client_secret,
+            self.auth_signing_key,
+            self.base_url,
+        )
+
     @property
     def saved_searches_dir(self) -> Path | None:
         """The directory the saved searches live in; ``None`` means keep them in memory."""
@@ -92,6 +124,10 @@ class Settings:
         """
         defaults = cls()
         cache_dir = env.get("BOE_INSIGHTS_CACHE_DIR")
+        client_id, client_secret, signing_key, base_url = _login(env)
+        allowed_users = _csv(env.get(_ALLOWED_USERS_VAR))
+        # Parsed only to fail at startup on a typo; ``server`` parses it again to enforce it.
+        AllowList.parse(allowed_users)
         return cls(
             cache_backend=_backend(env.get("BOE_INSIGHTS_CACHE"), defaults.cache_backend),
             cache_dir=Path(cache_dir) if cache_dir else default_cache_dir(env),
@@ -105,6 +141,11 @@ class Settings:
             port=_port(env.get("BOE_INSIGHTS_PORT"), defaults.port),
             allowed_hosts=_csv(env.get("BOE_INSIGHTS_ALLOWED_HOSTS")),
             allowed_origins=_csv(env.get("BOE_INSIGHTS_ALLOWED_ORIGINS")),
+            github_client_id=client_id,
+            github_client_secret=client_secret,
+            auth_signing_key=signing_key,
+            base_url=base_url,
+            allowed_users=allowed_users,
         )
 
 
@@ -173,3 +214,49 @@ def _port(value: str | None, default: int) -> int:
 def _csv(value: str | None) -> tuple[str, ...]:
     """Split a comma-separated list, dropping blank entries; unset or empty gives ``()``."""
     return tuple(item for item in (part.strip() for part in (value or "").split(",")) if item)
+
+
+def _login(env: Mapping[str, str]) -> tuple[str | None, str | None, str | None, str | None]:
+    """Read and validate the four login variables: all unset (login off) or all set and valid.
+
+    A value that is only whitespace counts as unset. Raises ``ValueError`` naming every missing
+    variable when only some are set. No message here repeats a value: two of them are secrets
+    and the URL may carry a password.
+    """
+    names = (_CLIENT_ID_VAR, _CLIENT_SECRET_VAR, _SIGNING_KEY_VAR, _BASE_URL_VAR)
+    values = [(env.get(name) or "").strip() or None for name in names]
+    if all(value is None for value in values):
+        return None, None, None, None
+    missing = [name for name, value in zip(names, values, strict=True) if value is None]
+    if missing:
+        # A half-configured login must never start as an open server, whatever the transport.
+        raise ValueError(f"GitHub login needs all four variables; missing {', '.join(missing)}")
+    client_id, client_secret, signing_key, base_url = values
+    assert client_id and client_secret and signing_key and base_url  # narrowed by the check above
+    if len(signing_key) < _MIN_SIGNING_KEY_LENGTH:
+        raise ValueError(
+            f"{_SIGNING_KEY_VAR} must be at least {_MIN_SIGNING_KEY_LENGTH} characters long"
+        )
+    return client_id, client_secret, signing_key, _base_url(base_url)
+
+
+def _base_url(value: str) -> str:
+    """Parse ``BOE_INSIGHTS_BASE_URL``: ``http(s)://host[:port]``, the trailing slash removed."""
+    problem = f"{_BASE_URL_VAR} must look like https://host[:port], without path or credentials"
+    parts = urlsplit(value)
+    try:
+        has_port_problem = parts.port is not None and not 0 < parts.port < 65536
+    except ValueError:
+        has_port_problem = True
+    # "?" and "#" are checked on the text: ``urlsplit`` reports an empty query as no query.
+    if (
+        parts.scheme not in ("http", "https")
+        or not parts.hostname
+        or has_port_problem
+        or "@" in parts.netloc
+        or parts.path not in ("", "/")
+        or "?" in value
+        or "#" in value
+    ):
+        raise ValueError(problem)
+    return value.removesuffix("/")

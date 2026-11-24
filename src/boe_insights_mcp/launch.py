@@ -2,9 +2,10 @@
 
 ``server.main`` is the console-script entry point and delegates here. This module turns the
 command line and ``BOE_INSIGHTS_*`` variables into :class:`~boe_insights_mcp.settings.Settings`,
-builds the server through a factory it is given (so it never imports ``server`` and a later
-package can pass authentication or middleware to that factory), and then starts it over stdio or
-HTTP. For HTTP it also owns the ``/health`` route and the Host/Origin guard configuration.
+builds the server through a factory it is given (so it never imports ``server``; the factory
+decides about authentication), and then starts it over stdio or HTTP, warning about login
+settings that do nothing or let nobody in. For HTTP it also owns the ``/health`` route and the
+Host/Origin guard configuration.
 """
 
 from __future__ import annotations
@@ -126,6 +127,17 @@ def run(argv: Sequence[str], env: Mapping[str, str], factory: ServerFactory) -> 
         stream=sys.stderr,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
+    # Warned here, not in ``Settings``: it is the launcher that knows the transport in the end
+    # (``--transport`` overrides the variable). Neither message contains a value.
+    if settings.login_enabled and settings.transport == "stdio":
+        logger.warning(
+            "GitHub login variables are ignored over stdio; it only applies with --transport http"
+        )
+    elif settings.login_enabled and not settings.allowed_users:
+        logger.warning(
+            "GitHub login is on but BOE_INSIGHTS_ALLOWED_USERS is empty: nobody can sign in "
+            "until it is set"
+        )
     server = factory(settings)
     if settings.transport == "stdio":
         server.run(show_banner=False)

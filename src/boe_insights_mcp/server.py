@@ -11,14 +11,15 @@ or :mod:`boe_insights_mcp.articles` and turns client errors into messages the mo
 gazette tools ``get_daily_summary`` and ``scan_gazette``, ``verify_citation``,
 ``explore_amendment_chain`` and the five saved-search tools ``save_search``,
 ``list_saved_searches``, ``check_saved_searches``, ``edit_saved_search`` and
-``delete_saved_search``); it also registers the resources and prompts of ``resources`` and
-``prompts``. ``main`` starts it over stdio, or over HTTP when asked (see ``launch``).
+``delete_saved_search``, left out when the server is open over HTTP); it also registers the
+resources and prompts of ``resources`` and ``prompts``.
+``main`` starts it over stdio, or over HTTP when asked (see ``launch``).
 Layering: tool functions here -> use cases in ``legislation``, ``articles``, ``trends``,
 ``gazette``, ``citations``, ``amendment_chains`` and ``saved_searches`` -> ``client`` (and
 ``catalogue`` for the trend tools and the chain explorer, ``searchstore`` for saved searches).
 This is also where the cache, rate limiter, client, catalogue store and saved-search store are
 created, in the lifespan. The tool
-docstrings, ``Field`` descriptions and ``_INSTRUCTIONS`` are sent to the language model, so they
+docstrings, ``Field`` descriptions and ``_INSTRUCTIONS_*`` are sent to the language model, so they
 are model-facing text; explanations for human readers live in ``#`` comments.
 """
 
@@ -27,12 +28,16 @@ from __future__ import annotations
 import os
 import sys
 from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
+from dataclasses import dataclass
 from datetime import date
 from typing import Annotated, Any, Literal, TypeVar
 
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.server.auth import AuthProvider
+from fastmcp.server.auth.providers.github import GitHubProvider
 from fastmcp.server.lifespan import lifespan
+from fastmcp.server.middleware.authorization import AuthMiddleware
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
@@ -48,6 +53,7 @@ from boe_insights_mcp import (
     trends,
 )
 from boe_insights_mcp import citations as citation_checks
+from boe_insights_mcp.access import AllowList, allow_check
 from boe_insights_mcp.analytics import Period
 from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
 from boe_insights_mcp.catalogue import CatalogueStore
@@ -97,7 +103,7 @@ __all__ = ["create_server", "main"]
 
 _T = TypeVar("_T")
 
-_INSTRUCTIONS = (
+_INSTRUCTIONS_HEAD = (
     "Tools over Spanish legislation from the BOE (Boletín Oficial del Estado): the consolidated "
     "legislation (most tools) and the daily gazette (get_daily_summary and scan_gazette: "
     "everything published since 1960). Most identifiers found in the gazette are not in the "
@@ -112,11 +118,17 @@ _INSTRUCTIONS = (
     "compare_topics, explain_spike, most_amended_laws and explore_amendment_chain download the "
     "collection on first use (about 30 seconds). Repeat most_amended_laws, "
     "explore_amendment_chain and scan_gazette while complete is false. "
+)
+# The one sentence about saved searches, kept apart so the instructions of a server without
+# saved searches are the same text minus exactly this.
+_INSTRUCTIONS_SAVED_SEARCHES = (
     "Saved searches (save_search, list_saved_searches, edit_saved_search, delete_saved_search) "
     "live on the server and nothing is sent automatically: when the user asks what is new, call "
-    "check_saved_searches and repeat it while complete is false. Resources and prompts only "
-    "mirror these tools. The status of a law is derived from BOE flags, so treat it as an "
-    "indication. When quoting results, pass on the attribution "
+    "check_saved_searches and repeat it while complete is false. "
+)
+_INSTRUCTIONS_TAIL = (
+    "Resources and prompts only mirror these tools. The status of a law is derived from BOE "
+    "flags, so treat it as an indication. When quoting results, pass on the attribution "
     "'Basado en datos de la Agencia Estatal Boletín Oficial del Estado' "
     "(https://www.boe.es) and say that consolidated texts are informational and have no "
     "official legal value."
@@ -151,7 +163,10 @@ def _build_cache(settings: Settings) -> Cache:
 
 
 def _lifespan(
-    client: BoeClient | None, settings: Settings | None, store: SavedSearchStore | None
+    client: BoeClient | None,
+    settings: Settings | None,
+    store: SavedSearchStore | None,
+    remote: bool,
 ) -> Any:
     """Build the server lifespan, which makes the client and the saved-search store available.
 
@@ -166,7 +181,7 @@ def _lifespan(
 
     @lifespan
     async def client_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
-        """Provide ``{"client", "catalogue", "searches"}`` to the tools while the server runs."""
+        """Provide ``{"client", "catalogue", "searches", "remote"}`` while the server runs."""
         # An injected client (tests) needs no settings, so the environment is not read.
         config = (
             (settings if settings is not None else Settings.from_env()) if client is None else None
@@ -185,7 +200,12 @@ def _lifespan(
             if config is None:
                 # Injected (tests): the caller owns the client, so it is not closed here.
                 assert client is not None
-                yield {"client": client, "catalogue": CatalogueStore(client), "searches": searches}
+                yield {
+                    "client": client,
+                    "catalogue": CatalogueStore(client),
+                    "searches": searches,
+                    "remote": remote,
+                }
                 return
             cache = _build_cache(config)
             limiter = RateLimiter(config.min_interval, config.max_concurrency)
@@ -199,6 +219,7 @@ def _lifespan(
                         "client": own_client,
                         "catalogue": CatalogueStore(own_client),
                         "searches": searches,
+                        "remote": remote,
                     }
             finally:
                 await cache.close()
@@ -217,6 +238,11 @@ def _client(ctx: Context) -> BoeClient:
 def _searches(ctx: Context) -> SavedSearchStore:
     """Return the saved-search store that the lifespan stored in the request context."""
     return ctx.lifespan_context["searches"]
+
+
+def _remote(ctx: Context) -> bool:
+    """Whether this server runs over HTTP, so owners come from tokens and are never ``local``."""
+    return ctx.lifespan_context["remote"]
 
 
 def _catalogue(ctx: Context) -> CatalogueStore:
@@ -1044,6 +1070,7 @@ async def save_search(
         ),
         "save_search",
         ToolError,
+        remote=_remote(ctx),
     )
 
 
@@ -1053,6 +1080,7 @@ async def list_saved_searches(ctx: Context) -> SavedSearchList:
         lambda who: saved_searches.list_saved_searches(_searches(ctx), who),
         "list_saved_searches",
         ToolError,
+        remote=_remote(ctx),
     )
 
 
@@ -1094,6 +1122,7 @@ async def check_saved_searches(
         ),
         "check_saved_searches",
         ToolError,
+        remote=_remote(ctx),
     )
 
 
@@ -1127,6 +1156,7 @@ async def edit_saved_search(
         ),
         "edit_saved_search",
         ToolError,
+        remote=_remote(ctx),
     )
 
 
@@ -1139,6 +1169,7 @@ async def delete_saved_search(
         lambda who: saved_searches.delete_saved_search(_searches(ctx), who, name),
         "delete_saved_search",
         ToolError,
+        remote=_remote(ctx),
     )
 
 
@@ -1162,6 +1193,10 @@ _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (scan_gazette, "Scan the BOE over several days"),
     (verify_citation, "Verify citations of laws"),
     (explore_amendment_chain, "Explore an amendment chain"),
+)
+
+# Registered after ``_TOOLS``, and only in a mode that knows who the caller is (see ``_Mode``).
+_SAVED_SEARCH_TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (save_search, "Save a search"),
     (list_saved_searches, "List saved searches"),
     (check_saved_searches, "Check saved searches for news"),
@@ -1178,30 +1213,85 @@ _ANNOTATIONS: dict[Callable[..., Awaitable[Any]], ToolAnnotations] = {
     delete_saved_search: _CHANGES,
 }
 
+# Fewer scopes than FastMCP's default of ["user"], which grants write access to the profile. This
+# server only needs the numeric id and the login that GitHub's /user returns for any valid token,
+# public profile included. GitHubTokenVerifier checks the required scopes against the
+# X-OAuth-Scopes header of /user/repos and, with none required, skips that check
+# (fastmcp/server/auth/providers/github.py:236); the OAuth proxy then sends no ``scope`` to
+# GitHub (oauth_proxy/proxy.py:953). Only a real sign-in can confirm that GitHub and the MCP
+# clients accept this; ["read:user"] is the next narrowest value to try if they do not.
+_GITHUB_SCOPES: list[str] = []
+# How long FastMCP remembers that a token passed GitHub's check, so that a burst of calls does
+# not repeat its two requests to api.github.com (the account of a revoked token stays usable
+# for at most this long).
+_GITHUB_CACHE_SECONDS = 300
+
+
+@dataclass(frozen=True)
+class _Mode:
+    """How the server is used, decided once, when it is built; everything else follows.
+
+    * local (stdio): one person, every row owned by ``local``, no authentication;
+    * open HTTP: anyone who can reach the port, so there is no one to own a saved search and
+      the saved-search tools, resource and instructions are left out;
+    * signed-in HTTP: a verified GitHub user on the allow-list, rows owned by their id.
+    """
+
+    remote: bool
+    """Served over HTTP, signed in or not: owners must come from a token, never ``local``."""
+    signed_in: bool
+    """HTTP with an authentication provider in effect."""
+
+    @classmethod
+    def of(cls, settings: Settings | None, auth: AuthProvider | None) -> _Mode:
+        """The mode of a server with these settings and authentication provider."""
+        remote = settings is not None and settings.transport == "http"
+        # An authentication provider means nothing over stdio, which has no HTTP layer.
+        return cls(remote=remote, signed_in=remote and auth is not None)
+
+    @property
+    def saved_searches(self) -> bool:
+        """Whether saved searches exist: they need to know whose they are."""
+        return not self.remote or self.signed_in
+
 
 def create_server(
     *,
     client: BoeClient | None = None,
     settings: Settings | None = None,
     store: SavedSearchStore | None = None,
+    auth: AuthProvider | None = None,
 ) -> FastMCP:
     """Build the MCP server without touching the network or the disk.
 
     With no ``client``, the cache, rate limiter and client are created from ``settings`` (or
     the environment) when the server starts. An injected ``client`` or ``store`` is used as it
     is and left open; with an injected client and no store, saved searches live in memory.
+    ``settings`` (stdio when ``None``) and ``auth`` choose the mode (see ``_Mode``); with ``auth``
+    over HTTP, only the users of ``settings.allowed_users`` may use anything.
     """
+    mode = _Mode.of(settings, auth)
     # ``mask_error_details=True``: see ``_guard``.
     server = FastMCP(
         "boe-insights",
-        instructions=_INSTRUCTIONS,
-        lifespan=_lifespan(client, settings, store),
+        instructions=_INSTRUCTIONS_HEAD
+        + (_INSTRUCTIONS_SAVED_SEARCHES if mode.saved_searches else "")
+        + _INSTRUCTIONS_TAIL,
+        lifespan=_lifespan(client, settings, store, mode.remote),
         mask_error_details=True,
+        auth=auth if mode.signed_in else None,
     )
-    for function, title in _TOOLS:
+    if mode.signed_in:
+        assert settings is not None  # signed_in implies HTTP settings
+        # The provider only proves who the caller is; this decides whether they may use the
+        # server. It applies to every tool, resource and prompt, on listing and on use.
+        server.add_middleware(
+            AuthMiddleware(auth=allow_check(AllowList.parse(settings.allowed_users)))
+        )
+    for function, title in (*_TOOLS, *(_SAVED_SEARCH_TOOLS if mode.saved_searches else ())):
         server.tool(function, title=title, annotations=_ANNOTATIONS.get(function, _READ_ONLY))
     launch.register_health(server)
-    resources.register(server)
+    resources.register(server, with_saved_searches=mode.saved_searches)
     prompts.register(server)
     return server
 
@@ -1212,5 +1302,18 @@ def main(argv: Sequence[str] | None = None) -> None:
 
 
 def _build(settings: Settings) -> FastMCP:
-    """Build the server for ``settings``; the one place a later package adds auth or middleware."""
-    return create_server(settings=settings)
+    """Build the server for ``settings``, with GitHub login when HTTP and login are configured."""
+    auth: GitHubProvider | None = None
+    if settings.transport == "http" and settings.login_enabled:
+        client_id, client_secret = settings.github_client_id, settings.github_client_secret
+        signing_key, base_url = settings.auth_signing_key, settings.base_url
+        assert client_id and client_secret and signing_key and base_url  # login_enabled
+        auth = GitHubProvider(
+            client_id=client_id,
+            client_secret=client_secret,
+            base_url=base_url,
+            jwt_signing_key=signing_key,
+            required_scopes=_GITHUB_SCOPES,
+            cache_ttl_seconds=_GITHUB_CACHE_SECONDS,
+        )
+    return create_server(settings=settings, auth=auth)
