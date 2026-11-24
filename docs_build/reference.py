@@ -4,7 +4,7 @@ Responsibility: list every tool, resource and prompt of the fully featured serve
 FastMCP's own listing methods, and turn the list into six Markdown pages (tools, resources and
 prompts, in English and in Spanish). The English pages are generated entirely from the server.
 The Spanish pages have the same structure, with Spanish headings and labels and, next to each
-entry, a hand-written summary read from ``docs/reference/summaries.es.toml``; names, URIs,
+entry, a hand-written summary read from ``docs_build/summaries.es.toml``; names, URIs,
 parameter names and the English descriptions stay as they are, because they are what the model
 sees.
 
@@ -28,9 +28,9 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import hashlib
+import html
 import json
 import re
-import threading
 import tomllib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -66,22 +66,11 @@ Language = Literal["en", "es"]
 PAGES: tuple[Kind, ...] = ("tools", "resources", "prompts")
 """The page names, which are also the kinds of component and the tables of the summaries file."""
 
-DEFAULT_SUMMARIES = Path(__file__).resolve().parent.parent / "docs/reference/summaries.es.toml"
+DEFAULT_SUMMARIES = Path(__file__).resolve().parent / "summaries.es.toml"
 """Where the hand-written Spanish summaries live."""
 
-_SUMMARIES_NAME = "docs/reference/summaries.es.toml"
+_SUMMARIES_NAME = "docs_build/summaries.es.toml"
 _SINGULAR: dict[str, str] = {"tools": "tool", "resources": "resource", "prompts": "prompt"}
-
-SAVED_SEARCH_TOOLS: frozenset[str] = frozenset(
-    {
-        "save_search",
-        "list_saved_searches",
-        "check_saved_searches",
-        "edit_saved_search",
-        "delete_saved_search",
-    }
-)
-"""The tools that read or write a person's saved searches; they get their own section."""
 
 # Tool groups in page order, each with its tools in reading order. A tool not named here still
 # appears, under "other", so a new tool is never silently left out of the page.
@@ -129,6 +118,9 @@ _TOOL_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
 )
+
+SAVED_SEARCH_TOOLS: frozenset[str] = frozenset(dict(_TOOL_GROUPS)["saved"])
+"""The tools that read or write a person's saved searches; they get their own section."""
 
 _LABELS: dict[Language, dict[str, str]] = {
     "en": {
@@ -434,27 +426,10 @@ async def collect_components_async() -> list[Component]:
 def collect_components() -> list[Component]:
     """Synchronous :func:`collect_components_async`, usable from a build hook.
 
-    Inside a running event loop (where ``asyncio.run`` would refuse) it runs in a helper thread.
+    Must not be called from inside a running event loop (``asyncio.run`` raises there); the
+    command line and the MkDocs hook, its only callers, run synchronously.
     """
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(collect_components_async())
-    result: list[Component] = []
-    errors: list[BaseException] = []
-
-    def work() -> None:
-        try:
-            result.extend(asyncio.run(collect_components_async()))
-        except BaseException as error:  # re-raised in the caller's thread
-            errors.append(error)
-
-    thread = threading.Thread(target=work)
-    thread.start()
-    thread.join()
-    if errors:
-        raise errors[0]
-    return result
+    return asyncio.run(collect_components_async())
 
 
 # --- the hash and the two checks ---------------------------------------------------------------
@@ -603,7 +578,7 @@ def escape_markdown(text: str) -> str:
 
 def _escape_paragraph(paragraph: str) -> str:
     """Escape one paragraph that is already a single line."""
-    escaped = paragraph.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    escaped = html.escape(paragraph, quote=False)
     escaped = _INLINE_SPECIAL.sub(lambda match: "\\" + match.group(0), escaped)
     if escaped[:1] in "-+#":
         return "\\" + escaped

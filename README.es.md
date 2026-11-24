@@ -533,7 +533,7 @@ NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict  # la misma compilación que 
 
 Las pruebas live consultan la API real del BOE: úsalas con moderación. La lógica se escribe primero con pruebas, y las pruebas unitarias nunca acceden a la red: usan [respx](https://lundberg.github.io/respx/) con respuestas reales de la API grabadas en `tests/fixtures/boe/`. El comportamiento verificado de la API está documentado en [`docs/api-notes.md`](docs/api-notes.md) (en inglés).
 
-Las páginas de referencia del sitio se generan a partir del propio servidor. Sus resúmenes en español de las herramientas se escriben a mano en `docs/reference/summaries.es.toml`; cuando cambia el texto en inglés de una herramienta, vuelve a leer su resumen en español y después actualiza su hash con `uv run python -m docs_build --refresh tools.NAME` (`--hash tools.NAME` solo muestra el actual).
+Las páginas de referencia del sitio se generan a partir del propio servidor. Sus resúmenes en español de las herramientas se escriben a mano en `docs_build/summaries.es.toml`; cuando cambia el texto en inglés de una herramienta, vuelve a leer su resumen en español y después actualiza su hash con `uv run python -m docs_build --refresh tools.NAME` (`--hash tools.NAME` solo muestra el actual).
 
 ## Licencia
 

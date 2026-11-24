@@ -7,9 +7,6 @@ edit_uri: ""
 copyright: Basado en datos de la Agencia Estatal Boletín Oficial del Estado
 
 docs_dir: docs
-# Read by the reference generator, not a site asset.
-exclude_docs: |
-  reference/summaries.es.toml
 strict: true
 
 validation:

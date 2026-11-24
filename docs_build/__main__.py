@@ -15,25 +15,26 @@ from docs_build import reference
 
 
 def _parser() -> argparse.ArgumentParser:
-    """The argument parser; exactly one of ``--out``, ``--hash`` and ``--refresh`` is used."""
+    """The argument parser; exactly one of ``--out``, ``--hash`` and ``--refresh`` is required."""
     parser = argparse.ArgumentParser(
         prog="python -m docs_build",
         description="Generate the reference pages (tools, resources, prompts; English and "
         "Spanish) of the docs site from the server itself.",
     )
-    parser.add_argument("--out", type=Path, help="directory to write the six Markdown files to")
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--out", type=Path, help="directory to write the six Markdown files to")
     parser.add_argument(
         "--summaries",
         type=Path,
         default=reference.DEFAULT_SUMMARIES,
-        help="the Spanish summaries file (default: docs/reference/summaries.es.toml)",
+        help="the Spanish summaries file (default: docs_build/summaries.es.toml)",
     )
-    parser.add_argument(
+    mode.add_argument(
         "--hash",
         metavar="KEY",
         help="print the current source hash of ONE entry, e.g. tools.find_codes, and exit",
     )
-    parser.add_argument(
+    mode.add_argument(
         "--refresh",
         metavar="KEY",
         help="store the current source hash of ONE entry in the summaries file. Do this only "
@@ -44,11 +45,7 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line and return the exit status (0 ok, 1 build problems, 2 usage)."""
-    parser = _parser()
-    args = parser.parse_args(argv)
-    modes = [value for value in (args.out, args.hash, args.refresh) if value is not None]
-    if len(modes) != 1:
-        parser.error("give exactly one of --out, --hash or --refresh")
+    args = _parser().parse_args(argv)
     try:
         components = reference.collect_components()
         if args.hash is not None:

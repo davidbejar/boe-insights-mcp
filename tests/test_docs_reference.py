@@ -21,7 +21,7 @@ from docs_build import reference
 from docs_build.reference import Component, Parameter, ReferenceBuildError, Summary
 
 REPO = Path(__file__).resolve().parent.parent
-SUMMARIES = REPO / "docs" / "reference" / "summaries.es.toml"
+SUMMARIES = REPO / "docs_build" / "summaries.es.toml"
 
 
 def tool(
@@ -406,10 +406,16 @@ def test_page_file_names_follow_the_suffix_convention() -> None:
 # --- the real server ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def real_components() -> list[Component]:
-    """The components of the full server."""
-    return reference.collect_components()
+@pytest.fixture
+def real_components(server_components: list[Component]) -> list[Component]:
+    """The components of the full server (shared for the whole run)."""
+    return server_components
+
+
+@pytest.fixture
+def shared_collection(monkeypatch: pytest.MonkeyPatch, server_components: list[Component]) -> None:
+    """Make ``reference.collect_components`` return the shared listing instead of a new one."""
+    monkeypatch.setattr(reference, "collect_components", lambda: server_components)
 
 
 def test_the_full_server_has_23_tools_5_resources_and_8_prompts(
@@ -487,7 +493,9 @@ def test_the_real_output_is_byte_identical_between_two_builds() -> None:
 # --- the command line --------------------------------------------------------------------------
 
 
-def test_the_cli_writes_the_six_files_and_nothing_else(tmp_path: Path) -> None:
+def test_the_cli_writes_the_six_files_and_nothing_else(
+    tmp_path: Path, real_components: list[Component]
+) -> None:
     out = tmp_path / "out"
     assert cli.main(["--out", str(out)]) == 0
     assert sorted(p.name for p in out.iterdir()) == [
@@ -498,10 +506,12 @@ def test_the_cli_writes_the_six_files_and_nothing_else(tmp_path: Path) -> None:
         "tools.es.md",
         "tools.md",
     ]
-    assert (out / "tools.md").read_text(encoding="utf-8") == reference.render_pages("en")["tools"]
-    assert (out / "tools.es.md").read_text(encoding="utf-8") == reference.render_pages("es")[
-        "tools"
-    ]
+    assert (out / "tools.md").read_text(encoding="utf-8") == reference.render_pages(
+        "en", components=real_components
+    )["tools"]
+    assert (out / "tools.es.md").read_text(encoding="utf-8") == reference.render_pages(
+        "es", components=real_components
+    )["tools"]
 
 
 def test_the_cli_makes_no_network_call_and_writes_only_to_the_output_directory(
@@ -522,6 +532,7 @@ def test_the_cli_makes_no_network_call_and_writes_only_to_the_output_directory(
     assert SUMMARIES.read_bytes() == before
 
 
+@pytest.mark.usefixtures("shared_collection")
 def test_the_cli_fails_with_one_line_per_problem_and_writes_nothing(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -559,6 +570,7 @@ def test_the_cli_prints_the_hash_of_one_entry(
     assert cli.main(["--hash", "tools.nope"]) == 1
 
 
+@pytest.mark.usefixtures("shared_collection")
 def test_the_cli_refreshes_one_hash_in_a_copy_of_the_file(tmp_path: Path) -> None:
     source = SUMMARIES.read_text(encoding="utf-8")
     entry = tomllib.loads(source)["tools"]["find_codes"]

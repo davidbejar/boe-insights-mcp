@@ -23,6 +23,12 @@ from mkdocs.exceptions import Abort
 REPO = Path(__file__).resolve().parent.parent
 
 
+@pytest.fixture
+def shared_collection(monkeypatch: pytest.MonkeyPatch, server_components: list) -> None:
+    """Make the hook reuse the run's one listing of the server instead of collecting its own."""
+    monkeypatch.setattr(reference, "collect_components", lambda: server_components)
+
+
 def load_hook() -> ModuleType:
     """Import ``hooks/reference_pages.py`` by path, as MkDocs does, as a fresh module."""
     spec = importlib.util.spec_from_file_location(
@@ -34,6 +40,7 @@ def load_hook() -> ModuleType:
     return module
 
 
+@pytest.mark.usefixtures("shared_collection")
 def test_the_hook_generates_the_six_pages_once() -> None:
     hook = load_hook()
     first = hook._pages()
@@ -57,6 +64,7 @@ def test_the_hook_leaves_other_pages_alone() -> None:
     assert hook.on_page_markdown("# Home", page, None, None) == "# Home"
 
 
+@pytest.mark.usefixtures("shared_collection")
 def test_a_stale_or_missing_summary_aborts_the_build(monkeypatch: pytest.MonkeyPatch) -> None:
     hook = load_hook()
     real = reference.load_summaries()

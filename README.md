@@ -532,7 +532,7 @@ NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict  # the same build the checks 
 
 Live tests hit the real BOE API; run them sparingly. Logic is written tests first, and unit tests never touch the network: they use [respx](https://lundberg.github.io/respx/) with real API responses recorded in `tests/fixtures/boe/`. Verified API behaviour is documented in [`docs/api-notes.md`](docs/api-notes.md).
 
-The site's reference pages are generated from the server itself. Their Spanish tool summaries are written by hand in `docs/reference/summaries.es.toml`; when a tool's English text changes, re-read its Spanish summary and then refresh its hash with `uv run python -m docs_build --refresh tools.NAME` (`--hash tools.NAME` only prints the current one).
+The site's reference pages are generated from the server itself. Their Spanish tool summaries are written by hand in `docs_build/summaries.es.toml`; when a tool's English text changes, re-read its Spanish summary and then refresh its hash with `uv run python -m docs_build --refresh tools.NAME` (`--hash tools.NAME` only prints the current one).
 
 ## License
 
