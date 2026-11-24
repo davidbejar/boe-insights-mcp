@@ -13,7 +13,6 @@ import stat
 from collections.abc import AsyncIterator, Callable
 from datetime import UTC, date, datetime
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 import httpx
@@ -484,59 +483,10 @@ async def test_a_check_reports_progress(
     ]
 
 
-# --- owners ------------------------------------------------------------------------------------
-
-
-def authenticate_as(monkeypatch: pytest.MonkeyPatch, subject: str | None) -> None:
-    """Make the server see a request authenticated as ``subject`` (``None``: no token)."""
-    token = None if subject is None else SimpleNamespace(claims={"sub": subject})
-    monkeypatch.setattr("boe_insights_mcp.owner.get_access_token", lambda: token)
-
-
-async def test_each_user_sees_only_their_own_searches(
-    mcp: Client[Any], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    authenticate_as(monkeypatch, "alice")
-    await call(mcp, "save_search", words="vivienda", name="privada")
-    authenticate_as(monkeypatch, "bob")
-    await call(mcp, "save_search", words="otra cosa", name="privada")
-
-    bobs = await call(mcp, "list_saved_searches")
-    assert [s["words"] for s in bobs["searches"]] == ["otra cosa"]
-    authenticate_as(monkeypatch, "carol")
-    assert (await call(mcp, "list_saved_searches"))["searches"] == []
-    for tool in ("check_saved_searches", "delete_saved_search"):
-        with pytest.raises(ToolError, match="no saved search named 'privada'"):
-            await call(mcp, tool, name="privada")
-    with pytest.raises(ToolError, match="no saved search named 'privada'"):
-        await call(mcp, "edit_saved_search", name="privada", new_name="mia")
-    authenticate_as(monkeypatch, "alice")
-    alices = await call(mcp, "list_saved_searches")
-    assert [s["words"] for s in alices["searches"]] == ["vivienda"]
-
-
-async def test_the_limit_of_twenty_is_per_user(
-    mcp: Client[Any], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    authenticate_as(monkeypatch, "alice")
-    for number in range(20):
-        await call(mcp, "save_search", words=f"palabra{number}")
-    authenticate_as(monkeypatch, "bob")
-
-    saved = await call(mcp, "save_search", words="una")
-
-    assert saved["total"] == 1
-
-
-async def test_a_token_without_a_subject_is_refused_not_shared(
-    mcp: Client[Any], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(
-        "boe_insights_mcp.owner.get_access_token", lambda: SimpleNamespace(claims={})
-    )
-
-    with pytest.raises(ToolError):
-        await call(mcp, "list_saved_searches")
+# --- owners ---------------------------------------------------------------------------------------
+# Who may see whose searches is decided by the signed-in mode and tested in
+# tests/test_login_modes.py (two users, per-user limit, resource, tokens without a usable subject).
+# Without authentication every search belongs to the owner "local".
 
 
 # --- lifespan and the store --------------------------------------------------------------------
@@ -650,10 +600,7 @@ async def test_the_server_registers_the_resources_and_prompts(mcp: Client[Any]) 
     assert len(await mcp.list_prompts()) == 8
 
 
-async def test_the_saved_searches_resource_mirrors_the_tool(
-    mcp: Client[Any], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    authenticate_as(monkeypatch, "alice")
+async def test_the_saved_searches_resource_mirrors_the_tool(mcp: Client[Any]) -> None:
     await call(mcp, "save_search", words="vivienda", name="mia")
 
     contents = await mcp.read_resource("boe://saved-searches")
@@ -665,31 +612,6 @@ async def test_the_saved_searches_resource_mirrors_the_tool(
     assert resource["searches"] == tool["searches"]
     assert resource["total"] == 1
     assert resource["provenance"]["attribution"].startswith("Basado en datos")
-
-
-async def test_the_saved_searches_resource_is_per_owner(
-    mcp: Client[Any], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    authenticate_as(monkeypatch, "alice")
-    await call(mcp, "save_search", words="vivienda", name="mia")
-    authenticate_as(monkeypatch, "bob")
-
-    contents = await mcp.read_resource("boe://saved-searches")
-    bobs = json.loads(getattr(contents[0], "text", ""))
-
-    assert bobs["searches"] == []
-    assert bobs["note"] == "No saved searches. Create one with save_search."
-
-
-async def test_the_saved_searches_resource_refuses_a_token_without_a_subject(
-    mcp: Client[Any], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(
-        "boe_insights_mcp.owner.get_access_token", lambda: SimpleNamespace(claims={})
-    )
-
-    with pytest.raises(MCPError):
-        await mcp.read_resource("boe://saved-searches")
 
 
 # --- a bad store file or a missing identity never takes the server down -----------------------
@@ -784,22 +706,3 @@ async def test_a_store_that_becomes_usable_works_without_restarting_the_server(
         listed = await call(client, "list_saved_searches")
 
     assert listed["searches"] == []
-
-
-async def test_a_token_without_a_subject_gets_a_curated_error_from_every_tool_and_the_resource(
-    mcp: Client[Any], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(
-        "boe_insights_mcp.owner.get_access_token", lambda: SimpleNamespace(claims={})
-    )
-    expected = (
-        "Not signed in (unauthorized, not retryable): saved searches need an identified user."
-    )
-
-    for tool, arguments in SAVED_TOOLS.items():
-        with pytest.raises(ToolError) as caught:
-            await mcp.call_tool(tool, arguments)
-        assert expected in str(caught.value), tool
-    with pytest.raises(MCPError) as resource_error:
-        await mcp.read_resource("boe://saved-searches")
-    assert expected in str(resource_error.value)

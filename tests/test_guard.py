@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+from typing import Any
+
 import pytest
 from pydantic import BaseModel, ValidationError
 
 from boe_insights_mcp.errors import BoeNotFoundError
-from boe_insights_mcp.guard import guarded, invalid_argument
+from boe_insights_mcp.guard import guarded, guarded_for_owner, invalid_argument
 from boe_insights_mcp.owner import NotSignedInError
 from boe_insights_mcp.searchstore import SearchStoreError
 
@@ -81,3 +84,69 @@ async def test_a_missing_identity_is_a_curated_unauthorized_error() -> None:
         "Not signed in (unauthorized, not retryable): saved searches need an identified user."
     )
     assert "no subject" not in str(caught.value)
+
+
+def with_token(monkeypatch: pytest.MonkeyPatch, token: Any) -> None:
+    """Make ``owner`` see ``token`` as the authenticated access token."""
+    monkeypatch.setattr("boe_insights_mcp.owner.get_access_token", lambda: token)
+
+
+class Spy:
+    """A use case that records the owner it was run for."""
+
+    def __init__(self) -> None:
+        self.owners: list[str] = []
+
+    async def __call__(self, who: str) -> str:
+        self.owners.append(who)
+        return "done"
+
+
+async def test_locally_the_use_case_runs_for_the_local_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with_token(monkeypatch, None)
+    spy = Spy()
+
+    assert await guarded_for_owner(spy, "tool", CallerError) == "done"
+    assert spy.owners == ["local"]
+
+
+async def test_over_http_the_use_case_runs_for_the_github_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "1001", "login": "alice"}))
+    spy = Spy()
+
+    result = await guarded_for_owner(spy, "tool", CallerError, remote=True)
+
+    assert result == "done"
+    assert spy.owners == ["github:1001"]
+
+
+async def test_over_http_without_a_token_the_use_case_never_runs_and_the_message_is_curated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with_token(monkeypatch, None)
+    spy = Spy()
+
+    with pytest.raises(CallerError) as caught:
+        await guarded_for_owner(spy, "tool", CallerError, remote=True)
+
+    assert spy.owners == []
+    assert str(caught.value) == (
+        "Not signed in (unauthorized, not retryable): saved searches need an identified user."
+    )
+
+
+@pytest.mark.parametrize("subject", ["abc", "", " 12", 12, None])
+async def test_over_http_an_unusable_subject_never_runs_the_use_case(
+    monkeypatch: pytest.MonkeyPatch, subject: Any
+) -> None:
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": subject}))
+    spy = Spy()
+
+    with pytest.raises(CallerError, match="Not signed in"):
+        await guarded_for_owner(spy, "tool", CallerError, remote=True)
+
+    assert spy.owners == []
