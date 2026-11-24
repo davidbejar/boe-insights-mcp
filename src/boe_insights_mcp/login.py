@@ -12,11 +12,16 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from urllib.parse import parse_qs, urlsplit
 
+from fastmcp.server.auth.oauth_proxy.models import _hash_token
+from fastmcp.server.auth.oauth_proxy.ui import create_error_html
 from fastmcp.server.auth.providers.github import GitHubProvider
 from fastmcp.server.auth.redirect_validation import DEFAULT_LOCALHOST_PATTERNS
-from mcp.server.auth.provider import AccessToken, AuthorizationCode, TokenError
+from mcp.server.auth.provider import AccessToken, AuthorizationCode, RefreshToken, TokenError
 from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
+from starlette.requests import Request
+from starlette.responses import HTMLResponse, RedirectResponse
 
 from boe_insights_mcp.access import AllowList
 
@@ -34,6 +39,23 @@ LOOPBACK_REDIRECT_PATTERNS: tuple[str, ...] = (*DEFAULT_LOCALHOST_PATTERNS, "htt
 def redirect_patterns(extra: tuple[str, ...]) -> list[str]:
     """The redirect URI patterns clients may use: loopback ones plus the operator's ``extra``."""
     return [*LOOPBACK_REDIRECT_PATTERNS, *extra]
+
+
+def _refusal_page(sub: Any, login: Any) -> str:
+    """The HTML shown to a GitHub account the allow-list does not admit.
+
+    Says nothing about who is on the list. ``sub`` and ``login`` come from GitHub, so they are
+    escaped and capped before they reach the page; the numeric id is shown because the operator
+    needs it for an ``id:<n>`` entry.
+    """
+    if isinstance(sub, str | int) and str(sub):
+        shown_login = f" (GitHub login: {str(login)[:100]})" if login else ""
+        who = f" Ask the operator to add id:{str(sub)[:40]}{shown_login} to the allow-list."
+    else:
+        who = " Ask the operator to add it to the allow-list."
+    message = "This GitHub account is not allowed to use this server." + who
+    # create_error_html HTML-escapes the message, so GitHub-supplied text needs no escaping here.
+    return create_error_html(error_title="Access not allowed", error_message=message)
 
 
 class AllowListedGitHubProvider(GitHubProvider):
@@ -107,6 +129,84 @@ class AllowListedGitHubProvider(GitHubProvider):
                 await self._code_store.delete(key=authorization_code.code)
                 raise TokenError("invalid_grant", "This GitHub account is not permitted here")
         return await super().exchange_authorization_code(client, authorization_code)
+
+    async def exchange_refresh_token(
+        self,
+        client: OAuthClientInformationFull,
+        refresh_token: RefreshToken,
+        scopes: list[str],
+    ) -> OAuthToken:
+        """Rotate tokens only for an admitted user; a removed one gets ``invalid_grant``, no state.
+
+        The base class never looks at who the refresh token belongs to, so a user removed from the
+        allow-list after signing in could keep minting tokens (they were rejected at ``/mcp``, but
+        issuing them is the thing to prevent). The identity is the stored upstream token, checked
+        through the same cached verifier as at the code exchange; GitHub's refresh response is not
+        needed, so a refused user costs no refresh call to GitHub. When the account is known and
+        not admitted, the stale refresh token, its JTI mapping and the upstream token set are
+        deleted so the token cannot be retried; when GitHub cannot say who the token belongs to
+        (revoked, or unreachable) the request is refused but the records stay, since that is not
+        a verdict on the allow-list.
+        """
+        stored = await self._stored_upstream(refresh_token.token)
+        if stored is not None:
+            jti, upstream_token_id, upstream_access = stored
+            upstream = await self._token_validator.verify_token(upstream_access)
+            if upstream is None or not self._admits(upstream):
+                if upstream is not None:
+                    await self._refresh_token_store.delete(key=_hash_token(refresh_token.token))
+                    await self._jti_mapping_store.delete(key=jti)
+                    await self._upstream_token_store.delete(key=upstream_token_id)
+                raise TokenError("invalid_grant", "This GitHub account is not permitted here")
+        return await super().exchange_refresh_token(client, refresh_token, scopes)
+
+    async def _stored_upstream(self, refresh_token: str) -> tuple[str, str, str] | None:
+        """The ``(jti, upstream token id, upstream access token)`` behind a refresh token.
+
+        ``None`` when the token is not one this server signed or has no stored sign-in; the base
+        class then rejects it with its own ``invalid_grant``, so nothing is decided here.
+        """
+        try:
+            payload = self.jwt_issuer.verify_token(refresh_token, expected_token_use="refresh")
+            jti = payload["jti"]
+        except Exception:  # any failure means "not ours"; the base class reports it
+            return None
+        mapping = await self._jti_mapping_store.get(key=jti)
+        if mapping is None:
+            return None
+        upstream = await self._upstream_token_store.get(key=mapping.upstream_token_id)
+        if upstream is None:
+            return None
+        return jti, mapping.upstream_token_id, upstream.access_token
+
+    async def _handle_idp_callback(self, request: Request) -> HTMLResponse | RedirectResponse:
+        """GitHub's redirect back: show an unlisted account a 403 page instead of a success page.
+
+        The callback is the first point where the GitHub identity is known. The base handler is
+        long and private, so it runs unchanged and its result is inspected: on success it has
+        stored a one-time code and answers with a redirect to the client carrying that code. If
+        the account behind the code is not admitted, the code is deleted (the transaction is
+        already spent and the upstream token is only ever stored at the code exchange, so nothing
+        remains) and the redirect is replaced by a plain page. Without this the person sees a
+        success page and the client later fails with a 401 it cannot explain.
+        ``exchange_authorization_code`` keeps its own check as a second line of defence.
+        """
+        response = await super()._handle_idp_callback(request)
+        if not isinstance(response, RedirectResponse):
+            return response
+        codes = parse_qs(urlsplit(response.headers["location"]).query).get("code")
+        if not codes:
+            return response  # an error redirect (RFC 6749 section 4.1.2.1): no code, no identity
+        code = codes[0]
+        code_model = await self._code_store.get(key=code)
+        if code_model is None:
+            return response
+        upstream = await self._token_validator.verify_token(code_model.idp_tokens["access_token"])
+        if upstream is not None and self._admits(upstream):
+            return response
+        await self._code_store.delete(key=code)
+        claims = getattr(upstream, "claims", None) or {}
+        return HTMLResponse(_refusal_page(claims.get("sub"), claims.get("login")), status_code=403)
 
     def _admits(self, access: AccessToken) -> bool:
         """Whether the GitHub identity in ``access``'s claims is on the allow-list."""
