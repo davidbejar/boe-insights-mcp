@@ -1,13 +1,22 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
+    <img src="docs/assets/logo.svg" alt="boe-insights-mcp logo" width="420">
+  </picture>
+</p>
+
+<p align="center">An independent open-source project. Not affiliated with, endorsed by or connected to the Agencia Estatal Boletín Oficial del Estado.</p>
+
 # boe-insights-mcp
 
-**English** | [Español](README.es.md)
+**English** | [Español](README.es.md) | [Documentation site](https://davidbejar.github.io/boe-insights-mcp/)
 
 [![CI](https://github.com/davidbejar/boe-insights-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/davidbejar/boe-insights-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that gives AI assistants such as Claude analytical tools over the open data of Spain's BOE (Boletín Oficial del Estado). Instead of one tool per API endpoint, the tools are shaped around the questions people actually ask: "is this law still in force?", "what changed in this article?", "how has legislation on X evolved?".
 
-**Status:** early development. Twenty-three tools are available today (law lookup, search, status overview and code lookup; amendment history and amendment chains; reading, comparing and tracing the history of single articles; checking citations against the text; a law's table of contents; trend analytics over the whole consolidated collection; the BOE's daily gazette; and saved searches), plus five [resources](#resources-and-prompts) and eight prompts (four, each in English and Spanish); everything else is on the [roadmap](#roadmap). Not yet published on PyPI: run it from source.
+**Status:** early development. Twenty-three tools are available today (law lookup, search, status overview and code lookup; amendment history and amendment chains; reading, comparing and tracing the history of single articles; checking citations against the text; a law's table of contents; trend analytics over the whole consolidated collection; the BOE's daily gazette; and saved searches), plus five [resources](#resources-and-prompts) and eight prompts (four, each in English and Spanish); everything else is on the [roadmap](#roadmap). Not on PyPI yet (release 0.1.0 is next): run it with `uvx` straight from GitHub or from source, see the [quick start](#quick-start).
 
 ## What you can ask
 
@@ -327,7 +336,7 @@ Every result carries a `provenance` block. Trimmed output of `compare_article_ve
 
 ## How saved searches work
 
-A saved search is a search kept on your machine plus a bookmark of how far it was last checked. It exists so that you can ask, a week later, "anything new?" without repeating the filters and without seeing the same items twice.
+A saved search is a search kept by the server (on your machine when you run it yourself) plus a bookmark of how far it was last checked. It exists so that you can ask, a week later, "anything new?" without repeating the filters and without seeing the same items twice.
 
 **The server cannot alert anyone.** It runs only while your app is using it and has no way to send a message. Nothing happens until you ask ("anything new?"), and then the assistant calls `check_saved_searches`. A search you never check just waits.
 
@@ -347,6 +356,8 @@ Saving a gazette search reads today's issue once and remembers what it already h
 **Limit.** 20 saved searches. Saving a 21st fails with a message telling you to delete one first.
 
 **Where the data lives.** In a small SQLite file, `saved_searches.sqlite3`, in your user data directory (on macOS `~/Library/Application Support/boe-insights-mcp/`, on Linux `~/.local/share/boe-insights-mcp/`). The file is private to your user, stays on your machine and is never sent anywhere; a check sends only the BOE requests it needs. To move your searches, copy the file to the same place on the other machine, or set `BOE_INSIGHTS_DATA_DIR` ([Configuration](#configuration)). To delete everything, delete the file. It is separate from the response cache, which is safe to delete at any time: clearing the cache never loses a saved search. With `BOE_INSIGHTS_CACHE=memory` and no `BOE_INSIGHTS_DATA_DIR`, searches are kept in memory only and are lost when the server stops.
+
+On a server shared over HTTP with GitHub sign-in, the file lives on the server's host and each search belongs to the account that saved it (stored as `github:<id>`; run locally, the owner is `local`): nobody else can see, check, edit or delete it, and the 20-search limit applies per account. Without sign-in, a server open over HTTP does not offer saved searches at all.
 
 **These are the only tools that change anything**, and only in that file. `edit_saved_search` and `delete_saved_search` are marked as destructive, so some apps ask you to confirm before running them; a deleted search cannot be recovered. `check_saved_searches` also changes something (it records what it showed), unless you pass `since`.
 
@@ -395,67 +406,69 @@ In Claude Code, prompts appear as slash commands, for example `/mcp__boe-insight
 
 Prerequisites: Python 3.11+ and [uv](https://docs.astral.sh/uv/). No API key is needed: the BOE open data API is public.
 
-Run from source:
-
-```bash
-git clone https://github.com/davidbejar/boe-insights-mcp.git
-cd boe-insights-mcp
-uv sync
-```
-
-The server speaks MCP over stdio, so you normally do not start it by hand: your MCP client does.
-
-**Claude Desktop.** Add this to `claude_desktop_config.json` and restart the app (use the absolute path of your clone):
-
-```json
-{
-  "mcpServers": {
-    "boe-insights": {
-      "command": "uv",
-      "args": ["--directory", "/absolute/path/to/boe-insights-mcp", "run", "boe-insights-mcp"]
-    }
-  }
-}
-```
-
-**Claude Code:**
-
-```bash
-claude mcp add boe-insights -- uv --directory /absolute/path/to/boe-insights-mcp run boe-insights-mcp
-```
-
-Or commit the same server definition in a project-level `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "boe-insights": {
-      "command": "uv",
-      "args": ["--directory", "/absolute/path/to/boe-insights-mcp", "run", "boe-insights-mcp"]
-    }
-  }
-}
-```
-
-**Without cloning**, uv can fetch and run it straight from GitHub:
+The server speaks MCP over stdio, so you normally do not start it by hand: your MCP client does. Until release 0.1.0 is on PyPI, uv fetches and runs it straight from GitHub. The command your client runs is:
 
 ```bash
 uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
 ```
 
-In a client configuration, use `"command": "uvx"` with `"args": ["--from", "git+https://github.com/davidbejar/boe-insights-mcp", "boe-insights-mcp"]`.
+After release 0.1.0 it will be just `uvx boe-insights-mcp`. Do not use that plain form before the release is on PyPI: the name there is not this project's yet, so it would run whatever is published under it, if anything.
+
+For Claude Code, for example:
+
+```bash
+claude mcp add boe-insights -- uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
+```
+
+Other ways to run it (documentation site):
+
+- [With uvx](https://davidbejar.github.io/boe-insights-mcp/run/uvx/): no clone, no install.
+- [From source](https://davidbejar.github.io/boe-insights-mcp/run/from-source/): a clone of the repository.
+- [Over HTTP](https://davidbejar.github.io/boe-insights-mcp/run/http/): one server for several people or machines.
+- [As a container](https://davidbejar.github.io/boe-insights-mcp/run/container/): the container image.
+- [With GitHub sign-in](https://davidbejar.github.io/boe-insights-mcp/run/github-login/): an HTTP server open only to the GitHub accounts you list.
+- Client setup: [Claude Code](https://davidbejar.github.io/boe-insights-mcp/run/clients/claude-code/), [Claude Desktop](https://davidbejar.github.io/boe-insights-mcp/run/clients/claude-desktop/), [Cursor](https://davidbejar.github.io/boe-insights-mcp/run/clients/cursor/), [VS Code](https://davidbejar.github.io/boe-insights-mcp/run/clients/vscode/) and [any other client](https://davidbejar.github.io/boe-insights-mcp/run/clients/generic/).
+- [Security and operations](https://davidbejar.github.io/boe-insights-mcp/operating/): limits, access control and what to watch when you host it.
+- [Tool reference](https://davidbejar.github.io/boe-insights-mcp/reference/tools/): every tool, with its parameters.
 
 ## Configuration
 
-Optional environment variables; unset or empty variables keep their defaults, and invalid values stop the server at startup with a message naming the variable.
+Optional environment variables; unset or empty variables keep their defaults, and invalid values stop the server at startup with a message naming the variable (`BOE_INSIGHTS_HOST` is not checked in advance). The [Security and operations](https://davidbejar.github.io/boe-insights-mcp/operating/) page explains each one in detail.
+
+**General**
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `BOE_INSIGHTS_CACHE` | `disk` | Cache backend: `disk` (persistent) or `memory` (per process). |
 | `BOE_INSIGHTS_CACHE_DIR` | platform cache directory | Where the disk cache lives. |
-| `BOE_INSIGHTS_DATA_DIR` | platform user data directory | Where saved searches live (`saved_searches.sqlite3`). Separate from the cache on purpose: the cache can be deleted, your saved searches should not be. |
+| `BOE_INSIGHTS_DATA_DIR` | platform user data directory | Where saved searches live (`saved_searches.sqlite3`); kept apart from the cache on purpose, because the cache can be deleted and your saved searches should not be. |
 | `BOE_INSIGHTS_MIN_INTERVAL` | `1.0` | Minimum seconds between requests to boe.es (number >= 0). |
 | `BOE_INSIGHTS_MAX_CONCURRENCY` | `2` | Maximum simultaneous requests to boe.es (integer >= 1). |
+
+**HTTP** (only with `--transport http`)
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `BOE_INSIGHTS_TRANSPORT` | `stdio` | `stdio` (your app starts the server) or `http` (it listens on a port); the `--transport` flag overrides it. |
+| `BOE_INSIGHTS_HOST` | `127.0.0.1` | Address to bind to; the `--host` flag overrides it. |
+| `BOE_INSIGHTS_PORT` | `8000` | Port to listen on (1-65535); the `--port` flag overrides it. |
+| `BOE_INSIGHTS_ALLOWED_HOSTS` | empty | Comma-separated public host names accepted in the `Host` header, added to the loopback names, which are always accepted. |
+| `BOE_INSIGHTS_ALLOWED_ORIGINS` | empty | Comma-separated browser origins (`http(s)://host[:port]`) accepted, without wildcards. |
+| `BOE_INSIGHTS_CALLS_PER_MINUTE` | `60` | Calls one caller may make per minute; `0` switches the limit off. |
+| `BOE_INSIGHTS_CALLS_BURST` | `20` | Calls one caller may make at once before having to wait (integer >= 1). |
+
+**GitHub sign-in** (the first four go together: all set or none)
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `BOE_INSIGHTS_GITHUB_CLIENT_ID` | unset | Client ID of the GitHub OAuth app that signs people in. |
+| `BOE_INSIGHTS_GITHUB_CLIENT_SECRET` | unset | That app's client secret. |
+| `BOE_INSIGHTS_AUTH_SIGNING_KEY` | unset | Secret for the tokens the server issues; at least 32 characters. |
+| `BOE_INSIGHTS_BASE_URL` | unset | The server's public URL (`https://host[:port]`, no path; `http` only for loopback). |
+| `BOE_INSIGHTS_ALLOWED_USERS` | empty | Who may sign in: GitHub usernames, `id:<number>` or `*` (everyone), comma-separated. Empty means nobody. |
+| `BOE_INSIGHTS_ALLOWED_REDIRECT_URIS` | empty | Extra exact redirect URLs for OAuth clients, beyond the loopback ones that are always accepted. A client that registers any address not allowed here is refused as a whole; editors such as Cursor and VS Code need their web address listed. |
+
+Over HTTP without sign-in the saved-search tools are not offered, because there is no one to own a saved search. Over stdio a complete sign-in configuration is ignored, with a warning; the values are still checked, so a partial or invalid one stops the server.
 
 ## How it works
 
@@ -504,20 +517,31 @@ Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](
 - [x] 3. Trend analytics: legislation over time, top departments, compare topics, explain a spike, most-amended laws, plus a law's table of contents
 - [x] 4. Citation verification, amendment chain explorer, gazette scanning
 - [x] 5. MCP resources, prompts and saved searches
-- [ ] 6. Remote mode: Streamable HTTP, GitHub OAuth, Podman container
-- [ ] 7. Evaluation suite, documentation site, PyPI release
+- [x] 6. Remote mode: Streamable HTTP, GitHub sign-in with an allow-list, a call limit per caller, a container image, and the documentation site
+- [ ] 7. Release 0.1.0: publication on PyPI, with the container image and the documentation site
+- [ ] Listing in the MCP Registry
+- [ ] Evaluation suite
+- [ ] Move the documentation site from Material for MkDocs to Zensical before Material's end of life in May 2027
 
 ## Development
 
 ```bash
-uv sync --all-groups                         # install, including dev tools
+uv sync --all-groups                         # install, including dev tools and the docs tools
 uv run pytest                                # tests; no network
 uv run pytest -m live                        # tests against the real BOE API
 uv run ruff check . && uv run ruff format .  # lint and format
 uv run pyright                               # type check
+NO_MKDOCS_2_WARNING=1 uv run mkdocs serve    # the documentation site, with live reload
+NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict  # the same build the checks run
 ```
 
 Live tests hit the real BOE API; run them sparingly. Logic is written tests first, and unit tests never touch the network: they use [respx](https://lundberg.github.io/respx/) with real API responses recorded in `tests/fixtures/boe/`. Verified API behaviour is documented in [`docs/api-notes.md`](docs/api-notes.md).
+
+The site's reference pages are generated from the server itself. Their Spanish tool summaries are written by hand in `docs_build/summaries.es.toml`; when a tool's English text changes, re-read its Spanish summary and then refresh its hash with `uv run python -m docs_build --refresh tools.NAME` (`--hash tools.NAME` only prints the current one).
+
+### Publishing the site
+
+The documentation site is published to GitHub Pages by `.github/workflows/docs.yml`. That workflow runs only when started by hand (Actions tab, "Documentation site", "Run workflow"), and it deploys only when started from `main`; from any other branch it just builds the site. Nothing is published automatically yet: a later change will connect it to releases. Before the first run, the repository owner must set Settings, Pages, "Build and deployment", Source to "GitHub Actions" once.
 
 ## License
 

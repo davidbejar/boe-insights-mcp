@@ -34,6 +34,19 @@ def private_user_directories(
     monkeypatch.setenv("BOE_INSIGHTS_DATA_DIR", str(root / "data"))
 
 
+@pytest.fixture(scope="session")
+def server_components() -> list[Any]:
+    """The components of the full server, collected once per test run (read only).
+
+    Building the server and listing it costs a noticeable fraction of a second; tests that only
+    need the listing share this one. Tests of the collection itself, or of a hook's own cache,
+    collect afresh instead.
+    """
+    from docs_build import reference
+
+    return reference.collect_components()
+
+
 @pytest.fixture
 def load_fixture() -> Callable[[str], bytes]:
     """Return a function reading the raw bytes of a recorded BOE API response."""
