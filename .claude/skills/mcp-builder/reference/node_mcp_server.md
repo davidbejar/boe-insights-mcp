@@ -57,7 +57,7 @@ The official MCP TypeScript SDK provides:
 - Zod schema integration for runtime input validation
 - Type-safe tool handler implementations
 
-**IMPORTANT - Use Modern APIs Only:**
+**Use the modern registration APIs:**
 - **DO use**: `server.registerTool()`, `server.registerResource()`, `server.registerPrompt()`
 - **DO NOT use**: Old deprecated APIs such as `server.tool()`, `server.setRequestHandler(ListToolsRequestSchema, ...)`, or manual handler registration
 - The `register*` methods provide better type safety, automatic schema handling, and are the recommended approach
@@ -882,7 +882,7 @@ Use notifications sparingly - only when server capabilities genuinely change.
 
 ### Code Composability and Reusability
 
-Your implementation MUST prioritize composability and code reuse:
+Prioritize composability and code reuse:
 
 1. **Extract Common Functionality**:
    - Create reusable helper functions for operations used across multiple tools
@@ -892,7 +892,6 @@ Your implementation MUST prioritize composability and code reuse:
    - Extract shared markdown or JSON field selection & formatting functionality
 
 2. **Avoid Duplication**:
-   - NEVER copy-paste similar code between tools
    - If you find yourself writing similar logic twice, extract it into a function
    - Common operations like pagination, filtering, field selection, and formatting should be shared
    - Authentication/authorization logic should be centralized
