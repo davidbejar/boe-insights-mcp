@@ -102,7 +102,7 @@ dev = [
 requires-dist = [
     { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "diskcache" },
-    { name = "fastmcp", specifier = ">=4.2,<5" },
+    { name = "fastmcp", specifier = ">=4.2.4,<4.3" },
     { name = "httpx" },
     { name = "platformdirs" },
     { name = "pydantic", specifier = ">=2" },

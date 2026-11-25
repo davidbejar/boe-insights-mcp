@@ -27,6 +27,8 @@ data: law version history, amendment analysis and legislative trends.
 - Tests first for logic (client, cache, rate limiter, analytics).
 - Unit tests never hit the network: use respx and fixtures.
 - Code, comments, tool names and docs are in English. Spanish legal text is passed through unaltered.
+- FastMCP is pinned to `>=4.2.4,<4.3` because `login.py` overrides private FastMCP internals. Raising
+  the range needs `tests/test_login*.py` re-run and `login.py` re-read against the new source.
 - FastMCP 4.x: check the live docs at https://gofastmcp.com before using any API. Most online
   examples target older versions.
 

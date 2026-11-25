@@ -11,35 +11,42 @@ or :mod:`boe_insights_mcp.articles` and turns client errors into messages the mo
 gazette tools ``get_daily_summary`` and ``scan_gazette``, ``verify_citation``,
 ``explore_amendment_chain`` and the five saved-search tools ``save_search``,
 ``list_saved_searches``, ``check_saved_searches``, ``edit_saved_search`` and
-``delete_saved_search``); it also registers the resources and prompts of ``resources`` and
-``prompts``. ``main`` runs it over stdio.
+``delete_saved_search``, left out when the server is open over HTTP); it also registers the
+resources and prompts of ``resources`` and ``prompts``.
+``main`` starts it over stdio, or over HTTP when asked (see ``launch``).
 Layering: tool functions here -> use cases in ``legislation``, ``articles``, ``trends``,
 ``gazette``, ``citations``, ``amendment_chains`` and ``saved_searches`` -> ``client`` (and
 ``catalogue`` for the trend tools and the chain explorer, ``searchstore`` for saved searches).
 This is also where the cache, rate limiter, client, catalogue store and saved-search store are
 created, in the lifespan. The tool
-docstrings, ``Field`` descriptions and ``_INSTRUCTIONS`` are sent to the language model, so they
+docstrings, ``Field`` descriptions and ``_INSTRUCTIONS_*`` are sent to the language model, so they
 are model-facing text; explanations for human readers live in ``#`` comments.
 """
 
 from __future__ import annotations
 
-import logging
+import base64
+import os
 import sys
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
+from dataclasses import dataclass
 from datetime import date
+from importlib.resources import files as package_files
 from typing import Annotated, Any, Literal, TypeVar
 
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.server.auth import AuthProvider
 from fastmcp.server.lifespan import lifespan
-from mcp.types import ToolAnnotations
+from fastmcp.server.middleware.authorization import AuthMiddleware
+from mcp.types import Icon, ToolAnnotations
 from pydantic import Field
 
 from boe_insights_mcp import (
     amendment_chains,
     articles,
     gazette,
+    launch,
     legislation,
     prompts,
     resources,
@@ -47,8 +54,10 @@ from boe_insights_mcp import (
     trends,
 )
 from boe_insights_mcp import citations as citation_checks
+from boe_insights_mcp.access import AllowList, allow_check
 from boe_insights_mcp.analytics import Period
 from boe_insights_mcp.cache import Cache, DiskCache, MemoryCache
+from boe_insights_mcp.callrate import CallRateLimit
 from boe_insights_mcp.catalogue import CatalogueStore
 from boe_insights_mcp.chains import Direction
 from boe_insights_mcp.client import BoeClient
@@ -60,6 +69,7 @@ from boe_insights_mcp.legislation import (
     RankFilter,
     ScopeFilter,
 )
+from boe_insights_mcp.login import AllowListedGitHubProvider, redirect_patterns
 from boe_insights_mcp.query import SortField
 from boe_insights_mcp.ratelimit import RateLimiter
 from boe_insights_mcp.schemas import (
@@ -96,7 +106,7 @@ __all__ = ["create_server", "main"]
 
 _T = TypeVar("_T")
 
-_INSTRUCTIONS = (
+_INSTRUCTIONS_HEAD = (
     "Tools over Spanish legislation from the BOE (Boletín Oficial del Estado): the consolidated "
     "legislation (most tools) and the daily gazette (get_daily_summary and scan_gazette: "
     "everything published since 1960). Most identifiers found in the gazette are not in the "
@@ -111,15 +121,30 @@ _INSTRUCTIONS = (
     "compare_topics, explain_spike, most_amended_laws and explore_amendment_chain download the "
     "collection on first use (about 30 seconds). Repeat most_amended_laws, "
     "explore_amendment_chain and scan_gazette while complete is false. "
+)
+# The one sentence about saved searches, kept apart so the instructions of a server without
+# saved searches are the same text minus exactly this.
+_INSTRUCTIONS_SAVED_SEARCHES = (
     "Saved searches (save_search, list_saved_searches, edit_saved_search, delete_saved_search) "
     "live on the server and nothing is sent automatically: when the user asks what is new, call "
-    "check_saved_searches and repeat it while complete is false. Resources and prompts only "
-    "mirror these tools. The status of a law is derived from BOE flags, so treat it as an "
-    "indication. When quoting results, pass on the attribution "
+    "check_saved_searches and repeat it while complete is false. "
+)
+_INSTRUCTIONS_TAIL = (
+    "Resources and prompts only mirror these tools. The status of a law is derived from BOE "
+    "flags, so treat it as an indication. When quoting results, pass on the attribution "
     "'Basado en datos de la Agencia Estatal Boletín Oficial del Estado' "
     "(https://www.boe.es) and say that consolidated texts are informational and have no "
     "official legal value."
 )
+
+# The project logo, a packaged data file (a hatch wheel includes everything under the package).
+# It is inlined as a ``data:`` URI because FastMCP's sign-in consent page puts ``icons[0].src``
+# in an ``<img>`` (its CSP allows ``img-src https: data:``) and falls back to the FastMCP logo
+# otherwise; MCP clients receive the same icon in the server info on every transport. At about
+# 2 KB it adds little to the initialize response.
+_LOGO_SVG = package_files("boe_insights_mcp").joinpath("assets/logo-icon.svg").read_bytes()
+LOGO_DATA_URI = "data:image/svg+xml;base64," + base64.b64encode(_LOGO_SVG).decode("ascii")
+WEBSITE_URL = "https://github.com/davidbejar/boe-insights-mcp"
 
 _READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=True)
 # The saved-search tools are the first that write (to the server's own store, not to the BOE).
@@ -150,7 +175,10 @@ def _build_cache(settings: Settings) -> Cache:
 
 
 def _lifespan(
-    client: BoeClient | None, settings: Settings | None, store: SavedSearchStore | None
+    client: BoeClient | None,
+    settings: Settings | None,
+    store: SavedSearchStore | None,
+    remote: bool,
 ) -> Any:
     """Build the server lifespan, which makes the client and the saved-search store available.
 
@@ -165,7 +193,7 @@ def _lifespan(
 
     @lifespan
     async def client_lifespan(server: FastMCP) -> AsyncIterator[dict[str, Any]]:
-        """Provide ``{"client", "catalogue", "searches"}`` to the tools while the server runs."""
+        """Provide ``{"client", "catalogue", "searches", "remote"}`` while the server runs."""
         # An injected client (tests) needs no settings, so the environment is not read.
         config = (
             (settings if settings is not None else Settings.from_env()) if client is None else None
@@ -184,7 +212,12 @@ def _lifespan(
             if config is None:
                 # Injected (tests): the caller owns the client, so it is not closed here.
                 assert client is not None
-                yield {"client": client, "catalogue": CatalogueStore(client), "searches": searches}
+                yield {
+                    "client": client,
+                    "catalogue": CatalogueStore(client),
+                    "searches": searches,
+                    "remote": remote,
+                }
                 return
             cache = _build_cache(config)
             limiter = RateLimiter(config.min_interval, config.max_concurrency)
@@ -198,6 +231,7 @@ def _lifespan(
                         "client": own_client,
                         "catalogue": CatalogueStore(own_client),
                         "searches": searches,
+                        "remote": remote,
                     }
             finally:
                 await cache.close()
@@ -216,6 +250,18 @@ def _client(ctx: Context) -> BoeClient:
 def _searches(ctx: Context) -> SavedSearchStore:
     """Return the saved-search store that the lifespan stored in the request context."""
     return ctx.lifespan_context["searches"]
+
+
+def _remote(ctx: Context) -> bool:
+    """Whether this server runs over HTTP, so owners come from tokens and are never ``local``."""
+    return ctx.lifespan_context["remote"]
+
+
+async def _for_owner(ctx: Context, tool: str, use_case: Callable[[str], Awaitable[_T]]) -> _T:
+    """Run a saved-search ``use_case`` for the owner of this request, failing as ``ToolError``."""
+    # The one place that passes ``remote``: over HTTP the owner must come from a token and can
+    # never fall back to ``local``, so no saved-search tool may forget the flag.
+    return await guarded_for_owner(use_case, tool, ToolError, remote=_remote(ctx))
 
 
 def _catalogue(ctx: Context) -> CatalogueStore:
@@ -1030,7 +1076,9 @@ async def save_search(
     """
     # The owner comes from the authenticated request and is never an argument: a model (or
     # anyone steering it) must not be able to name another person's searches.
-    return await guarded_for_owner(
+    return await _for_owner(
+        ctx,
+        "save_search",
         lambda who: saved_searches.save_search(
             _searches(ctx),
             _client(ctx),
@@ -1041,17 +1089,15 @@ async def save_search(
             department_code=department_code,
             law_id=law_id,
         ),
-        "save_search",
-        ToolError,
     )
 
 
 async def list_saved_searches(ctx: Context) -> SavedSearchList:
     """The saved searches, with their filters and when each was last checked."""
-    return await guarded_for_owner(
-        lambda who: saved_searches.list_saved_searches(_searches(ctx), who),
+    return await _for_owner(
+        ctx,
         "list_saved_searches",
-        ToolError,
+        lambda who: saved_searches.list_saved_searches(_searches(ctx), who),
     )
 
 
@@ -1081,7 +1127,9 @@ async def check_saved_searches(
     complete is false. since re-reads gazette searches up to 90 days back without marking
     anything.
     """
-    return await guarded_for_owner(
+    return await _for_owner(
+        ctx,
+        "check_saved_searches",
         lambda who: saved_searches.check_saved_searches(
             _searches(ctx),
             _client(ctx),
@@ -1091,8 +1139,6 @@ async def check_saved_searches(
             limit=limit,
             progress=ctx.report_progress,
         ),
-        "check_saved_searches",
-        ToolError,
     )
 
 
@@ -1114,7 +1160,9 @@ async def edit_saved_search(
     ] = None,
 ) -> SaveSearchResult:
     """Rename a saved search or change its gazette filters. Its last-checked point is kept."""
-    return await guarded_for_owner(
+    return await _for_owner(
+        ctx,
+        "edit_saved_search",
         lambda who: saved_searches.edit_saved_search(
             _searches(ctx),
             who,
@@ -1124,8 +1172,6 @@ async def edit_saved_search(
             section=section,
             department_code=department_code,
         ),
-        "edit_saved_search",
-        ToolError,
     )
 
 
@@ -1134,10 +1180,10 @@ async def delete_saved_search(
     name: Annotated[str, Field(description="Name of the saved search (see list_saved_searches).")],
 ) -> DeleteSearchResult:
     """Delete a saved search. This cannot be undone."""
-    return await guarded_for_owner(
-        lambda who: saved_searches.delete_saved_search(_searches(ctx), who, name),
+    return await _for_owner(
+        ctx,
         "delete_saved_search",
-        ToolError,
+        lambda who: saved_searches.delete_saved_search(_searches(ctx), who, name),
     )
 
 
@@ -1161,6 +1207,10 @@ _TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (scan_gazette, "Scan the BOE over several days"),
     (verify_citation, "Verify citations of laws"),
     (explore_amendment_chain, "Explore an amendment chain"),
+)
+
+# Registered after ``_TOOLS``, and only in a mode that knows who the caller is (see ``_Mode``).
+_SAVED_SEARCH_TOOLS: tuple[tuple[Callable[..., Awaitable[Any]], str], ...] = (
     (save_search, "Save a search"),
     (list_saved_searches, "List saved searches"),
     (check_saved_searches, "Check saved searches for news"),
@@ -1177,38 +1227,127 @@ _ANNOTATIONS: dict[Callable[..., Awaitable[Any]], ToolAnnotations] = {
     delete_saved_search: _CHANGES,
 }
 
+# FastMCP's default is ["user"], which grants write access to the profile. This server needs only
+# the numeric id and the login that GitHub's /user returns for any valid token, public profile
+# included, so nothing is required of tokens: GitHubTokenVerifier skips its scope check when none
+# is required (fastmcp/server/auth/providers/github.py:236) and the OAuth proxy sends no ``scope``
+# to GitHub for a client that sent none (oauth_proxy/proxy.py:953, 1253). Clients that ask for a
+# scope anyway are served by advertising ``read:user`` (below), read-only profile access, through
+# ``AllowListedGitHubProvider``: metadata and the 401 challenge name it, registration and
+# /authorize accept it and then ask GitHub for exactly that. ``user`` and ``repo`` stay refused.
+# Observed in ``tests/test_login_door.py``; only a real sign-in confirms that GitHub accepts a
+# sign-in with no scope and with ``read:user`` and that /user answers for both.
+_GITHUB_SCOPES: list[str] = []
+_GITHUB_ADVERTISED_SCOPES: list[str] = ["read:user"]
+# How long FastMCP remembers that a token passed GitHub's check, so that a burst of calls does
+# not repeat its two requests to api.github.com (the account of a revoked token stays usable
+# for at most this long).
+_GITHUB_CACHE_SECONDS = 300
+
+
+@dataclass(frozen=True)
+class _Mode:
+    """How the server is used, decided once, when it is built; everything else follows.
+
+    * local (stdio): one person, every row owned by ``local``, no authentication;
+    * open HTTP: anyone who can reach the port, so there is no one to own a saved search and
+      the saved-search tools, resource and instructions are left out;
+    * signed-in HTTP: a verified GitHub user on the allow-list, rows owned by their id.
+    """
+
+    remote: bool
+    """Served over HTTP, signed in or not: owners must come from a token, never ``local``."""
+    signed_in: bool
+    """HTTP with an authentication provider in effect."""
+
+    @classmethod
+    def of(cls, settings: Settings | None, auth: AuthProvider | None) -> _Mode:
+        """The mode of a server with these settings and authentication provider."""
+        remote = settings is not None and settings.transport == "http"
+        # An authentication provider means nothing over stdio, which has no HTTP layer.
+        return cls(remote=remote, signed_in=remote and auth is not None)
+
+    @property
+    def saved_searches(self) -> bool:
+        """Whether saved searches exist: they need to know whose they are."""
+        return not self.remote or self.signed_in
+
 
 def create_server(
     *,
     client: BoeClient | None = None,
     settings: Settings | None = None,
     store: SavedSearchStore | None = None,
+    auth: AuthProvider | None = None,
 ) -> FastMCP:
     """Build the MCP server without touching the network or the disk.
 
     With no ``client``, the cache, rate limiter and client are created from ``settings`` (or
     the environment) when the server starts. An injected ``client`` or ``store`` is used as it
     is and left open; with an injected client and no store, saved searches live in memory.
+    ``settings`` (stdio when ``None``) and ``auth`` choose the mode (see ``_Mode``); with ``auth``
+    over HTTP, only the users of ``settings.allowed_users`` may use anything.
     """
+    mode = _Mode.of(settings, auth)
     # ``mask_error_details=True``: see ``_guard``.
     server = FastMCP(
         "boe-insights",
-        instructions=_INSTRUCTIONS,
-        lifespan=_lifespan(client, settings, store),
+        instructions=_INSTRUCTIONS_HEAD
+        + (_INSTRUCTIONS_SAVED_SEARCHES if mode.saved_searches else "")
+        + _INSTRUCTIONS_TAIL,
+        lifespan=_lifespan(client, settings, store, mode.remote),
         mask_error_details=True,
+        auth=auth if mode.signed_in else None,
+        website_url=WEBSITE_URL,
+        icons=[Icon(src=LOGO_DATA_URI, mime_type="image/svg+xml", sizes=["any"])],
     )
-    for function, title in _TOOLS:
+    if mode.remote and settings is not None and settings.calls_per_minute > 0:
+        # First, so it is the outermost: callers the allow-list refuses are counted too, and a
+        # refused call costs the allow-list nothing. Signed in, one bucket per GitHub id; open,
+        # one for everybody.
+        server.add_middleware(
+            CallRateLimit(settings.calls_per_minute, settings.calls_burst, by_user=mode.signed_in)
+        )
+    if mode.signed_in:
+        assert settings is not None  # signed_in implies HTTP settings
+        # The provider only proves who the caller is; this decides whether they may use the
+        # server. It applies to every tool, resource and prompt, on listing and on use.
+        server.add_middleware(
+            AuthMiddleware(auth=allow_check(AllowList.parse(settings.allowed_users)))
+        )
+    for function, title in (*_TOOLS, *(_SAVED_SEARCH_TOOLS if mode.saved_searches else ())):
         server.tool(function, title=title, annotations=_ANNOTATIONS.get(function, _READ_ONLY))
-    resources.register(server)
-    prompts.register(server)
+    launch.register_health(server)
+    resources.register(server, with_saved_searches=mode.saved_searches)
+    prompts.register(server, with_saved_searches=mode.saved_searches)
     return server
 
 
-def main() -> None:
-    """Run the server over stdio. Logs go to stderr, so stdout carries only the protocol."""
-    logging.basicConfig(
-        level=logging.INFO,
-        stream=sys.stderr,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
-    create_server().run(show_banner=False)
+def main(argv: Sequence[str] | None = None) -> None:
+    """Console-script entry point: stdio by default, HTTP with ``--transport http``."""
+    launch.run(sys.argv[1:] if argv is None else argv, os.environ, _build)
+
+
+def _build(settings: Settings) -> FastMCP:
+    """Build the server for ``settings``, with GitHub login when HTTP and login are configured."""
+    auth: AllowListedGitHubProvider | None = None
+    if settings.transport == "http" and settings.login_enabled:
+        client_id, client_secret = settings.github_client_id, settings.github_client_secret
+        signing_key, base_url = settings.auth_signing_key, settings.base_url
+        assert client_id and client_secret and signing_key and base_url  # login_enabled
+        auth = AllowListedGitHubProvider(
+            allow_list=AllowList.parse(settings.allowed_users),
+            client_id=client_id,
+            client_secret=client_secret,
+            base_url=base_url,
+            jwt_signing_key=signing_key,
+            required_scopes=_GITHUB_SCOPES,
+            advertised_scopes=_GITHUB_ADVERTISED_SCOPES,
+            cache_ttl_seconds=_GITHUB_CACHE_SECONDS,
+            # Without this FastMCP accepts any redirect URI at registration and at /authorize
+            # (fastmcp/server/auth/redirect_validation.py:536-573, ``None`` means "any safe
+            # scheme"), so a page of the attacker's choosing could be handed a sign-in code.
+            # Loopback plus what the operator names; see ``login.redirect_patterns``.
+            allowed_client_redirect_uris=redirect_patterns(settings.allowed_redirect_uris),
+        )
+    return create_server(settings=settings, auth=auth)

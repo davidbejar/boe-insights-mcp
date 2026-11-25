@@ -9,7 +9,7 @@ The JSON is the result model's own serialisation, so provenance, the BOE attribu
 informational notice travel with it, as the BOE reuse conditions require.
 
 The one static resource, ``boe://saved-searches``, is the owner's list of saved searches, read from
-the store the server lifespan provides.
+the store the server lifespan provides. ``server`` leaves it out in the mode that has no owners.
 
 ``server.create_server`` calls :func:`register`; the use cases do all the work and this module
 only maps URIs onto them and turns expected failures into ``ResourceError`` messages.
@@ -160,11 +160,15 @@ async def _saved_searches(ctx: Context) -> str:
         return await saved_searches.list_saved_searches(ctx.lifespan_context["searches"], who)
 
     # The owner is looked up inside the guard so that a missing identity is a curated message.
-    return _as_json(await guarded_for_owner(listing, "list_saved_searches", ResourceError))
+    return _as_json(
+        await guarded_for_owner(
+            listing, "list_saved_searches", ResourceError, remote=ctx.lifespan_context["remote"]
+        )
+    )
 
 
-def register(server: FastMCP) -> None:
-    """Register the four resource templates and the saved-searches resource on ``server``."""
+def register(server: FastMCP, *, with_saved_searches: bool = True) -> None:
+    """Register the four resource templates, and the saved-searches resource unless declined."""
     # Registered by call rather than with decorators on the module-level functions so that the
     # texts below, which the model and the person see, sit in one place.
     specs: list[tuple[Any, str, str, str, str]] = [
@@ -199,15 +203,16 @@ def register(server: FastMCP) -> None:
             "use the find_codes tool.",
         ),
     ]
-    specs.append(
-        (
-            _saved_searches,
-            "boe://saved-searches",
-            "saved_searches",
-            "Saved searches",
-            "Your saved searches, with their filters and when each was last checked.",
+    if with_saved_searches:
+        specs.append(
+            (
+                _saved_searches,
+                "boe://saved-searches",
+                "saved_searches",
+                "Saved searches",
+                "Your saved searches, with their filters and when each was last checked.",
+            )
         )
-    )
     for function, uri, name, title, description in specs:
         server.resource(uri, name=name, title=title, description=description, mime_type=_JSON)(
             function

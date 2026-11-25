@@ -176,3 +176,204 @@ def test_the_memory_backend_without_any_data_dir_keeps_searches_in_memory(
     monkeypatch.delenv("BOE_INSIGHTS_DATA_DIR", raising=False)
 
     assert Settings(cache_backend="memory").saved_searches_dir is None
+
+
+# --- Transport settings -----------------------------------------------------------------------
+
+
+def test_transport_defaults_are_stdio_on_loopback() -> None:
+    settings = Settings.from_env({})
+
+    assert settings.transport == "stdio"
+    assert settings.host == "127.0.0.1"
+    assert settings.port == 8000
+    assert settings.allowed_hosts == ()
+    assert settings.allowed_origins == ()
+
+
+def test_transport_variables_are_read() -> None:
+    settings = Settings.from_env(
+        {
+            "BOE_INSIGHTS_TRANSPORT": " HTTP ",
+            "BOE_INSIGHTS_HOST": "0.0.0.0",
+            "BOE_INSIGHTS_PORT": "9001",
+            "BOE_INSIGHTS_ALLOWED_HOSTS": "boe.example.org, ,other.example.org,",
+            "BOE_INSIGHTS_ALLOWED_ORIGINS": "https://boe.example.org",
+        }
+    )
+
+    assert settings.transport == "http"
+    assert settings.host == "0.0.0.0"
+    assert settings.port == 9001
+    assert settings.allowed_hosts == ("boe.example.org", "other.example.org")
+    assert settings.allowed_origins == ("https://boe.example.org",)
+
+
+@pytest.mark.parametrize(
+    ("given", "kept"),
+    [
+        ("boe.example.org", "boe.example.org"),
+        ("192.0.2.10", "192.0.2.10"),
+        ("localhost", "localhost"),
+        ("my_host", "my_host"),
+        ("::1", "::1"),
+        ("[::1]", "::1"),
+        ("[2001:DB8::5]", "2001:DB8::5"),
+    ],
+)
+def test_an_allowed_host_is_a_bare_name_or_ip_and_ipv6_is_unbracketed(
+    given: str, kept: str
+) -> None:
+    # FastMCP's matcher strips the brackets of a Host header and of a pattern alike
+    # (fastmcp/server/http.py, ``_normalize_host``), so the bare form is the one that matches.
+    settings = Settings.from_env({"BOE_INSIGHTS_ALLOWED_HOSTS": f"a.example.org,{given}"})
+
+    assert settings.allowed_hosts == ("a.example.org", kept)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "*",
+        "*.example.org",
+        "boe.*",
+        "boe?.example.org",
+        "boe[1].example.org",
+        "https://boe.example.org",
+        "boe.example.org:8000",
+        "boe.example.org/",
+        "boe.example.org/path",
+        "boe example.org",
+        "[::1]:8000",
+        "[::1",
+        "[boe.example.org]",
+        "1:2",
+        "-boe.example.org",
+        "boe..example.org",
+        "user@boe.example.org",
+        # An IPv6 zone id is not part of a Host header and FastMCP's fnmatch matcher would read the
+        # ``*`` after ``%`` as a pattern.
+        "::%*",
+        "[fe80::1%*]",
+        "fe80::1%eth0",
+        "fe80::1%25eth0",
+    ],
+)
+def test_a_bad_allowed_host_is_refused_naming_the_variable_and_the_entry(bad: str) -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({"BOE_INSIGHTS_ALLOWED_HOSTS": f"ok.example.org,{bad}"})
+
+    assert "BOE_INSIGHTS_ALLOWED_HOSTS" in str(caught.value)
+    assert bad in str(caught.value)
+
+
+@pytest.mark.parametrize(
+    "good",
+    [
+        "https://boe.example.org",
+        "http://boe.example.org:8080",
+        "https://192.0.2.10",
+        "http://[::1]:3000",
+    ],
+)
+def test_an_allowed_origin_is_a_scheme_host_and_optional_port(good: str) -> None:
+    settings = Settings.from_env({"BOE_INSIGHTS_ALLOWED_ORIGINS": good})
+
+    assert settings.allowed_origins == (good,)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "*",
+        "https://*.example.org",
+        "https://boe.example.org/",
+        "https://boe.example.org/path",
+        "https://boe.example.org?x=1",
+        "https://boe.example.org#x",
+        "https://user@boe.example.org",
+        "boe.example.org",
+        "ftp://boe.example.org",
+        "https://",
+        "https://boe.example.org:99999",
+        "https://boe.example.org:abc",
+        "https://boe example.org",
+        "https://boe.example.org:",
+        "https://boe?.example.org",
+    ],
+)
+def test_a_bad_allowed_origin_is_refused_naming_the_variable_and_the_entry(bad: str) -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({"BOE_INSIGHTS_ALLOWED_ORIGINS": f"https://ok.example.org,{bad}"})
+
+    assert "BOE_INSIGHTS_ALLOWED_ORIGINS" in str(caught.value)
+    assert bad in str(caught.value)
+
+
+def test_empty_transport_variables_keep_the_defaults() -> None:
+    env = {
+        "BOE_INSIGHTS_TRANSPORT": "",
+        "BOE_INSIGHTS_HOST": "",
+        "BOE_INSIGHTS_PORT": "",
+        "BOE_INSIGHTS_ALLOWED_HOSTS": "",
+        "BOE_INSIGHTS_ALLOWED_ORIGINS": " , ",
+    }
+
+    assert Settings.from_env(env) == Settings.from_env({})
+
+
+@pytest.mark.parametrize(
+    ("variable", "value"),
+    [
+        ("BOE_INSIGHTS_TRANSPORT", "sse"),
+        ("BOE_INSIGHTS_PORT", "0"),
+        ("BOE_INSIGHTS_PORT", "65536"),
+        ("BOE_INSIGHTS_PORT", "http"),
+        ("BOE_INSIGHTS_PORT", "80.5"),
+    ],
+)
+def test_invalid_transport_values_name_the_variable(variable: str, value: str) -> None:
+    with pytest.raises(ValueError, match=variable):
+        Settings.from_env({variable: value})
+
+
+def test_port_bounds_are_accepted() -> None:
+    assert Settings.from_env({"BOE_INSIGHTS_PORT": "1"}).port == 1
+    assert Settings.from_env({"BOE_INSIGHTS_PORT": "65535"}).port == 65535
+
+
+@pytest.mark.parametrize(
+    ("variable", "value", "message"),
+    [
+        (
+            "BOE_INSIGHTS_MAX_CONCURRENCY",
+            "0",
+            "BOE_INSIGHTS_MAX_CONCURRENCY must be an integer >= 1, got '0'",
+        ),
+        ("BOE_INSIGHTS_PORT", "x", "BOE_INSIGHTS_PORT must be an integer from 1 to 65535, got 'x'"),
+        (
+            "BOE_INSIGHTS_PORT",
+            "65536",
+            "BOE_INSIGHTS_PORT must be an integer from 1 to 65535, got '65536'",
+        ),
+        (
+            "BOE_INSIGHTS_CALLS_PER_MINUTE",
+            "-1",
+            "BOE_INSIGHTS_CALLS_PER_MINUTE must be an integer >= 0, got '-1'",
+        ),
+        (
+            "BOE_INSIGHTS_CALLS_PER_MINUTE",
+            "many",
+            "BOE_INSIGHTS_CALLS_PER_MINUTE must be an integer >= 0, got 'many'",
+        ),
+        (
+            "BOE_INSIGHTS_CALLS_BURST",
+            "0",
+            "BOE_INSIGHTS_CALLS_BURST must be an integer >= 1, got '0'",
+        ),
+    ],
+)
+def test_integer_variable_errors_read_exactly(variable: str, value: str, message: str) -> None:
+    with pytest.raises(ValueError) as caught:
+        Settings.from_env({variable: value})
+    assert str(caught.value) == message

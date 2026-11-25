@@ -23,6 +23,7 @@ from boe_insights_mcp.client import BoeClient
 from boe_insights_mcp.clock import madrid_today, utc_now
 from boe_insights_mcp.ratelimit import RateLimiter
 from boe_insights_mcp.server import create_server
+from boe_insights_mcp.settings import Settings
 
 ATTRIBUTION = "Basado en datos de la Agencia Estatal Boletín Oficial del Estado"
 
@@ -359,3 +360,44 @@ async def test_spanish_prompts_name_the_status_field_of_an_ambiguous_reference(
 
     assert "Si el estado (status) es ambiguous" in text
     assert "Si el resultado es ambiguous" not in text
+
+
+# --- The saved-search step only exists where saved searches do ---------------------------------
+
+
+async def _briefing(with_saved_searches: bool, name: str) -> str:
+    """The text of a gazette briefing prompt on a server with or without saved searches."""
+    server = FastMCP("test")
+    prompts.register(server, with_saved_searches=with_saved_searches)
+    async with Client(server) as client:
+        return await _text(client, name)
+
+
+@pytest.mark.parametrize("name", ["gazette_briefing", "resumen_boe"])
+async def test_the_briefing_mentions_save_search_only_when_saved_searches_exist(name: str) -> None:
+    with_step = await _briefing(True, name)
+    without_step = await _briefing(False, name)
+
+    assert "save_search" in with_step
+    assert "save_search" not in without_step
+    # One text: the open variant is the full one minus exactly the third step.
+    [step] = [line for line in with_step.splitlines() if line.startswith("3. ")]
+    assert with_step.replace(step + "\n", "") == without_step
+
+
+async def test_the_prompts_default_to_the_full_text() -> None:
+    server = FastMCP("test")
+    prompts.register(server)
+    async with Client(server) as client:
+        assert "save_search" in await _text(client, "gazette_briefing")
+
+
+@pytest.mark.parametrize("name", ["gazette_briefing", "resumen_boe"])
+async def test_a_real_open_http_server_does_not_send_the_model_to_save_search(name: str) -> None:
+    client = BoeClient(cache=MemoryCache(), limiter=RateLimiter(min_interval=0))
+    open_http = create_server(client=client, settings=Settings(transport="http"))
+    local = create_server(client=client)
+
+    async with Client(open_http) as http_client, Client(local) as local_client:
+        assert "save_search" not in await _text(http_client, name)
+        assert "save_search" in await _text(local_client, name)

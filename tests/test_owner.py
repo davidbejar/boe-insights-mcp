@@ -1,4 +1,10 @@
-"""Tests of ``owner``: who a stored row belongs to (never taken from a tool argument)."""
+"""Tests of ``owner``: who a stored row belongs to (never taken from a tool argument).
+
+Two regimes. Locally (stdio, ``remote=False``, the default) there is no identity and the owner is
+``local``. Over HTTP the caller passes ``remote=True``: the owner is then ``github:<numeric id>``
+taken from the token's ``sub`` claim, and anything else fails closed with ``NotSignedInError``;
+``local`` is never the answer.
+"""
 
 from __future__ import annotations
 
@@ -29,10 +35,36 @@ def test_the_real_dependency_gives_local_outside_a_request() -> None:
     assert owner.current_owner() == "local"
 
 
-def test_a_token_gives_a_user_owner_from_its_subject(monkeypatch: pytest.MonkeyPatch) -> None:
-    with_token(monkeypatch, SimpleNamespace(claims={"sub": "abc-123"}))
+def test_a_token_gives_a_github_owner_from_its_numeric_subject(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "1001", "login": "alice"}))
 
-    assert owner.current_owner() == "user:abc-123"
+    assert owner.current_owner(remote=True) == "github:1001"
+
+
+def test_the_owner_comes_from_the_subject_not_from_the_login(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "1001", "login": "renamed"}))
+    renamed = owner.current_owner(remote=True)
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "1001", "login": "alice"}))
+
+    assert renamed == owner.current_owner(remote=True) == "github:1001"
+
+
+def test_over_http_without_a_token_the_owner_is_never_local(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with_token(monkeypatch, None)
+
+    with pytest.raises(owner.NotSignedInError):
+        owner.current_owner(remote=True)
+
+
+def test_over_http_the_real_dependency_outside_a_request_is_not_local() -> None:
+    with pytest.raises(owner.NotSignedInError):
+        owner.current_owner(remote=True)
 
 
 @pytest.mark.parametrize(
@@ -43,21 +75,44 @@ def test_a_token_gives_a_user_owner_from_its_subject(monkeypatch: pytest.MonkeyP
         {"sub": None},
         {"other": "x"},
         {"sub": "   "},
-        {"sub": " alice"},
-        {"sub": "alice "},
-        {"sub": "al\nice"},
-        {"sub": "al\x00ice"},
-        {"sub": "al\u200bice"},
+        {"sub": " 1001"},
+        {"sub": "1001 "},
+        {"sub": "1001\n"},
+        {"sub": "10\n01"},
+        {"sub": "10\x0001"},
+        {"sub": "1001\u200b"},
         {"sub": 42},
+        {"sub": 1001},
+        {"sub": ["1001"]},
+        {"sub": "abc-123"},
+        {"sub": "alice"},
+        {"sub": "user:1001"},
+        {"sub": "github:1001"},
+        {"sub": "1.5"},
+        {"sub": "-1"},
+        {"sub": "+1"},
+        {"sub": "1_0"},
+        {"sub": "\u0661\u0662"},
+        {"sub": "\u00b2"},
+        {"sub": "\uff11\uff12"},
+        {"sub": "local"},
     ],
+    ids=repr,
 )
-def test_a_token_without_a_subject_is_refused(
+def test_a_token_without_a_numeric_subject_is_refused(
     monkeypatch: pytest.MonkeyPatch, claims: dict[str, Any]
 ) -> None:
     with_token(monkeypatch, SimpleNamespace(claims=claims))
 
     with pytest.raises(PermissionError):
-        owner.current_owner()
+        owner.current_owner(remote=True)
+
+
+def test_a_token_without_claims_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    with_token(monkeypatch, SimpleNamespace())
+
+    with pytest.raises(owner.NotSignedInError):
+        owner.current_owner(remote=True)
 
 
 def test_the_refusal_is_the_error_the_server_turns_into_a_curated_message(
@@ -66,21 +121,59 @@ def test_the_refusal_is_the_error_the_server_turns_into_a_curated_message(
     with_token(monkeypatch, SimpleNamespace(claims={}))
 
     with pytest.raises(owner.NotSignedInError):
-        owner.current_owner()
+        owner.current_owner(remote=True)
 
 
-@pytest.mark.parametrize("subject", ["abc-123", "a b", "ñandú", "auth0|12345", "x@y.org"])
-def test_ordinary_subjects_are_accepted_as_they_are(
+def test_the_refusal_message_does_not_echo_the_subject(monkeypatch: pytest.MonkeyPatch) -> None:
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "secret-looking-subject"}))
+
+    with pytest.raises(owner.NotSignedInError) as caught:
+        owner.current_owner(remote=True)
+
+    assert "secret-looking-subject" not in str(caught.value)
+
+
+@pytest.mark.parametrize("subject", ["1", "1001", "9007199254740993", "0", "012"])
+def test_ordinary_numeric_subjects_are_accepted_as_they_are(
     monkeypatch: pytest.MonkeyPatch, subject: str
 ) -> None:
     with_token(monkeypatch, SimpleNamespace(claims={"sub": subject}))
 
-    assert owner.current_owner() == f"user:{subject}"
+    assert owner.current_owner(remote=True) == f"github:{subject}"
 
 
 def test_two_subjects_are_two_owners(monkeypatch: pytest.MonkeyPatch) -> None:
-    with_token(monkeypatch, SimpleNamespace(claims={"sub": "a"}))
-    first = owner.current_owner()
-    with_token(monkeypatch, SimpleNamespace(claims={"sub": "b"}))
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "12"}))
+    first = owner.current_owner(remote=True)
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "123"}))
 
-    assert first != owner.current_owner()
+    assert first != owner.current_owner(remote=True)
+
+
+def test_the_old_user_prefix_is_gone(monkeypatch: pytest.MonkeyPatch) -> None:
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "1001"}))
+
+    assert not owner.current_owner(remote=True).startswith("user:")
+
+
+# --- Never local inside an HTTP request ---------------------------------------------------------
+
+
+def test_inside_an_http_request_the_owner_is_never_local_whatever_remote_says(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Defence in depth: a server built without settings but served over HTTP says remote=False.
+    monkeypatch.setattr("boe_insights_mcp.owner.get_http_request", lambda: SimpleNamespace())
+    with_token(monkeypatch, None)
+
+    with pytest.raises(owner.NotSignedInError):
+        owner.current_owner(remote=False)
+
+
+def test_inside_an_http_request_with_a_token_the_owner_is_that_user_not_local(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("boe_insights_mcp.owner.get_http_request", lambda: SimpleNamespace())
+    with_token(monkeypatch, SimpleNamespace(claims={"sub": "1001"}))
+
+    assert owner.current_owner(remote=False) == "github:1001"
