@@ -74,6 +74,7 @@ Don't mix the two in one project: v1 code samples (imports from `@modelcontextpr
 **For Python:**
 - **Python SDK**: Use WebFetch to load `https://raw.githubusercontent.com/modelcontextprotocol/python-sdk/main/README.md`
 - [🐍 Python Guide](./reference/python_mcp_server.md) - Python patterns and examples
+- **In this repository**: the server is built on the standalone `fastmcp` package (4.2.x, pinned in `pyproject.toml`), not the SDK's bundled `mcp.server.fastmcp` that the Python Guide's samples import. Follow `CLAUDE.md` for FastMCP APIs and use the Python Guide for design patterns only.
 
 #### 1.4 Plan Your Implementation
 
