@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "boe-insights-mcp"
-version = "0.1.0rc1"
+version = "0.1.0"
 description = "MCP server with analytical tools over Spain's BOE (Boletín Oficial del Estado) open data: law version history, amendment analysis and legislative trends."
 dynamic = ["readme"]
 license = "MIT"
