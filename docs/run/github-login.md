@@ -39,7 +39,7 @@ export BOE_INSIGHTS_ALLOWED_USERS=octocat,id:1234567
 uvx boe-insights-mcp --transport http
 ```
 
-(Before release 0.1.0, use `uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp --transport http` or `uv run boe-insights-mcp --transport http` from a clone.)
+(From a clone, use `uv run boe-insights-mcp --transport http`.)
 
 Keep the signing key. If you generate a new one every time you start, people have to sign in again each time. Put the secret and the key in a private file or a secrets manager, never in the repository.
 

@@ -3,7 +3,7 @@
 Claude Desktop es la aplicación de escritorio de Anthropic. Puede ejecutar un servidor MCP local como un programa de tu equipo. Es la forma que ha probado este proyecto.
 
 !!! success "Probado por este proyecto"
-    Se probó el uso local por stdio con Claude Desktop en macOS el 2026-11-26, con el comando desde el repositorio que se muestra más abajo. El servidor arrancó y se ejecutaron con éxito estas herramientas: resolver una referencia a una ley, leer un artículo, y guardar y listar una búsqueda guardada. No se registró la versión de Claude Desktop. Windows y Linux no se probaron; sus rutas de configuración de abajo vienen de la documentación de Anthropic.
+    Se probó el uso local por stdio con Claude Desktop en macOS el 2026-11-26, con el comando `uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp`, que ejecutaba el paquete directamente desde el repositorio antes de la versión 0.1.0. El servidor arrancó y se ejecutaron con éxito estas herramientas: resolver una referencia a una ley, leer un artículo, y guardar y listar una búsqueda guardada. No se registró la versión de Claude Desktop. Windows y Linux no se probaron; sus rutas de configuración de abajo vienen de la documentación de Anthropic.
 
 !!! warning "Sin probar"
     No se probó conectar Claude Desktop al servidor por HTTP. Lee la sección de HTTP de abajo para ver qué dice la documentación de Anthropic y qué implica para este servidor.
@@ -34,20 +34,7 @@ Necesitas tener instalado [uv](https://docs.astral.sh/uv/).
 3. Guarda el archivo, cierra Claude Desktop por completo y vuelve a abrirlo. Cerrar la ventana no basta.
 4. En la barra lateral izquierda, abre **Plugins** (en la interfaz en español, "Plugins"; la aplicación muestra un aviso de que los conectores y las skills ahora son plugins). `boe-insights` aparece en **Your plugins** ("Tus plugins" en español), con las etiquetas "Local development" y "Local MCP server" ("Desarrollo local" y "Servidor MCP local"). Abre la entrada para ver sus herramientas: 23 cuando se probó, divididas en herramientas de solo lectura y herramientas de escritura o borrado. El desarrollador aparece como desconocido, que es lo que muestra la aplicación para cualquier servidor añadido mediante el archivo de configuración.
 
-El primer arranque puede tardar: con la forma del repositorio, uvx construye el paquete desde GitHub (unos 16 segundos en la prueba). Espera hasta un minuto. Si el servidor aparece como fallido, reinicia la aplicación una vez.
-
-Antes de la versión 0.1.0, usa la forma con el repositorio, que funciona hoy:
-
-```json
-{
-  "mcpServers": {
-    "boe-insights": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/davidbejar/boe-insights-mcp", "boe-insights-mcp"]
-    }
-  }
-}
-```
+El primer arranque puede tardar: uvx tiene que descargar antes el paquete (unos 16 segundos en la prueba, que lo construyó desde GitHub). Espera hasta un minuto. Si el servidor aparece como fallido, reinicia la aplicación una vez.
 
 Desde un clon, usa la ruta absoluta de la carpeta:
 

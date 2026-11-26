@@ -20,19 +20,6 @@ The client starts the server as a program and talks to it over standard input an
 }
 ```
 
-Before release 0.1.0, use the repository form, which works today:
-
-```json
-{
-  "mcpServers": {
-    "boe-insights": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/davidbejar/boe-insights-mcp", "boe-insights-mcp"]
-    }
-  }
-}
-```
-
 From a clone:
 
 ```json

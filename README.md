@@ -16,7 +16,7 @@
 
 An [MCP](https://modelcontextprotocol.io) (Model Context Protocol) server that gives AI assistants such as Claude analytical tools over the open data of Spain's BOE (Boletín Oficial del Estado). Instead of one tool per API endpoint, the tools are shaped around the questions people actually ask: "is this law still in force?", "what changed in this article?", "how has legislation on X evolved?".
 
-**Status:** early development. Twenty-three tools are available today (law lookup, search, status overview and code lookup; amendment history and amendment chains; reading, comparing and tracing the history of single articles; checking citations against the text; a law's table of contents; trend analytics over the whole consolidated collection; the BOE's daily gazette; and saved searches), plus five [resources](#resources-and-prompts) and eight prompts (four, each in English and Spanish); everything else is on the [roadmap](#roadmap). Not on PyPI yet (release 0.1.0 is next): run it with `uvx` straight from GitHub or from source, see the [quick start](#quick-start).
+**Status:** early development. Twenty-three tools are available today (law lookup, search, status overview and code lookup; amendment history and amendment chains; reading, comparing and tracing the history of single articles; checking citations against the text; a law's table of contents; trend analytics over the whole consolidated collection; the BOE's daily gazette; and saved searches), plus five [resources](#resources-and-prompts) and eight prompts (four, each in English and Spanish); everything else is on the [roadmap](#roadmap). Version 0.1.0 is on PyPI: run it with `uvx boe-insights-mcp`, see the [quick start](#quick-start).
 
 ## What you can ask
 
@@ -406,18 +406,18 @@ In Claude Code, prompts appear as slash commands, for example `/mcp__boe-insight
 
 Prerequisites: Python 3.11+ and [uv](https://docs.astral.sh/uv/). No API key is needed: the BOE open data API is public.
 
-The server speaks MCP over stdio, so you normally do not start it by hand: your MCP client does. Until release 0.1.0 is on PyPI, uv fetches and runs it straight from GitHub. The command your client runs is:
+The server speaks MCP over stdio, so you normally do not start it by hand: your MCP client does. uv fetches the package from [PyPI](https://pypi.org/project/boe-insights-mcp/) and runs it. The command your client runs is:
 
 ```bash
-uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
+uvx boe-insights-mcp
 ```
 
-After release 0.1.0 it will be just `uvx boe-insights-mcp`. Do not use that plain form before the release is on PyPI: the name there is not this project's yet, so it would run whatever is published under it, if anything.
+To pin an exact version, use `uvx boe-insights-mcp@0.1.0`. To try the latest unreleased code instead, run it straight from GitHub: `uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp`.
 
 For Claude Code, for example:
 
 ```bash
-claude mcp add boe-insights -- uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
+claude mcp add boe-insights -- uvx boe-insights-mcp
 ```
 
 Other ways to run it (documentation site):
@@ -518,7 +518,7 @@ Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](
 - [x] 4. Citation verification, amendment chain explorer, gazette scanning
 - [x] 5. MCP resources, prompts and saved searches
 - [x] 6. Remote mode: Streamable HTTP, GitHub sign-in with an allow-list, a call limit per caller, a container image, and the documentation site
-- [ ] 7. Release 0.1.0: publication on PyPI, with the container image and the documentation site
+- [x] 7. Release 0.1.0: publication on PyPI, with the container image and the documentation site
 - [ ] Listing in the MCP Registry
 - [ ] Evaluation suite
 - [ ] Move the documentation site from Material for MkDocs to Zensical before Material's end of life in May 2027

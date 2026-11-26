@@ -16,7 +16,7 @@
 
 Servidor [MCP](https://modelcontextprotocol.io) (Model Context Protocol) que ofrece a asistentes de IA como Claude herramientas analíticas sobre los datos abiertos del BOE (Boletín Oficial del Estado). En lugar de una herramienta por cada endpoint de la API, las herramientas se diseñan en torno a las preguntas que la gente se hace de verdad: "¿sigue vigente esta ley?", "¿qué ha cambiado en este artículo?", "¿cómo ha evolucionado la legislación sobre X?".
 
-**Estado:** desarrollo temprano. Hoy hay veintitrés herramientas disponibles (localizar una norma, buscar, consultar su situación de vigencia y buscar códigos; historial y cadenas de modificaciones; leer, comparar y consultar el historial de cada artículo; cotejar citas con el texto; el índice de una norma; análisis de tendencias sobre toda la colección consolidada; el diario oficial día a día; y búsquedas guardadas), además de cinco [recursos](#recursos-y-prompts) y ocho prompts (cuatro, cada uno en inglés y en español); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). Todavía no está en PyPI (la versión 0.1.0 es la siguiente): se ejecuta con `uvx` directamente desde GitHub o desde el código fuente, mira el [inicio rápido](#inicio-rápido).
+**Estado:** desarrollo temprano. Hoy hay veintitrés herramientas disponibles (localizar una norma, buscar, consultar su situación de vigencia y buscar códigos; historial y cadenas de modificaciones; leer, comparar y consultar el historial de cada artículo; cotejar citas con el texto; el índice de una norma; análisis de tendencias sobre toda la colección consolidada; el diario oficial día a día; y búsquedas guardadas), además de cinco [recursos](#recursos-y-prompts) y ocho prompts (cuatro, cada uno en inglés y en español); todo lo demás está en la [hoja de ruta](#hoja-de-ruta). La versión 0.1.0 está en PyPI: se ejecuta con `uvx boe-insights-mcp`, mira el [inicio rápido](#inicio-rápido).
 
 ## Qué puedes preguntar
 
@@ -406,18 +406,18 @@ En Claude Code los prompts aparecen como comandos con barra, por ejemplo `/mcp__
 
 Requisitos previos: Python 3.11 o superior y [uv](https://docs.astral.sh/uv/). No hace falta clave de API: la API de datos abiertos del BOE es pública.
 
-El servidor habla MCP por stdio, así que normalmente no lo arrancas tú: lo hace tu cliente MCP. Hasta que la versión 0.1.0 esté en PyPI, uv lo descarga y lo ejecuta directamente desde GitHub. El comando que ejecuta tu cliente es:
+El servidor habla MCP por stdio, así que normalmente no lo arrancas tú: lo hace tu cliente MCP. uv descarga el paquete de [PyPI](https://pypi.org/project/boe-insights-mcp/) y lo ejecuta. El comando que ejecuta tu cliente es:
 
 ```bash
-uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
+uvx boe-insights-mcp
 ```
 
-Cuando se publique la versión 0.1.0 bastará con `uvx boe-insights-mcp`. No uses esa forma simple antes de que la versión esté en PyPI: el nombre allí todavía no es de este proyecto, así que ejecutaría lo que haya publicado con ese nombre, si hay algo.
+Para fijar una versión exacta, usa `uvx boe-insights-mcp@0.1.0`. Para probar en cambio el código más reciente sin publicar, ejecútalo directamente desde GitHub: `uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp`.
 
 Por ejemplo, para Claude Code:
 
 ```bash
-claude mcp add boe-insights -- uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
+claude mcp add boe-insights -- uvx boe-insights-mcp
 ```
 
 Otras formas de ejecutarlo (sitio de documentación):
@@ -519,7 +519,7 @@ Basado en datos de la Agencia Estatal Boletín Oficial del Estado ([www.boe.es](
 - [x] 4. Verificación de citas, explorador de la cadena de modificaciones, exploración del diario oficial
 - [x] 5. Recursos y prompts MCP y búsquedas guardadas
 - [x] 6. Modo remoto: Streamable HTTP, inicio de sesión con GitHub con lista de acceso, límite de llamadas por usuario, imagen de contenedor y sitio de documentación
-- [ ] 7. Versión 0.1.0: publicación en PyPI, con la imagen de contenedor y el sitio de documentación
+- [x] 7. Versión 0.1.0: publicación en PyPI, con la imagen de contenedor y el sitio de documentación
 - [ ] Inclusión en el MCP Registry
 - [ ] Batería de evaluación
 - [ ] Pasar el sitio de documentación de Material for MkDocs a Zensical antes del fin de vida de Material, en mayo de 2027

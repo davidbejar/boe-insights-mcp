@@ -24,10 +24,9 @@ Check the options:
 uvx boe-insights-mcp --help
 ```
 
-## Run from the repository before the release
+## Run the code from the repository
 
-!!! note "Release status"
-    The package will be published on PyPI with release 0.1.0. Until it is there, do not run the plain `uvx boe-insights-mcp` form: the name on PyPI is not this project's yet, so the command would run whatever is published under it, if anything. Use the repository form below, which works today:
+To try the latest code that is not released yet, run it straight from GitHub:
 
 ```bash
 uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
@@ -41,7 +40,7 @@ In a client configuration, use `"command": "uvx"` and these arguments:
 
 ## Pin a version
 
-After the release you can ask for an exact version, so a client does not pick up a new one by surprise:
+You can ask for an exact version, so a client does not pick up a new one by surprise:
 
 ```bash
 uvx boe-insights-mcp@0.1.0
