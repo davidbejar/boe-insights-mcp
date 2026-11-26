@@ -6,14 +6,24 @@ allow-list is enforced when a token is *verified* (so a refused user gets 401 be
 session exists, instead of a valid session that sees nothing), and the redirect URIs that clients
 may register are limited. ``AuthMiddleware`` in ``server`` stays as a second layer on the
 components.
+
+Before the proxy is built, ``make_token_store_private`` makes the folder where FastMCP keeps the
+encrypted sign-in records private to the server's user (mode 0700), and refuses to start when that
+folder is a symbolic link or not a folder; the refusal is a ``launch.StartupError``, which
+``launch.run`` reports in one line.
 """
 
 from __future__ import annotations
 
+import contextlib
 import logging
+import os
+import stat
+from pathlib import Path
 from typing import Any, NamedTuple
 from urllib.parse import parse_qs, urlsplit
 
+import fastmcp
 from fastmcp.server.auth.oauth_proxy.models import _hash_token
 from fastmcp.server.auth.oauth_proxy.ui import create_error_html
 from fastmcp.server.auth.providers.github import GitHubProvider
@@ -24,10 +34,143 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 
 from boe_insights_mcp.access import AllowList
+from boe_insights_mcp.launch import StartupError
 
-__all__ = ["AllowListedGitHubProvider", "redirect_patterns"]
+__all__ = [
+    "AllowListedGitHubProvider",
+    "TokenStoreError",
+    "make_token_store_private",
+    "redirect_patterns",
+]
 
 logger = logging.getLogger(__name__)
+
+# When no ``client_storage`` is given, the OAuth proxy keeps its encrypted records (upstream GitHub
+# tokens, client registrations) in ``settings.home / "oauth-proxy" / <key fingerprint>``, creating
+# it with ``mkdir(parents=True, exist_ok=True)`` and so with the default mode
+# (fastmcp/server/auth/oauth_proxy/proxy.py:615-623). Only the folder name is repeated here; the
+# home is read from the same ``fastmcp.settings`` object the proxy imports (proxy.py:75), so a
+# ``FASTMCP_HOME`` variable or ``.env`` entry moves both together.
+TOKEN_STORE_FOLDER = "oauth-proxy"
+
+_PRIVATE_MODE = 0o700
+
+# POSIX permission bits mean nothing on Windows (``chmod`` there only toggles read-only), so the
+# store is left to FastMCP and to the folder's ACLs.
+_POSIX_MODES = os.name == "posix"
+
+
+class TokenStoreError(StartupError):
+    """The sign-in token store's folder is not one the server will keep secrets in."""
+
+
+def make_token_store_private(home: Path) -> Path | None:
+    """Make ``home / "oauth-proxy"`` a folder only its owner can enter, before FastMCP uses it.
+
+    A missing store is created, with any missing parents, with mode 0700 whatever the umask. An
+    existing one with group or other permission bits is set to 0700, and so are the fingerprint
+    folders directly inside it; a pre-existing ``home`` and everything above it keep their modes,
+    since they may be shared with other programs. A folder that cannot be tightened for lack of
+    permission is reported with one WARNING and left as it is.
+
+    Returns the store's path, or ``None`` on Windows, where nothing is done. Raises
+    ``TokenStoreError`` when the store is a symbolic link or exists but is not a folder, or when it
+    cannot be created.
+    """
+    if not _POSIX_MODES:
+        return None
+    store = home / TOKEN_STORE_FOLDER
+    # Checked before anything else and without following the link: ``exists()`` would follow it
+    # (a dangling one looks missing) and ``chmod`` would change whatever it points at. A store
+    # that silently lives somewhere else is not something to trust with sign-in secrets.
+    if store.is_symlink():
+        raise TokenStoreError(
+            f"the sign-in token store {store} is a symbolic link; refusing to keep sign-in "
+            "secrets behind it. Replace it with a real folder, or set FASTMCP_HOME elsewhere"
+        )
+    if not store.exists():
+        _create_private(store)
+        return store
+    # Refused rather than moved or deleted: the file is not ours to remove, and FastMCP would
+    # fail on it anyway, with a traceback instead of this message.
+    if not store.is_dir():
+        raise TokenStoreError(
+            f"the sign-in token store {store} exists but is not a directory; move it away, or "
+            "set FASTMCP_HOME elsewhere"
+        )
+    _tighten(store)
+    return store
+
+
+def _create_private(store: Path) -> None:
+    """Create ``store`` and its missing parents, each with mode 0700; ``TokenStoreError`` if not.
+
+    Raises ``TokenStoreError`` naming the store when a folder cannot be created.
+    """
+    # As ``searchstore._make_private_directories``: ``mkdir(parents=True, mode=...)`` gives the
+    # mode to the last folder only and the umask narrows it, so each missing folder is created and
+    # set explicitly. ``lexists`` so that a dangling symlink among the parents counts as present
+    # (mkdir then fails and is reported) rather than as missing.
+    missing: list[Path] = []
+    current = store
+    while not os.path.lexists(current):
+        missing.append(current)
+        current = current.parent
+    try:
+        for created in reversed(missing):
+            created.mkdir(mode=_PRIVATE_MODE)
+            created.chmod(_PRIVATE_MODE)
+    except OSError as error:
+        raise TokenStoreError(
+            f"cannot create the sign-in token store {store}: {error.strerror or error}"
+        ) from error
+    # FastMCP then creates the fingerprint folder (and the store creates one per collection)
+    # inside with the default mode, typically 0755. Those are not patched: nobody but the owner
+    # can enter a 0700 folder, so nobody else reaches anything below it whatever its mode, and
+    # the record files themselves are written 0600 (checked with FastMCP 4.2.4).
+
+
+def _tighten(store: Path) -> None:
+    """Set an existing ``store`` and the fingerprint folders inside it to 0700 when wider.
+
+    Symlinked entries are skipped, never followed. Folders that cannot be changed for lack of
+    permission are named in one WARNING; the server still starts.
+    """
+    refused = [] if _restrict(store) else [str(store)]
+    inside: list[Path] = []
+    # An unreadable store (another account's, or one its owner closed to itself) is already in
+    # ``refused`` if others could enter it; otherwise there is nothing to tighten for their sake,
+    # and FastMCP fails when it tries to use it, which says more than we could.
+    with contextlib.suppress(PermissionError):
+        inside = sorted(
+            entry for entry in store.iterdir() if not entry.is_symlink() and entry.is_dir()
+        )
+    refused += [str(folder) for folder in inside if not _restrict(folder)]
+    if refused:
+        # A warning, not a refusal, like the open-HTTP one in ``launch.run``: the folder may
+        # belong to another account on purpose (a service user, a shared volume), and only the
+        # operator can tell.
+        logger.warning(
+            "Could not make the sign-in token store private (mode 0700): %s. Other users of "
+            "this machine may be able to list it; give it to the server's user or chmod 700 it",
+            ", ".join(refused),
+        )
+
+
+def _restrict(folder: Path) -> bool:
+    """Set ``folder`` to 0700 if group or others have any access; False if not permitted."""
+    # Only access by others is a reason to change it: a folder already closed to them is left
+    # as it is, so a store owned by someone else but already private causes no warning.
+    if not stat.S_IMODE(folder.lstat().st_mode) & 0o077:
+        return True
+    try:
+        # A symlink swapped in between the checks and this call would be followed; doing that
+        # needs write access to the parent, which is the home or the 0700 store itself.
+        folder.chmod(_PRIVATE_MODE)
+    except PermissionError:
+        return False
+    return True
+
 
 # What command-line MCP clients (Claude Code and others) use for their callback: RFC 8252 loopback
 # redirects on a port they pick at run time. FastMCP's own list covers ``localhost`` and
@@ -83,7 +226,15 @@ class AllowListedGitHubProvider(GitHubProvider):
         ``advertised_scopes`` are the scopes clients are told they may ask for and may register
         with. They are not required of any token: ``required_scopes`` (in ``options``) stays the
         only thing the token check and the scope sent to GitHub follow.
+
+        Unless ``options`` give a ``client_storage``, the token store folder is made private
+        first (``make_token_store_private``), which may raise ``TokenStoreError``.
         """
+        # Before ``super().__init__``, which creates the store folder: with our 0700 folder already
+        # there, FastMCP's ``mkdir(exist_ok=True)`` leaves its mode alone. A caller-supplied
+        # storage means FastMCP never touches the folder, so neither do we.
+        if options.get("client_storage") is None:
+            make_token_store_private(fastmcp.settings.home)
         super().__init__(**options)
         self._advertised_scopes = list(advertised_scopes)
         # Replaces the advertised, default and valid scopes that the base class derived from
