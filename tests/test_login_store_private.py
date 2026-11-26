@@ -507,6 +507,46 @@ def test_a_parent_that_turns_out_to_be_a_file_is_refused(
         login.make_token_store_private(home)
 
 
+def appear_before_creation(monkeypatch: pytest.MonkeyPatch, store: Path, competitor: Any) -> None:
+    """Make ``competitor(store)`` run after the first lookup found no store, before creation."""
+    real_create = login._create_private  # pyright: ignore[reportPrivateUsage]
+
+    def create(path: Path, findings: Any) -> bool:
+        """Let another process put something at the store first, then create as usual."""
+        competitor(store)
+        return real_create(path, findings)
+
+    monkeypatch.setattr(login, "_create_private", create)
+
+
+def test_a_loose_store_appearing_after_the_first_lookup_ends_private(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = loose_directory(tmp_path / "home")
+    store = home / "oauth-proxy"
+    appear_before_creation(monkeypatch, store, loose_directory)
+
+    login.make_token_store_private(home)
+
+    assert mode(store) == 0o700
+
+
+def test_a_symlink_appearing_after_the_first_lookup_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = loose_directory(tmp_path / "home")
+    store = home / "oauth-proxy"
+    target = loose_directory(tmp_path / "elsewhere")
+    appear_before_creation(
+        monkeypatch, store, lambda path: path.symlink_to(target, target_is_directory=True)
+    )
+
+    with pytest.raises(login.TokenStoreError, match="symbolic link"):
+        login.make_token_store_private(home)
+
+    assert mode(target) == 0o755
+
+
 def test_a_symlink_planted_in_the_creation_window_is_still_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

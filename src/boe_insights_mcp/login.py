@@ -157,9 +157,9 @@ def _not_directory_refusal(store: Path) -> TokenStoreError:
 def _create_private(store: Path, findings: _Findings) -> bool:
     """Create ``store`` and its missing parents, each set to 0700.
 
-    Returns False when another process created ``store`` itself first, so the caller examines
-    it as an existing store; True otherwise. Raises ``TokenStoreError`` naming the store when a
-    folder cannot be created.
+    Returns False when ``store`` turns out to exist (another process created it first), so the
+    caller examines it as an existing store; True otherwise. Raises ``TokenStoreError`` naming the
+    store when a folder cannot be created.
     """
     # ``mkdir(parents=True, mode=...)`` gives the mode to the last folder only and the umask
     # narrows it, so each missing folder is created and set explicitly. ``lexists`` so that a
@@ -169,6 +169,10 @@ def _create_private(store: Path, findings: _Findings) -> bool:
     while not os.path.lexists(current):
         missing.append(current)
         current = current.parent
+    if not missing:
+        # The store appeared after the caller looked (another process, or someone planting a
+        # link): it goes through the existing-store checks rather than being taken as ours.
+        return False
     for created in reversed(missing):
         try:
             created.mkdir(mode=_PRIVATE_MODE)
@@ -239,8 +243,9 @@ def _make_private(folder: Path, findings: _Findings, *, existing: bool, is_store
                 return
         old_mode, new_mode = _change_mode(folder, just_created=not existing)
     except OSError as error:
-        # Something replaced the store after ``_refuse_untrusted``. A symbolic link gives ELOOP on
-        # Linux but ENOTDIR on macOS (O_DIRECTORY is checked first there); a file gives ENOTDIR.
+        # Something replaced the store after ``_refuse_untrusted``. With O_DIRECTORY set, a
+        # symbolic link gives ENOTDIR on both Linux and macOS (measured), as a file does; ELOOP,
+        # what O_NOFOLLOW alone gives, is accepted too in case a system reports that instead.
         if is_store and error.errno in (errno.ELOOP, errno.ENOTDIR):
             if folder.is_symlink():
                 raise _symlink_refusal(folder) from error
