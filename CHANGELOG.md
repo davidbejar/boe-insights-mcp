@@ -6,7 +6,7 @@ All notable changes to this project are recorded here. The format follows
 
 ## [0.1.0] - 2026-11-26
 
-First stable release. It is the same code as `0.1.0rc1`, apart from the documentation, which now
+First final release (not a pre-release). It is the same code as `0.1.0rc1`, apart from the documentation, which now
 describes installing from PyPI and pulling the image from GHCR, and the CI and release workflows,
 which are pinned to newer action versions.
 
@@ -30,7 +30,7 @@ version tag) and publishes the documentation site, which a pre-release leaves as
 ## [0.1.0rc1] - 2026-11-26
 
 Pre-release that published the package name on PyPI and exercised the release pipeline. It has the
-same content as `0.1.0`.
+same code as `0.1.0`.
 
 [0.1.0]: https://github.com/davidbejar/boe-insights-mcp/releases/tag/v0.1.0
 [0.1.0rc1]: https://github.com/davidbejar/boe-insights-mcp/releases/tag/v0.1.0rc1

@@ -48,7 +48,14 @@ curl http://127.0.0.1:8000/health
 
 The answer is `{"status":"ok"}`. The MCP address is `http://127.0.0.1:8000/mcp`. Connect a client as described on the [client pages](clients/generic.md).
 
-The image defines a health check that calls `/health` from inside the container. `podman ps` shows the state.
+The image defines a health check that calls `/health` from inside the container. Docker applies it, and `docker ps` shows the state. Podman does not: it ignores a health check stored in an OCI-format image such as the published one, so after a pull `podman ps` shows no state. (An image you build yourself with `--format docker` keeps it, as said above.) To get the same check with the published image under Podman, add these options to the `podman run` command:
+
+```bash
+    --health-cmd "python -c \"import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/health' % os.environ.get('BOE_INSIGHTS_PORT', '8000'), timeout=3)\"" \
+    --health-interval 30s --health-timeout 5s --health-start-period 15s --health-retries 3 \
+```
+
+They reproduce the `HEALTHCHECK` of the `Containerfile`: the same command and the same timings. If you change `BOE_INSIGHTS_PORT`, the command follows it.
 
 !!! warning "No sign-in by default"
     As started above, anyone who can reach the published port can use the server. Keep the `127.0.0.1:` in `-p`, or turn on [GitHub login](github-login.md). See [Security and operations](../operating.md) before publishing it more widely.
@@ -110,10 +117,16 @@ These commands use the name given with `--name boe-insights`, as in every `podma
 
 To update, pull or build the new image and start a new container with the same volume.
 
-## Not tested
+## What was tested
 
-The image was built for linux/arm64 and linux/amd64. The arm64 image was run in open HTTP mode. The amd64 image was only built and checked to import, never run. The published `0.1.0rc1` image was pulled and run with Podman on macOS arm64 on 2026-11-26, with the lock-down flags above, and `/health` answered `{"status":"ok"}`.
+- The image was built for linux/arm64 and linux/amd64. The arm64 image was run in open HTTP mode.
+- The published `0.1.0rc1` image was pulled and run with Podman on macOS arm64 on 2026-11-26, with the lock-down flags above, and `/health` answered `{"status":"ok"}`. Podman showed no health check for it, as described above.
+- The same image run with the `--health-cmd` options above under Podman, on the same day: `podman ps` showed it as healthy.
 
+Not tested:
+
+- The amd64 image was only built and checked to import, never run.
+- The health check under Docker. That Docker applies it rests on the image configuration containing it.
 - Sign-in (GitHub login) against the container image.
 - The bind-mount commands above.
 

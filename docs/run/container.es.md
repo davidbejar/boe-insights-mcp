@@ -48,7 +48,14 @@ curl http://127.0.0.1:8000/health
 
 La respuesta es `{"status":"ok"}`. La dirección MCP es `http://127.0.0.1:8000/mcp`. Conecta un cliente como se explica en las [páginas de cada cliente](clients/generic.md).
 
-La imagen define una comprobación de estado que llama a `/health` desde dentro del contenedor. `podman ps` muestra el estado.
+La imagen define una comprobación de estado que llama a `/health` desde dentro del contenedor. Docker la aplica, y `docker ps` muestra el estado. Podman no: ignora una comprobación de estado guardada en una imagen en formato OCI, como la publicada, así que tras descargarla `podman ps` no muestra ningún estado. (Una imagen que construyas tú con `--format docker` sí la conserva, como se explica arriba.) Para tener la misma comprobación con la imagen publicada en Podman, añade estas opciones al comando `podman run`:
+
+```bash
+    --health-cmd "python -c \"import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/health' % os.environ.get('BOE_INSIGHTS_PORT', '8000'), timeout=3)\"" \
+    --health-interval 30s --health-timeout 5s --health-start-period 15s --health-retries 3 \
+```
+
+Reproducen el `HEALTHCHECK` del `Containerfile`: el mismo comando y los mismos tiempos. Si cambias `BOE_INSIGHTS_PORT`, el comando lo sigue.
 
 !!! warning "Sin inicio de sesión por defecto"
     Tal como se ha arrancado arriba, cualquiera que pueda llegar al puerto publicado puede usar el servidor. Mantén el `127.0.0.1:` en `-p` o activa el [inicio de sesión con GitHub](github-login.md). Consulta [Seguridad y operación](../operating.md) antes de publicarlo más ampliamente.
@@ -110,10 +117,16 @@ Estos comandos usan el nombre indicado con `--name boe-insights`, como en todos 
 
 Para actualizar, descarga o construye la imagen nueva y arranca un contenedor nuevo con el mismo volumen.
 
-## Sin probar
+## Qué se ha probado
 
-La imagen se construyó para linux/arm64 y linux/amd64. La imagen arm64 se ejecutó en modo HTTP abierto. La imagen amd64 solo se construyó y se comprobó que se importa; nunca se ejecutó. La imagen publicada `0.1.0rc1` se descargó y se ejecutó con Podman en macOS arm64 el 2026-11-26, con las opciones de blindaje de arriba, y `/health` respondió `{"status":"ok"}`.
+- La imagen se construyó para linux/arm64 y linux/amd64. La imagen arm64 se ejecutó en modo HTTP abierto.
+- La imagen publicada `0.1.0rc1` se descargó y se ejecutó con Podman en macOS arm64 el 2026-11-26, con las opciones de blindaje de arriba, y `/health` respondió `{"status":"ok"}`. Podman no mostró ninguna comprobación de estado para ella, como se explica arriba.
+- La misma imagen ejecutada con las opciones `--health-cmd` de arriba en Podman, el mismo día: `podman ps` la mostró como sana (`healthy`).
 
+Sin probar:
+
+- La imagen amd64 solo se construyó y se comprobó que se importa; nunca se ejecutó.
+- La comprobación de estado con Docker. Que Docker la aplica se basa en que la configuración de la imagen la contiene.
 - El inicio de sesión (con GitHub) con la imagen de contenedor.
 - Los comandos del bind mount de arriba.
 
