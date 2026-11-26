@@ -30,20 +30,6 @@ You need [uv](https://docs.astral.sh/uv/).
 }
 ```
 
-Before release 0.1.0, use the repository form, which works today:
-
-```json
-{
-  "servers": {
-    "boe-insights": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/davidbejar/boe-insights-mcp", "boe-insights-mcp"]
-    }
-  }
-}
-```
-
 From a clone, use `"command": "uv"` and `"args": ["--directory", "/absolute/path/to/boe-insights-mcp", "run", "boe-insights-mcp"]`.
 
 To pass settings, add an `env` object next to `args`. They are listed in [Run with uvx](../uvx.md#settings).

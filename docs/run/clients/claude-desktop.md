@@ -3,7 +3,7 @@
 Claude Desktop is Anthropic's desktop app. It can run a local MCP server as a program on your computer. This is the way tested by this project.
 
 !!! success "Tested by this project"
-    Local use over stdio was tested with Claude Desktop on macOS on 2026-11-26, with the from-repository command shown below. The server started, and these tools were run and worked: resolving a law reference, reading an article, and saving and listing a saved search. The version of Claude Desktop was not recorded. Windows and Linux were not tested; their config paths below come from Anthropic's documentation.
+    Local use over stdio was tested with Claude Desktop on macOS on 2026-11-26, with the command `uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp`, which ran the package straight from the repository before release 0.1.0. The server started, and these tools were run and worked: resolving a law reference, reading an article, and saving and listing a saved search. The version of Claude Desktop was not recorded. Windows and Linux were not tested; their config paths below come from Anthropic's documentation.
 
 !!! warning "Not tested"
     Connecting Claude Desktop to the server over HTTP was not tested. Read the HTTP section below for what Anthropic's documentation says and what that means for this server.
@@ -34,20 +34,7 @@ You need [uv](https://docs.astral.sh/uv/) installed.
 3. Save the file, then quit Claude Desktop completely and start it again. Closing the window is not enough.
 4. In the left sidebar, open **Plugins** (the app shows a notice that connectors and skills are now plugins). `boe-insights` is listed under **Your plugins**, labelled "Local development" and "Local MCP server". Open the entry to see its tools: 23 at the time of testing, split into read-only tools and write/delete tools. The developer is shown as unknown, which is what the app shows for any server added through the config file.
 
-The first start can be slow: with the repository form, uvx builds the package from GitHub (about 16 seconds in the test). Allow up to a minute. If the server shows as failed, restart the app once.
-
-Before release 0.1.0, use the repository form, which works today:
-
-```json
-{
-  "mcpServers": {
-    "boe-insights": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/davidbejar/boe-insights-mcp", "boe-insights-mcp"]
-    }
-  }
-}
-```
+The first start can be slow: uvx has to fetch the package first (about 16 seconds in the test, which built it from GitHub). Allow up to a minute. If the server shows as failed, restart the app once.
 
 From a clone, use the absolute path of the folder:
 

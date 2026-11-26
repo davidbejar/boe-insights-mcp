@@ -11,7 +11,7 @@ Por defecto el servidor habla por stdio con un único cliente de tu propio equip
 uvx boe-insights-mcp --transport http
 ```
 
-(Antes de la versión 0.1.0, usa `uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp --transport http`. Desde un clon, usa `uv run boe-insights-mcp --transport http`.)
+(Desde un clon, usa `uv run boe-insights-mcp --transport http`.)
 
 El servidor escribe en el log dónde escucha. Con los valores por defecto, la dirección MCP es:
 

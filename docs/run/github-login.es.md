@@ -39,7 +39,7 @@ export BOE_INSIGHTS_ALLOWED_USERS=octocat,id:1234567
 uvx boe-insights-mcp --transport http
 ```
 
-(Antes de la versión 0.1.0, usa `uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp --transport http` o, desde un clon, `uv run boe-insights-mcp --transport http`.)
+(Desde un clon, usa `uv run boe-insights-mcp --transport http`.)
 
 Conserva la clave de firma. Si generas una nueva cada vez que arrancas, las personas tienen que volver a iniciar sesión cada vez. Guarda el secreto y la clave en un archivo privado o en un gestor de secretos, nunca en el repositorio.
 

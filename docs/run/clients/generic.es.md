@@ -20,19 +20,6 @@ El cliente arranca el servidor como un programa y habla con él por entrada y sa
 }
 ```
 
-Antes de la versión 0.1.0, usa la forma con el repositorio, que funciona hoy:
-
-```json
-{
-  "mcpServers": {
-    "boe-insights": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/davidbejar/boe-insights-mcp", "boe-insights-mcp"]
-    }
-  }
-}
-```
-
 Desde un clon:
 
 ```json

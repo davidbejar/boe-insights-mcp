@@ -11,7 +11,7 @@ By default the server talks to one client on your own machine over stdio. Over H
 uvx boe-insights-mcp --transport http
 ```
 
-(Before release 0.1.0, use `uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp --transport http`. From a clone, use `uv run boe-insights-mcp --transport http`.)
+(From a clone, use `uv run boe-insights-mcp --transport http`.)
 
 The server logs where it listens. With the defaults the MCP address is:
 

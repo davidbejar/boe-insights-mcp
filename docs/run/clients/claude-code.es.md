@@ -15,12 +15,6 @@ claude mcp add boe-insights -- uvx boe-insights-mcp
 
 Todo lo que va después de `--` es el comando que ejecuta Claude Code. `boe-insights` es el nombre que das al servidor.
 
-Antes de la versión 0.1.0 el paquete no está en PyPI. Usa la forma con el repositorio, que funciona hoy:
-
-```bash
-claude mcp add boe-insights -- uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
-```
-
 Desde un clon, usa la ruta absoluta de la carpeta:
 
 ```bash

@@ -24,10 +24,9 @@ Para ver las opciones:
 uvx boe-insights-mcp --help
 ```
 
-## Ejecutarlo desde el repositorio antes de la publicación
+## Ejecutar el código del repositorio
 
-!!! note "Estado de la publicación"
-    El paquete se publicará en PyPI con la versión 0.1.0. Mientras no esté allí, no ejecutes la forma simple `uvx boe-insights-mcp`: el nombre en PyPI todavía no es de este proyecto, así que el comando ejecutaría lo que haya publicado con ese nombre, si hay algo. Usa la forma con el repositorio de abajo, que funciona hoy:
+Para probar el código más reciente que aún no se ha publicado en una versión, ejecútalo directamente desde GitHub:
 
 ```bash
 uvx --from git+https://github.com/davidbejar/boe-insights-mcp boe-insights-mcp
@@ -41,7 +40,7 @@ En la configuración de un cliente, usa `"command": "uvx"` con estos argumentos:
 
 ## Fijar una versión
 
-Cuando se publique la versión 0.1.0 podrás pedir una versión exacta, para que un cliente no se encuentre con una nueva por sorpresa:
+Puedes pedir una versión exacta, para que un cliente no se encuentre con una nueva por sorpresa:
 
 ```bash
 uvx boe-insights-mcp@0.1.0

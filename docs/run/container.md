@@ -2,18 +2,19 @@
 
 The container image runs the server over HTTP. It is built from the `Containerfile` in the repository root. The commands below use Podman. Docker works the same way: replace `podman` with `docker`, except where noted.
 
-!!! note "Release status"
-    The image `ghcr.io/davidbejar/boe-insights-mcp` will be published with release 0.1.0. Until then, build the image yourself from a clone (next section).
-
 ## Get the image
 
-After the release:
+The image is public on GitHub Container Registry for linux/amd64 and linux/arm64. You do not need to sign in to pull it:
 
 ```bash
 podman pull ghcr.io/davidbejar/boe-insights-mcp:0.1.0
 ```
 
-Today, from a clone of the repository:
+The tags `0.1` and `latest` also exist. `0.1` follows the latest 0.1.x release and `latest` follows the newest release. Use the exact version tag, as in this page, so an update never surprises you.
+
+### Build it yourself
+
+To run code that is not released yet, build the image from a clone of the repository:
 
 ```bash
 git clone https://github.com/davidbejar/boe-insights-mcp.git
@@ -23,14 +24,14 @@ podman build --format docker -t localhost/boe-insights-mcp:dev -f Containerfile 
 
 With Docker, drop `--format docker`: `docker build -t localhost/boe-insights-mcp:dev -f Containerfile .`. With Podman the flag is required: Podman's default image format (OCI) does not keep the health check.
 
-The commands below use the name `localhost/boe-insights-mcp:dev`. After the release, use `ghcr.io/davidbejar/boe-insights-mcp:0.1.0` instead.
+The `podman run` commands on this page use the published image. If you built the image yourself, use `localhost/boe-insights-mcp:dev` in them instead.
 
 ## Run it
 
 ```bash
 podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 \
     --read-only --tmpfs /tmp --cap-drop=all --security-opt no-new-privileges \
-    -v boe-insights-data:/data localhost/boe-insights-mcp:dev
+    -v boe-insights-data:/data ghcr.io/davidbejar/boe-insights-mcp:0.1.0
 ```
 
 What each part does:
@@ -47,7 +48,14 @@ curl http://127.0.0.1:8000/health
 
 The answer is `{"status":"ok"}`. The MCP address is `http://127.0.0.1:8000/mcp`. Connect a client as described on the [client pages](clients/generic.md).
 
-The image defines a health check that calls `/health` from inside the container. `podman ps` shows the state.
+The image defines a health check that calls `/health` from inside the container. Docker applies it, and `docker ps` shows the state. Podman does not: it ignores a health check stored in an OCI-format image such as the published one, so after a pull `podman ps` shows no state. (An image you build yourself with `--format docker` keeps it, as said above.) To get the same check with the published image under Podman, add these options to the `podman run` command:
+
+```bash
+    --health-cmd "python -c \"import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/health' % os.environ.get('BOE_INSIGHTS_PORT', '8000'), timeout=3)\"" \
+    --health-interval 30s --health-timeout 5s --health-start-period 15s --health-retries 3 \
+```
+
+They reproduce the `HEALTHCHECK` of the `Containerfile`: the same command and the same timings. If you change `BOE_INSIGHTS_PORT`, the command follows it.
 
 !!! warning "No sign-in by default"
     As started above, anyone who can reach the published port can use the server. Keep the `127.0.0.1:` in `-p`, or turn on [GitHub login](github-login.md). See [Security and operations](../operating.md) before publishing it more widely.
@@ -68,7 +76,7 @@ The server runs as user and group `10001`, not root. A named volume inherits the
 
 ```bash
 mkdir -p "$PWD/boe-data" && podman unshare chown 10001:10001 "$PWD/boe-data"
-podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 -v "$PWD/boe-data":/data localhost/boe-insights-mcp:dev
+podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 -v "$PWD/boe-data":/data ghcr.io/davidbejar/boe-insights-mcp:0.1.0
 ```
 
 Give the bind mount an absolute host path, as `"$PWD/boe-data"` does: some Docker versions refuse a relative one. `podman unshare` is for rootless Podman. With Docker or rootful Podman, use `sudo chown 10001:10001 "$PWD/boe-data"`. The bind-mount commands were not run for this page.
@@ -93,7 +101,7 @@ If you change `BOE_INSIGHTS_PORT`, change the right side of `-p` to match. The h
 Put secrets (the GitHub client secret and the signing key) in an environment file rather than on the command line, so they do not appear in your shell history or in `ps`:
 
 ```bash
-podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 --env-file boe.env -v boe-insights-data:/data localhost/boe-insights-mcp:dev
+podman run --rm --name boe-insights -p 127.0.0.1:8000:8000 --env-file boe.env -v boe-insights-data:/data ghcr.io/davidbejar/boe-insights-mcp:0.1.0
 ```
 
 Keep that file private (`chmod 600 boe.env`).
@@ -109,13 +117,18 @@ These commands use the name given with `--name boe-insights`, as in every `podma
 
 To update, pull or build the new image and start a new container with the same volume.
 
-## Not tested
+## What was tested
 
-The image was built for linux/arm64 and linux/amd64. The arm64 image was run in open HTTP mode. The amd64 image was only built and checked to import, never run.
+- The image was built for linux/arm64 and linux/amd64. The arm64 image was run in open HTTP mode.
+- The published `0.1.0rc1` image was pulled and run with Podman on macOS arm64 on 2026-11-26, with the lock-down flags above, and `/health` answered `{"status":"ok"}`. Podman showed no health check for it, as described above.
+- The same image run with the `--health-cmd` options above under Podman, on the same day: `podman ps` showed it as healthy.
 
+Not tested:
+
+- The amd64 image was only built and checked to import, never run.
+- The health check under Docker. That Docker applies it rests on the image configuration containing it.
 - Sign-in (GitHub login) against the container image.
 - The bind-mount commands above.
-- Running the published image: it does not exist yet.
 
 ## See also
 

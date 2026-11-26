@@ -32,20 +32,6 @@ Necesitas [uv](https://docs.astral.sh/uv/).
 
 La página de Cursor indica que `type` es obligatorio para los servidores stdio, aunque algunos de sus propios ejemplos lo omiten. Conservarlo no hace daño.
 
-Antes de la versión 0.1.0, usa la forma con el repositorio, que funciona hoy:
-
-```json
-{
-  "mcpServers": {
-    "boe-insights": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/davidbejar/boe-insights-mcp", "boe-insights-mcp"]
-    }
-  }
-}
-```
-
 Desde un clon, usa `"command": "uv"` y `"args": ["--directory", "/absolute/path/to/boe-insights-mcp", "run", "boe-insights-mcp"]`.
 
 Para pasar ajustes, añade un objeto `env` junto a `args`. Están en [Ejecutar con uvx](../uvx.md#ajustes).
