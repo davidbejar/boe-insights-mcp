@@ -1,19 +1,26 @@
 # Publishes the documentation site (MkDocs Material) to GitHub Pages.
 #
-# MANUAL ONLY: the sole trigger is workflow_dispatch (Actions tab -> "Documentation site" ->
-# "Run workflow"). There is deliberately no push, tag or schedule trigger, so nothing is
-# published until the repository owner runs it. A later pull request will connect it to releases.
+# Two triggers:
+#  - workflow_dispatch: run by hand (Actions tab -> "Documentation site" -> "Run workflow").
+#  - workflow_call: called by release.yml for a final (non-pre-release) version, so the site is
+#    built from the tagged commit. There is deliberately no push or schedule trigger.
 #
-# One-time manual step before the first deployment: in the repository, open Settings -> Pages and
-# under "Build and deployment" set Source to "GitHub Actions". Without it the deploy job fails.
+# The deploy job runs only for refs/heads/main (a manual run) or a v* tag (the release call);
+# any other ref (a feature branch, say) only builds, as a check that the site compiles.
 #
-# A run started from any branch other than main only builds (a check that the site compiles);
-# the deploy job is skipped.
+# Every action is pinned to a full commit SHA (version in the trailing comment), as in release.yml.
+#
+# One-time manual steps before the first deployment:
+#  1. Settings -> Pages -> "Build and deployment": set Source to "GitHub Actions".
+#  2. Settings -> Environments -> github-pages -> "Deployment branches and tags": the environment
+#     restricts which refs may deploy (by default only the default branch), so add a rule of ref
+#     type Tag with the pattern v*. Without it the release-triggered deployment is rejected.
 
 name: Documentation site
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -31,12 +38,16 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          enable-cache: true
+          persist-credentials: false
+
+      # No cache: this workflow is on the release path (release.yml calls it), so nothing restored
+      # from a cache may reach the published site.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          enable-cache: false
 
       # Same install and build as the docs job in ci.yml: the project plus the docs group only.
       - name: Install dependencies
@@ -49,15 +60,16 @@ jobs:
 
       # MkDocs writes to ./site (its default site_dir), not the action's default ./_site.
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: site
 
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    # Publish only from the default branch; a feature-branch run stops after the build.
-    if: github.ref == 'refs/heads/main'
+    # Publish only from the default branch or a release tag; any other ref stops after the build.
+    # In a workflow_call run, github.ref is the caller's ref (the pushed tag).
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       pages: write # deploy-pages publishes the artifact
@@ -69,4 +81,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

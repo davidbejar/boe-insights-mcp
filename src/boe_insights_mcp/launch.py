@@ -4,7 +4,9 @@
 command line and ``BOE_INSIGHTS_*`` variables into :class:`~boe_insights_mcp.settings.Settings`,
 builds the server through a factory it is given (so it never imports ``server``; the factory
 decides about authentication), and then starts it over stdio or HTTP, warning about login
-settings that do nothing or let nobody in. For HTTP it also owns the ``/health`` route, the
+settings that do nothing or let nobody in. A factory that finds something on the machine the
+operator must fix (``login`` does, for the sign-in token store) raises :class:`StartupError`,
+which becomes a one-line message and exit status 1. For HTTP it also owns the ``/health`` route, the
 Host/Origin guard configuration and the wiring of ``httplimits`` (request body limit, access log
 without query strings).
 """
@@ -33,7 +35,7 @@ from boe_insights_mcp.settings import (
     port_in_range,
 )
 
-__all__ = ["build_http_app", "register_health", "resolve_settings", "run"]
+__all__ = ["StartupError", "build_http_app", "register_health", "resolve_settings", "run"]
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,14 @@ logger = logging.getLogger(__name__)
 MCP_PATH = "/mcp"
 
 ServerFactory = Callable[[Settings], FastMCP]
+
+
+class StartupError(Exception):
+    """Raised by a server factory for a condition the operator must fix before the server runs.
+
+    ``run`` turns it into a one-line message and a non-zero exit instead of a traceback, so the
+    message must be one line and must not contain secrets.
+    """
 
 
 def register_health(server: FastMCP) -> None:
@@ -182,7 +192,12 @@ def run(argv: Sequence[str], env: Mapping[str, str], factory: ServerFactory) -> 
             "(for example -p 127.0.0.1:8000:8000)",
             settings.host,
         )
-    server = factory(settings)
+    try:
+        server = factory(settings)
+    except StartupError as error:
+        # Status 1, not argparse's 2: the command line was fine, something on the machine is not.
+        # Same "prog: error: message" shape as the settings errors above.
+        sys.exit(f"{_parser().prog}: error: {error}")
     if settings.transport == "stdio":
         server.run(show_banner=False)
         return

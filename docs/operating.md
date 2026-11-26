@@ -242,11 +242,29 @@ signing key. If you do not set `FASTMCP_HOME`, it is FastMCP's per-user data dir
 poor choice for a service. The folder must:
 
 - persist across restarts (otherwise everybody signs in again after each deploy);
-- be private to the account that runs the server. FastMCP does not restrict it: it creates the
-  folder with the default permissions (seen as `drwxr-xr-x`, readable by other accounts), so make
-  it private yourself, for example with `chmod 700` on `$FASTMCP_HOME`. The container image
-  creates `/data` with mode 0700 for the server's user; a bind-mounted folder keeps the
-  permissions you give it;
+- be private to the account that runs the server. Over HTTP with GitHub sign-in enabled, on POSIX
+  systems only, the server prepares `$FASTMCP_HOME/oauth-proxy` before FastMCP uses it:
+    - It creates the folder, and any missing parent folders (a missing `FASTMCP_HOME` included),
+      with permission bits 0700, whatever the umask.
+    - If the folder already exists and group or others have any access, it sets it and the folders
+      directly inside it to 0700 and logs one INFO line naming each folder changed and its old mode. This also
+      applies when `oauth-proxy` is itself a mounted volume, and it clears a setgid bit.
+    - It never changes a `FASTMCP_HOME` folder that already existed, anything above it, or the
+      files inside the store.
+    - It refuses to start, with a one-line error, if `oauth-proxy` is a symbolic link, exists but
+      is not a folder, or cannot be created.
+    - If it cannot make a folder private (it is not the owner, the filesystem is read-only or
+      does not support changing permissions, or the filesystem accepted the change but did not
+      apply it, as some network shares do), it logs one WARNING naming the folder and the reason,
+      and keeps starting. Look for that warning in the log after the first start.
+
+  Limits: it does nothing on Windows. It sets permission bits only: it does not check who owns the
+  folder or examine access-control lists (on macOS an inherited ACL on the home folder can still
+  grant others access). The record files inside were already owner-only (0600) and encrypted, so
+  the folder permission protects the file names (which include client ids and short-lived codes)
+  and listing, not the contents. The container image creates `/data` with mode 0700 for the
+  server's user. A bind mount of `FASTMCP_HOME` or `/data` keeps the permissions you give it; a
+  mount that is the `oauth-proxy` folder itself is tightened as described above;
 - be backed up only if you accept that a copy holds encrypted GitHub tokens (they are useless
   without the signing key).
 
@@ -431,8 +449,9 @@ The data is the BOE's, and its reuse conditions apply to your instance:
 - [ ] The signing key is random, at least 32 characters, and kept outside the image and the repo.
 - [ ] The GitHub client secret is kept the same way.
 - [ ] `FASTMCP_HOME` and `BOE_INSIGHTS_DATA_DIR` are on persistent storage, private to the server
-  account (FastMCP does not make `FASTMCP_HOME` private: `chmod 700` it). The saved-searches folder
-  is backed up.
+  account. You checked the log of the first start for a warning about the token store; if
+  `FASTMCP_HOME` already existed or is shared, you reviewed its own permissions; on Windows you
+  protected the folder yourself. The saved-searches folder is backed up.
 - [ ] You know that allow-list changes need a restart.
 - [ ] Logs are kept for a limited time. You have decided who may read them.
 - [ ] The attribution and the "informational, not official" label are intact, and your instance does

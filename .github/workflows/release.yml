@@ -1,0 +1,246 @@
+# Releases boe-insights-mcp: PyPI package, container image, GitHub release and docs site.
+#
+# The only trigger is pushing a tag that matches v* (for example v0.1.0 or v0.1.0rc1). The tag
+# must equal the version in pyproject.toml with a leading "v"; the build job fails otherwise, so
+# nothing is published from a mismatched tag. See RELEASING.md for the full procedure and the
+# one-time setup (PyPI trusted publisher, protected `pypi` environment, GHCR visibility).
+#
+# Job order: build -> pypi (waits for a reviewer to approve the `pypi` environment) -> image,
+# github-release and site, which run in parallel. A failure after pypi leaves the package
+# published: PyPI versions can never be reused, so the fix is a new version (RELEASING.md).
+#
+# Every action is pinned to a full commit SHA, GitHub-owned ones included; the version is in the
+# trailing comment. This is the release path, so a moved tag must not be able to change what runs.
+# Caches are off on this path (a poisoned cache must not reach a published artifact).
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+# Least privilege by default; each job below asks only for what it needs.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and check distributions
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      minor: ${{ steps.version.outputs.minor }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+
+    steps:
+      # Full history so the ancestry check below can see main. The token is not kept in .git/config:
+      # nothing in this job pushes.
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          enable-cache: false
+
+      # Releases come from reviewed code only: a tag on a feature-branch commit (or a commit
+      # that was never merged) is refused before anything is built.
+      - name: Check the tagged commit is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Commit $GITHUB_SHA is not an ancestor of origin/main; merge it first"
+            exit 1
+          fi
+
+      # The tag is the single trigger, so verify it against the package metadata before anything
+      # is built or published. The tag name is passed through the environment, never interpolated
+      # into the script. packaging (the PEP 440 reference implementation) parses the version, so
+      # spellings such as 0.1.0-rc1 or 0.1.0c1 are not guessed at with a regex.
+      - name: Check the tag against pyproject.toml
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          uv run --no-project --with packaging==26.4 python - <<'PY'
+          import os
+          import sys
+          import tomllib
+
+          from packaging.version import Version
+
+          tag = os.environ["TAG"]
+          raw = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
+          version = Version(raw)
+          normalised = str(version)
+
+
+          def fail(message: str) -> None:
+              print(f"::error::{message}")
+              sys.exit(1)
+
+
+          # Written in normalised form so the tag, the PyPI version and the image tag all agree.
+          if raw != normalised:
+              fail(f"pyproject.toml version {raw!r} must be written as {normalised!r}")
+          if tag != f"v{normalised}":
+              fail(f"Tag {tag} does not match pyproject.toml version {normalised} (expected v{normalised})")
+          # Not supported yet: the image and release rules below assume no post-release or local part.
+          if version.is_postrelease:
+              fail("Post-releases are not supported by this workflow; release a new patch version")
+          if version.local is not None:
+              fail("Local versions cannot be uploaded to PyPI")
+
+          prerelease = version.is_prerelease or version.is_devrelease
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"version={normalised}\n")
+              out.write(f"minor={version.major}.{version.minor}\n")
+              out.write(f"prerelease={'true' if prerelease else 'false'}\n")
+          PY
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Check package metadata
+        run: uvx twine check --strict dist/*
+
+      # A fresh virtual environment outside the project, so the test sees only what the wheel
+      # declares (a missing dependency or data file shows up here, not on PyPI).
+      - name: Smoke test the built wheel
+        run: |
+          uv venv "$RUNNER_TEMP/smoke"
+          uv pip install --python "$RUNNER_TEMP/smoke/bin/python" dist/*.whl
+          "$RUNNER_TEMP/smoke/bin/boe-insights-mcp" --help
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # Protected by a required reviewer; also the environment name registered on PyPI.
+    environment:
+      name: pypi
+      url: https://pypi.org/project/boe-insights-mcp/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write # PyPI trusted publishing (OIDC); no API token exists anywhere
+
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+
+  image:
+    name: Publish container image
+    needs: [build, pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push to ghcr.io with GITHUB_TOKEN
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # QEMU lets the amd64 runner build the arm64 image.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The exact version is always tagged. `latest` and MAJOR.MINOR move only for a final release,
+      # so a pre-release never becomes what `docker pull` fetches by default.
+      - name: Compute image tags
+        id: tags
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          MINOR: ${{ needs.build.outputs.minor }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+        run: |
+          image=ghcr.io/davidbejar/boe-insights-mcp
+          {
+            echo "tags<<EOF"
+            echo "$image:$VERSION"
+            if [ "$PRERELEASE" = "false" ]; then
+              echo "$image:latest"
+              echo "$image:$MINOR"
+            fi
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: Containerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.build.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  github-release:
+    name: Create GitHub release
+    needs: [build, pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release and upload its assets
+
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+          REPO: ${{ github.repository }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" dist/* \
+            --repo "$REPO" \
+            --verify-tag \
+            --title "$TAG" \
+            --notes "See [CHANGELOG.md](https://github.com/$REPO/blob/$TAG/CHANGELOG.md) for what changed in this release." \
+            "${flags[@]}"
+
+  site:
+    name: Documentation site
+    # Only final releases update the public site; a pre-release leaves it as it is.
+    if: needs.build.outputs.prerelease == 'false'
+    needs: [build, pypi]
+    # Reusable workflow: builds from the tagged commit and deploys it (see docs.yml).
+    uses: ./.github/workflows/docs.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

@@ -6,14 +6,25 @@ allow-list is enforced when a token is *verified* (so a refused user gets 401 be
 session exists, instead of a valid session that sees nothing), and the redirect URIs that clients
 may register are limited. ``AuthMiddleware`` in ``server`` stays as a second layer on the
 components.
+
+Before the proxy is built, ``make_token_store_private`` makes the folder where FastMCP keeps the
+encrypted sign-in records private to the server's user (mode 0700), and refuses to start when that
+folder is a symbolic link or not a folder; the refusal is a ``launch.StartupError``, which
+``launch.run`` reports in one line. What cannot be made private is only logged as a warning.
 """
 
 from __future__ import annotations
 
+import errno
 import logging
+import os
+import stat
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, NamedTuple
 from urllib.parse import parse_qs, urlsplit
 
+import fastmcp
 from fastmcp.server.auth.oauth_proxy.models import _hash_token
 from fastmcp.server.auth.oauth_proxy.ui import create_error_html
 from fastmcp.server.auth.providers.github import GitHubProvider
@@ -24,10 +35,268 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 
 from boe_insights_mcp.access import AllowList
+from boe_insights_mcp.launch import StartupError
 
-__all__ = ["AllowListedGitHubProvider", "redirect_patterns"]
+__all__ = [
+    "AllowListedGitHubProvider",
+    "TokenStoreError",
+    "make_token_store_private",
+    "redirect_patterns",
+]
 
 logger = logging.getLogger(__name__)
+
+# When no ``client_storage`` is given, the OAuth proxy keeps its encrypted records (upstream GitHub
+# tokens, client registrations) in ``settings.home / "oauth-proxy" / <key fingerprint>``, creating
+# it with ``mkdir(parents=True, exist_ok=True)`` and so with the default mode
+# (fastmcp/server/auth/oauth_proxy/proxy.py:615-623). Only the folder name is repeated here; the
+# home is read from the same ``fastmcp.settings`` object the proxy imports (proxy.py:75), so a
+# ``FASTMCP_HOME`` variable or ``.env`` entry moves both together.
+TOKEN_STORE_FOLDER = "oauth-proxy"
+
+_PRIVATE_MODE = 0o700
+
+# POSIX permission bits mean nothing on Windows (``chmod`` there only toggles read-only), so the
+# store is left to FastMCP and to the folder's ACLs.
+_POSIX_MODES = os.name == "posix"
+
+
+class TokenStoreError(StartupError):
+    """The sign-in token store's folder is not one the server will keep secrets in."""
+
+
+# Group and other permission bits: any of them set means someone else may enter the folder.
+_OTHERS = 0o077
+
+
+@dataclass
+class _Findings:
+    """What making the store private did and could not do, logged once at the end."""
+
+    tightened: list[str] = field(default_factory=list)
+    """Existing folders whose mode was changed to 0700, each with its old mode."""
+    problems: list[str] = field(default_factory=list)
+    """Folders that could not be made private, each with the reason."""
+
+    def log(self) -> None:
+        """One INFO line for what was tightened and one WARNING line for what could not be."""
+        if self.tightened:
+            # An administrator may have opened the folder on purpose; this says it was closed.
+            logger.info(
+                "Made the sign-in token store private (mode 0700): %s", ", ".join(self.tightened)
+            )
+        if self.problems:
+            # A warning, not a refusal, like the open-HTTP one in ``launch.run``: the folder may
+            # belong to another account on purpose (a service user, a shared volume), or live on
+            # a filesystem without POSIX permissions, and only the operator can tell.
+            logger.warning(
+                "Could not make the sign-in token store private (mode 0700): %s. Other users of "
+                "this machine may be able to read it; give it to the server's user, chmod 700 it, "
+                "or set FASTMCP_HOME on a filesystem that keeps permissions",
+                "; ".join(self.problems),
+            )
+
+
+def make_token_store_private(home: Path) -> Path | None:
+    """Make ``home / "oauth-proxy"`` a folder only its owner can enter, before FastMCP uses it.
+
+    A missing store is created, with any missing parents, with mode 0700 whatever the umask. An
+    existing one with group or other permission bits is set to 0700, and so are the folders
+    directly inside it (FastMCP's fingerprint folders), with one INFO line naming what changed. A
+    pre-existing ``home`` and everything above it keep their modes, since they may be shared with
+    other programs. A folder that cannot be made private (not the owner, a filesystem that refuses
+    or ignores the change) is named in one WARNING and the server still starts.
+
+    Returns the store's path, or ``None`` on Windows, where nothing is done. Raises
+    ``TokenStoreError`` when the store is a symbolic link or exists but is not a folder, or when it
+    or a parent cannot be created.
+    """
+    if not _POSIX_MODES:
+        return None
+    store = home / TOKEN_STORE_FOLDER
+    _refuse_untrusted(store)
+    findings = _Findings()
+    if os.path.lexists(store) or not _create_private(store, findings):
+        # Present from the start, or created by another process (a second server starting on the
+        # same volume) between our look and our mkdir: it is examined like any existing store.
+        _refuse_untrusted(store)
+        _tighten(store, findings)
+    findings.log()
+    return store
+
+
+def _refuse_untrusted(store: Path) -> None:
+    """Raise ``TokenStoreError`` if ``store`` is a symbolic link or exists but is not a folder."""
+    # Checked without following the link: ``exists()`` would follow it (a dangling one looks
+    # missing) and ``chmod`` would change whatever it points at. A store that silently lives
+    # somewhere else is not something to trust with sign-in secrets.
+    if store.is_symlink():
+        raise _symlink_refusal(store)
+    # Refused rather than moved or deleted: the file is not ours to remove, and FastMCP would
+    # fail on it anyway, with a traceback instead of this message.
+    if os.path.lexists(store) and not store.is_dir():
+        raise _not_directory_refusal(store)
+
+
+def _symlink_refusal(store: Path) -> TokenStoreError:
+    """The error for a store that is a symbolic link."""
+    return TokenStoreError(
+        f"the sign-in token store {store} is a symbolic link; refusing to keep sign-in secrets "
+        "behind it. Replace it with a real folder, or set FASTMCP_HOME elsewhere"
+    )
+
+
+def _not_directory_refusal(store: Path) -> TokenStoreError:
+    """The error for a store that exists but is not a folder."""
+    return TokenStoreError(
+        f"the sign-in token store {store} exists but is not a directory; move it away, or "
+        "set FASTMCP_HOME elsewhere"
+    )
+
+
+def _create_private(store: Path, findings: _Findings) -> bool:
+    """Create ``store`` and its missing parents, each set to 0700.
+
+    Returns False when ``store`` turns out to exist (another process created it first), so the
+    caller examines it as an existing store; True otherwise. Raises ``TokenStoreError`` naming the
+    store when a folder cannot be created.
+    """
+    # ``mkdir(parents=True, mode=...)`` gives the mode to the last folder only and the umask
+    # narrows it, so each missing folder is created and set explicitly. ``lexists`` so that a
+    # dangling symlink among the parents counts as present (mkdir then fails and is reported).
+    missing: list[Path] = []
+    current = store
+    while not os.path.lexists(current):
+        missing.append(current)
+        current = current.parent
+    if not missing:
+        # The store appeared after the caller looked (another process, or someone planting a
+        # link): it goes through the existing-store checks rather than being taken as ours.
+        return False
+    for created in reversed(missing):
+        try:
+            created.mkdir(mode=_PRIVATE_MODE)
+        except FileExistsError:
+            # Lost a race with another process. Not ``exist_ok=True``: that would also accept a
+            # symlink planted in the same window, and the mode change would follow it. The store
+            # goes back to the caller's checks; a parent is used as it is (it is not ours to
+            # change, and a symlinked parent is as acceptable as a symlinked home).
+            if created == store:
+                return False
+            if created.is_dir():
+                continue
+            raise TokenStoreError(
+                f"cannot create the sign-in token store {store}: {created} is not a directory"
+            ) from None
+        except OSError as error:
+            raise TokenStoreError(
+                f"cannot create the sign-in token store {store}: {error.strerror or error}"
+            ) from error
+        # mkdir's mode never grants group or other bits, so this only restores owner bits the
+        # umask removed, and catches a filesystem that ignores the requested mode altogether.
+        _make_private(created, findings, existing=False, is_store=created == store)
+    # FastMCP then creates the fingerprint folder (and the store creates one per collection)
+    # inside with the default mode, typically 0755. Those are not patched: nobody but the owner
+    # can enter a 0700 folder, so nobody else reaches anything below it whatever its mode, and
+    # the record files themselves are written 0600 (checked with FastMCP 4.2.4).
+    return True
+
+
+def _tighten(store: Path, findings: _Findings) -> None:
+    """Set an existing ``store`` and the folders directly inside it to 0700 when wider.
+
+    Symbolic links inside are skipped, never followed. Anything that fails is noted in
+    ``findings`` for the one WARNING; nothing here stops the server, except a store that has
+    become a symbolic link (``TokenStoreError``).
+    """
+    _make_private(store, findings, existing=True, is_store=True)
+    try:
+        with os.scandir(store) as entries:
+            inside = sorted(
+                Path(entry.path) for entry in entries if entry.is_dir(follow_symlinks=False)
+            )
+    except OSError as error:
+        findings.problems.append(
+            f"{store} (its folders could not be listed: {error.strerror or error})"
+        )
+        return
+    for folder in inside:
+        _make_private(folder, findings, existing=True, is_store=False)
+
+
+def _make_private(folder: Path, findings: _Findings, *, existing: bool, is_store: bool) -> None:
+    """Set ``folder`` to 0700 through a descriptor that does not follow links; note the outcome.
+
+    An ``existing`` folder already closed to group and others is left alone; a folder just created
+    is always set. Raises ``TokenStoreError`` only when ``folder`` is the store and has become a
+    symbolic link or a file since it was checked; every other failure is noted in ``findings``.
+    """
+    # Deliberately not checked: who owns the folder (a store owned by another account is only
+    # reported when the change fails), macOS ACLs, which can still grant others access whatever
+    # the mode, and the setgid bit, which setting exactly 0700 clears.
+    try:
+        if existing:
+            before = os.lstat(folder)
+            # Only access by others is a reason to change an existing folder, so one owned by
+            # someone else but already private causes no warning.
+            if stat.S_ISDIR(before.st_mode) and not before.st_mode & _OTHERS:
+                return
+        old_mode, new_mode = _change_mode(folder, just_created=not existing)
+    except OSError as error:
+        # Something replaced the store after ``_refuse_untrusted``. With O_DIRECTORY set, a
+        # symbolic link gives ENOTDIR on both Linux and macOS (measured), as a file does; ELOOP,
+        # what O_NOFOLLOW alone gives, is accepted too in case a system reports that instead.
+        if is_store and error.errno in (errno.ELOOP, errno.ENOTDIR):
+            if folder.is_symlink():
+                raise _symlink_refusal(folder) from error
+            raise _not_directory_refusal(folder) from error
+        if not is_store and isinstance(error, FileNotFoundError):
+            return  # removed meanwhile: nothing left there to protect
+        findings.problems.append(f"{folder} ({error.strerror or error})")
+        return
+    if new_mode & _OTHERS:
+        findings.problems.append(
+            f"{folder} (the filesystem did not apply the permissions; mode is {new_mode:04o})"
+        )
+    elif existing:
+        # Reached only when the mode was wider (unchanged folders returned early above).
+        findings.tightened.append(f"{folder} (was {old_mode:04o})")
+
+
+def _change_mode(folder: Path, *, just_created: bool) -> tuple[int, int]:
+    """Set ``folder`` to 0700 without following a link; return its modes before and after.
+
+    Raises ``OSError`` as the system calls do, ``NotADirectoryError`` included when ``folder`` is
+    not (or no longer) a folder.
+    """
+    try:
+        # The descriptor pins the folder that was checked: O_NOFOLLOW refuses a symbolic link
+        # swapped in since (``Path.chmod`` would follow it), and fchmod/fstat act on that folder.
+        descriptor = os.open(folder, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    except PermissionError:
+        if not just_created:
+            raise
+        # A umask that removes the owner's read bit (say 0o677) leaves a folder we just made
+        # that cannot be opened, only changed by path. Acceptable for that folder alone: mkdir's
+        # mode gave group and others nothing, and replacing it needs write access to its parent.
+        # An existing folder is never changed by path, since a link could have been swapped in.
+        old_mode = stat.S_IMODE(os.lstat(folder).st_mode)
+        os.chmod(folder, _PRIVATE_MODE)
+        after = os.lstat(folder)
+        if not stat.S_ISDIR(after.st_mode):
+            raise NotADirectoryError(
+                errno.ENOTDIR, os.strerror(errno.ENOTDIR), str(folder)
+            ) from None
+        return old_mode, stat.S_IMODE(after.st_mode)
+    try:
+        old_mode = stat.S_IMODE(os.fstat(descriptor).st_mode)
+        os.fchmod(descriptor, _PRIVATE_MODE)
+        # Read back: some filesystems (SMB with a fixed dir_mode, WSL drvfs, some FUSE) accept
+        # the change and keep their own mode.
+        return old_mode, stat.S_IMODE(os.fstat(descriptor).st_mode)
+    finally:
+        os.close(descriptor)
+
 
 # What command-line MCP clients (Claude Code and others) use for their callback: RFC 8252 loopback
 # redirects on a port they pick at run time. FastMCP's own list covers ``localhost`` and
@@ -83,7 +352,15 @@ class AllowListedGitHubProvider(GitHubProvider):
         ``advertised_scopes`` are the scopes clients are told they may ask for and may register
         with. They are not required of any token: ``required_scopes`` (in ``options``) stays the
         only thing the token check and the scope sent to GitHub follow.
+
+        Unless ``options`` give a ``client_storage``, the token store folder is made private
+        first (``make_token_store_private``), which may raise ``TokenStoreError``.
         """
+        # Before ``super().__init__``, which creates the store folder: with our 0700 folder already
+        # there, FastMCP's ``mkdir(exist_ok=True)`` leaves its mode alone. A caller-supplied
+        # storage means FastMCP never touches the folder, so neither do we.
+        if options.get("client_storage") is None:
+            make_token_store_private(fastmcp.settings.home)
         super().__init__(**options)
         self._advertised_scopes = list(advertised_scopes)
         # Replaces the advertised, default and valid scopes that the base class derived from
