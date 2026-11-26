@@ -9,8 +9,9 @@
 # github-release and site, which run in parallel. A failure after pypi leaves the package
 # published: PyPI versions can never be reused, so the fix is a new version (RELEASING.md).
 #
-# Third-party actions are pinned to a full commit SHA (the version is in the trailing comment);
-# GitHub-owned actions (actions/*) stay on major tags, as in the other workflows.
+# Every action is pinned to a full commit SHA, GitHub-owned ones included; the version is in the
+# trailing comment. This is the release path, so a moved tag must not be able to change what runs.
+# Caches are off on this path (a poisoned cache must not reach a published artifact).
 
 name: Release
 
@@ -28,36 +29,76 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      minor: ${{ steps.version.outputs.minor }}
       prerelease: ${{ steps.version.outputs.prerelease }}
 
     steps:
+      # Full history so the ancestry check below can see main. The token is not kept in .git/config:
+      # nothing in this job pushes.
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up uv
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          enable-cache: false
+
+      # Releases come from reviewed code only: a tag on a feature-branch commit (or a commit
+      # that was never merged) is refused before anything is built.
+      - name: Check the tagged commit is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Commit $GITHUB_SHA is not an ancestor of origin/main; merge it first"
+            exit 1
+          fi
 
       # The tag is the single trigger, so verify it against the package metadata before anything
       # is built or published. The tag name is passed through the environment, never interpolated
-      # into the script.
+      # into the script. packaging (the PEP 440 reference implementation) parses the version, so
+      # spellings such as 0.1.0-rc1 or 0.1.0c1 are not guessed at with a regex.
       - name: Check the tag against pyproject.toml
         id: version
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          version="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
-          if [ "${TAG#v}" != "$version" ]; then
-            echo "::error::Tag $TAG does not match pyproject.toml version $version"
-            exit 1
-          fi
-          # PEP 440 pre-release: an a, b, rc or dev segment right after a digit (0.1.0rc1, 1.0.0a2, 1.0.dev3).
-          if printf '%s' "$version" | grep -Eq '[0-9](a|b|rc|\.?dev)[0-9]*'; then
-            prerelease=true
-          else
-            prerelease=false
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          uv run --no-project --with packaging==26.4 python - <<'PY'
+          import os
+          import sys
+          import tomllib
+
+          from packaging.version import Version
+
+          tag = os.environ["TAG"]
+          raw = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
+          version = Version(raw)
+          normalised = str(version)
+
+
+          def fail(message: str) -> None:
+              print(f"::error::{message}")
+              sys.exit(1)
+
+
+          # Written in normalised form so the tag, the PyPI version and the image tag all agree.
+          if raw != normalised:
+              fail(f"pyproject.toml version {raw!r} must be written as {normalised!r}")
+          if tag != f"v{normalised}":
+              fail(f"Tag {tag} does not match pyproject.toml version {normalised} (expected v{normalised})")
+          # Not supported yet: the image and release rules below assume no post-release or local part.
+          if version.is_postrelease:
+              fail("Post-releases are not supported by this workflow; release a new patch version")
+          if version.local is not None:
+              fail("Local versions cannot be uploaded to PyPI")
+
+          prerelease = version.is_prerelease or version.is_devrelease
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write(f"version={normalised}\n")
+              out.write(f"minor={version.major}.{version.minor}\n")
+              out.write(f"prerelease={'true' if prerelease else 'false'}\n")
+          PY
 
       - name: Build sdist and wheel
         run: uv build
@@ -74,7 +115,7 @@ jobs:
           "$RUNNER_TEMP/smoke/bin/boe-insights-mcp" --help
 
       - name: Upload distributions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist
           path: dist/
@@ -93,7 +134,7 @@ jobs:
 
     steps:
       - name: Download distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dist
           path: dist/
@@ -111,7 +152,9 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       # QEMU lets the amd64 runner build the arm64 image.
       - name: Set up QEMU
@@ -133,6 +176,7 @@ jobs:
         id: tags
         env:
           VERSION: ${{ needs.build.outputs.version }}
+          MINOR: ${{ needs.build.outputs.minor }}
           PRERELEASE: ${{ needs.build.outputs.prerelease }}
         run: |
           image=ghcr.io/davidbejar/boe-insights-mcp
@@ -141,7 +185,7 @@ jobs:
             echo "$image:$VERSION"
             if [ "$PRERELEASE" = "false" ]; then
               echo "$image:latest"
-              echo "$image:${VERSION%.*}"
+              echo "$image:$MINOR"
             fi
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
@@ -168,7 +212,7 @@ jobs:
 
     steps:
       - name: Download distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: dist
           path: dist/

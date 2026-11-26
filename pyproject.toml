@@ -89,6 +89,19 @@ replacement = '\1https://github.com/davidbejar/boe-insights-mcp/blob/main/\2"'
 pattern = '(\]\()(?![a-zA-Z][a-zA-Z0-9+.-]*:|/|#)([^)\s]+)\)'
 replacement = '\1https://github.com/davidbejar/boe-insights-mcp/blob/main/\2)'
 
+# PyPI files are permanent and the sdist is labelled MIT, so ship only what is needed to build
+# and understand the package: no agent tooling (.claude/, CLAUDE.md, with third-party licensed
+# files), CI config, docs sources or test fixtures. README.md is needed by the readme plugin.
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/README.md",
+    "/README.es.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/pyproject.toml",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/boe_insights_mcp"]
 

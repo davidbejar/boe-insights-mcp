@@ -4,10 +4,10 @@ All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [PEP 440](https://peps.python.org/pep-0440/).
 
-## [0.1.0rc1] - Unreleased
+## [0.1.0rc1] - 2026-11-26
 
 First pre-release. It publishes the package name on PyPI and exercises the whole release
-pipeline; the final `0.1.0` follows in a later release. Set the date when the tag is pushed.
+pipeline; the final `0.1.0` follows in a later release.
 
 ### Added
 
