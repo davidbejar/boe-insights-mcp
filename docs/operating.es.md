@@ -264,15 +264,32 @@ por usuario de FastMCP, una mala elección para un servicio. La carpeta debe:
 
 - conservarse entre reinicios (si no, todo el mundo inicia sesión de nuevo después de cada
   despliegue);
-- ser privada para la cuenta que ejecuta el servidor. Cuando el inicio de sesión con GitHub está
-  activado, el propio servidor crea `$FASTMCP_HOME/oauth-proxy` (y las carpetas superiores que
-  falten) con modo 0700 antes de que FastMCP lo use, y lo restringe a 0700 si ya existe con
-  permisos más amplios. No cambia los permisos de una carpeta `FASTMCP_HOME` que ya existía, así
-  que, si esa carpeta es compartida, revísala. Si el servidor no puede restringir la carpeta (no
-  es su propietario), registra un aviso en el log y continúa. Se niega a arrancar si
-  `oauth-proxy` es un enlace simbólico. Los permisos POSIX no se aplican en Windows. La imagen de
-  contenedor crea `/data` con modo 0700 para el usuario del servidor; una carpeta montada con bind
-  mount conserva los permisos que le des;
+- ser privada para la cuenta que ejecuta el servidor. Por HTTP con el inicio de sesión con GitHub
+  activado, y solo en sistemas POSIX, el servidor prepara `$FASTMCP_HOME/oauth-proxy` antes de que
+  FastMCP lo use:
+    - Crea la carpeta, y las carpetas superiores que falten (también `FASTMCP_HOME` si no existe),
+      con bits de permisos 0700, sea cual sea la umask.
+    - Si la carpeta ya existe y el grupo u otros tienen algún acceso, la pone a 0700, igual que las
+      carpetas que contiene directamente, y registra en el log una línea INFO con cada carpeta
+      cambiada y su modo anterior. Esto también ocurre cuando `oauth-proxy` es en sí un volumen montado, y
+      elimina un bit setgid.
+    - Nunca cambia una carpeta `FASTMCP_HOME` que ya existía, nada por encima de ella ni los
+      archivos del almacén.
+    - Se niega a arrancar, con un error de una línea, si `oauth-proxy` es un enlace simbólico,
+      existe pero no es una carpeta, o no se puede crear.
+    - Si no puede hacer privada una carpeta (no es su propietario, el sistema de archivos es de
+      solo lectura o no admite cambiar permisos, o aceptó el cambio pero no lo aplicó, como hacen
+      algunos recursos de red), registra en el log un WARNING con la carpeta y el motivo, y sigue
+      arrancando. Busca ese aviso en el log tras el primer arranque.
+
+  Límites: no hace nada en Windows. Solo fija bits de permisos: no comprueba quién es el
+  propietario de la carpeta ni examina las listas de control de acceso (en macOS, una ACL heredada
+  de la carpeta personal aún puede dar acceso a otros). Los archivos de registro de dentro ya eran
+  solo del propietario (0600) y estaban cifrados, así que el permiso de la carpeta protege los
+  nombres de archivo (que incluyen ids de cliente y códigos de corta duración) y el listado, no el
+  contenido. La imagen de contenedor crea `/data` con modo 0700 para el usuario del servidor. Un
+  bind mount de `FASTMCP_HOME` o de `/data` conserva los permisos que le des; un montaje que sea la
+  propia carpeta `oauth-proxy` se restringe como se ha descrito;
 - tener copia de seguridad solo si aceptas que la copia contiene tokens de GitHub cifrados (son
   inútiles sin la clave de firma).
 
@@ -478,9 +495,10 @@ Los datos son del BOE, y sus condiciones de reutilización se aplican a tu insta
   del repositorio.
 - [ ] El secreto de cliente de GitHub se guarda de la misma manera.
 - [ ] `FASTMCP_HOME` y `BOE_INSIGHTS_DATA_DIR` están en almacenamiento persistente, privado para la
-  cuenta del servidor (el servidor hace privado `$FASTMCP_HOME/oauth-proxy`, pero no una carpeta
-  `FASTMCP_HOME` que ya existía: revísala si es compartida). Se hace copia de seguridad de la
-  carpeta de búsquedas guardadas.
+  cuenta del servidor. Has revisado en el log del primer arranque si hay un aviso sobre el almacén
+  de tokens; si `FASTMCP_HOME` ya existía o es compartida, has revisado sus propios permisos; en
+  Windows has protegido la carpeta tú. Se hace copia de seguridad de la carpeta de búsquedas
+  guardadas.
 - [ ] Sabes que los cambios en la lista de acceso requieren un reinicio.
 - [ ] Los logs se conservan durante un tiempo limitado. Has decidido quién puede leerlos.
 - [ ] La atribución y la etiqueta "informativo, no oficial" están intactas, y tu instancia no
