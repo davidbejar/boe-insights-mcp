@@ -242,11 +242,14 @@ signing key. If you do not set `FASTMCP_HOME`, it is FastMCP's per-user data dir
 poor choice for a service. The folder must:
 
 - persist across restarts (otherwise everybody signs in again after each deploy);
-- be private to the account that runs the server. FastMCP does not restrict it: it creates the
-  folder with the default permissions (seen as `drwxr-xr-x`, readable by other accounts), so make
-  it private yourself, for example with `chmod 700` on `$FASTMCP_HOME`. The container image
-  creates `/data` with mode 0700 for the server's user; a bind-mounted folder keeps the
-  permissions you give it;
+- be private to the account that runs the server. When GitHub sign-in is enabled, the server
+  itself creates `$FASTMCP_HOME/oauth-proxy` (and any missing parent folders) with mode 0700 before
+  FastMCP uses it, and tightens it to 0700 if it already exists with wider permissions. It does
+  not change the permissions of a `FASTMCP_HOME` folder that already existed, so if that folder is
+  shared, review it. If the server cannot tighten the folder (it is not the owner), it logs a
+  warning and continues. It refuses to start if `oauth-proxy` is a symbolic link. POSIX
+  permissions do not apply on Windows. The container image creates `/data` with mode 0700 for the
+  server's user; a bind-mounted folder keeps the permissions you give it;
 - be backed up only if you accept that a copy holds encrypted GitHub tokens (they are useless
   without the signing key).
 
@@ -431,8 +434,8 @@ The data is the BOE's, and its reuse conditions apply to your instance:
 - [ ] The signing key is random, at least 32 characters, and kept outside the image and the repo.
 - [ ] The GitHub client secret is kept the same way.
 - [ ] `FASTMCP_HOME` and `BOE_INSIGHTS_DATA_DIR` are on persistent storage, private to the server
-  account (FastMCP does not make `FASTMCP_HOME` private: `chmod 700` it). The saved-searches folder
-  is backed up.
+  account (the server makes `$FASTMCP_HOME/oauth-proxy` private, but not a `FASTMCP_HOME` folder
+  that already existed: review it if it is shared). The saved-searches folder is backed up.
 - [ ] You know that allow-list changes need a restart.
 - [ ] Logs are kept for a limited time. You have decided who may read them.
 - [ ] The attribution and the "informational, not official" label are intact, and your instance does

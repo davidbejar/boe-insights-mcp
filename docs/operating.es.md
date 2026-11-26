@@ -264,11 +264,15 @@ por usuario de FastMCP, una mala elección para un servicio. La carpeta debe:
 
 - conservarse entre reinicios (si no, todo el mundo inicia sesión de nuevo después de cada
   despliegue);
-- ser privada para la cuenta que ejecuta el servidor. FastMCP no la restringe: crea la carpeta con
-  los permisos por defecto (se ha visto `drwxr-xr-x`, legible por otras cuentas), así que hazla
-  privada tú, por ejemplo con `chmod 700` sobre `$FASTMCP_HOME`. La imagen de contenedor crea
-  `/data` con modo 0700 para el usuario del servidor; una carpeta montada con bind mount conserva
-  los permisos que le des;
+- ser privada para la cuenta que ejecuta el servidor. Cuando el inicio de sesión con GitHub está
+  activado, el propio servidor crea `$FASTMCP_HOME/oauth-proxy` (y las carpetas superiores que
+  falten) con modo 0700 antes de que FastMCP lo use, y lo restringe a 0700 si ya existe con
+  permisos más amplios. No cambia los permisos de una carpeta `FASTMCP_HOME` que ya existía, así
+  que, si esa carpeta es compartida, revísala. Si el servidor no puede restringir la carpeta (no
+  es su propietario), registra un aviso en el log y continúa. Se niega a arrancar si
+  `oauth-proxy` es un enlace simbólico. Los permisos POSIX no se aplican en Windows. La imagen de
+  contenedor crea `/data` con modo 0700 para el usuario del servidor; una carpeta montada con bind
+  mount conserva los permisos que le des;
 - tener copia de seguridad solo si aceptas que la copia contiene tokens de GitHub cifrados (son
   inútiles sin la clave de firma).
 
@@ -474,8 +478,9 @@ Los datos son del BOE, y sus condiciones de reutilización se aplican a tu insta
   del repositorio.
 - [ ] El secreto de cliente de GitHub se guarda de la misma manera.
 - [ ] `FASTMCP_HOME` y `BOE_INSIGHTS_DATA_DIR` están en almacenamiento persistente, privado para la
-  cuenta del servidor (FastMCP no hace privado `FASTMCP_HOME`: aplícale `chmod 700`). Se hace copia
-  de seguridad de la carpeta de búsquedas guardadas.
+  cuenta del servidor (el servidor hace privado `$FASTMCP_HOME/oauth-proxy`, pero no una carpeta
+  `FASTMCP_HOME` que ya existía: revísala si es compartida). Se hace copia de seguridad de la
+  carpeta de búsquedas guardadas.
 - [ ] Sabes que los cambios en la lista de acceso requieren un reinicio.
 - [ ] Los logs se conservan durante un tiempo limitado. Has decidido quién puede leerlos.
 - [ ] La atribución y la etiqueta "informativo, no oficial" están intactas, y tu instancia no

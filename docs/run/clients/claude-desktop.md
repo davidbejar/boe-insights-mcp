@@ -3,7 +3,7 @@
 Claude Desktop is Anthropic's desktop app. It can run a local MCP server as a program on your computer. This is the way tested by this project.
 
 !!! success "Tested by this project"
-    Local use over stdio was tested with Claude Desktop.
+    Local use over stdio was tested with Claude Desktop on macOS on 2026-11-26, with the from-repository command shown below. The server started, and these tools were run and worked: resolving a law reference, reading an article, and saving and listing a saved search. The version of Claude Desktop was not recorded. Windows and Linux were not tested; their config paths below come from Anthropic's documentation.
 
 !!! warning "Not tested"
     Connecting Claude Desktop to the server over HTTP was not tested. Read the HTTP section below for what Anthropic's documentation says and what that means for this server.
@@ -12,11 +12,13 @@ Claude Desktop is Anthropic's desktop app. It can run a local MCP server as a pr
 
 You need [uv](https://docs.astral.sh/uv/) installed.
 
-1. Open the Claude Desktop settings (from the Claude menu in the menu bar, **Settings...**), then **Developer**, then **Edit Config**. This opens `claude_desktop_config.json`, which lives here:
+1. Open `claude_desktop_config.json` directly in a text editor. It lives here:
     - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
     - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
     - Linux: `~/.config/Claude/claude_desktop_config.json`
-2. Add the server under `mcpServers`:
+
+    Keep a backup copy of the file before you edit it. The file may already exist with other settings. Do not replace it: add the `mcpServers` key at the top level, next to the existing keys. Older versions of the app offered **Settings**, then **Developer**, then **Edit Config** to open this file; the current version does not have that entry.
+2. Add the server under `mcpServers`. If the file already has an `mcpServers` key, add only the `boe-insights` entry inside it:
 
     ```json
     {
@@ -30,7 +32,9 @@ You need [uv](https://docs.astral.sh/uv/) installed.
     ```
 
 3. Save the file, then quit Claude Desktop completely and start it again. Closing the window is not enough.
-4. In a conversation, open the "Add files, connectors, and more" menu, then **Connectors**. `boe-insights` should be listed with its tools.
+4. In the left sidebar, open **Plugins** (the app shows a notice that connectors and skills are now plugins). `boe-insights` is listed under **Your plugins**, labelled "Local development" and "Local MCP server". Open the entry to see its tools: 23 at the time of testing, split into read-only tools and write/delete tools. The developer is shown as unknown, which is what the app shows for any server added through the config file.
+
+The first start can be slow: with the repository form, uvx builds the package from GitHub (about 16 seconds in the test). Allow up to a minute. If the server shows as failed, restart the app once.
 
 Before release 0.1.0, use the repository form, which works today:
 
