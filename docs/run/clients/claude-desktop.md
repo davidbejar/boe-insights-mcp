@@ -77,7 +77,7 @@ To pass settings, add an `env` block next to `args`, for example `"env": { "BOE_
 Anthropic's documentation describes two separate things.
 
 - `claude_desktop_config.json`, above, is for local servers that run on your computer. Anthropic's pages do not say that it accepts a remote server by URL, so do not put an `http://` address in it.
-- Remote servers are added as custom connectors: **Customize**, then **Connectors**, then **Add custom connector** (on Team plans, Owners and Primary Owners add them under the organisation settings; on Enterprise plans, people with a role that includes managing access to Libraries). See [Anthropic's help page](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
+- Remote servers are added as custom connectors: **Customize**, then **Connectors**, then **Add custom connector** (on Team plans, Owners and Primary Owners add them under the organisation settings; on Enterprise plans, Owners, Primary Owners and people with a custom role that includes managing access to Libraries). See [Anthropic's help page](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp), which still gave these steps when checked on 2026-11-26. In the app tested that day, connectors were listed under **Plugins** in the sidebar, with a **Connectors** tab and an **Add** button; adding a custom connector from there was not tried.
 
 The same help page says that remote connectors connect from Anthropic's cloud, not from your device, in every Claude app including Claude Desktop. The server must be reachable from the public internet, and it must use the standard HTTPS port 443. Consequences for this server:
 
